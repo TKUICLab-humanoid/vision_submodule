@@ -23,10 +23,11 @@ Mat ObjectDetected::convertTo3Channels(const Mat &binImg)
 
 Mat ObjectDetected::White_Line(const cv::Mat iframe)
 {
+    cv::Mat threshold(iframe.rows, iframe.cols, CV_8UC3, Scalar(0, 0, 0));
     cv::Mat oframe(iframe.rows, iframe.cols, CV_8UC3, Scalar(0, 0, 0));
     //whitedis.data.clear();
     //======================threshold===================
-    /*for (int i = 0; i < iframe.rows; i++)
+    for (int i = 0; i < iframe.rows; i++)
     {
         for (int j = 0; j < iframe.cols; j++)
         {
@@ -34,7 +35,7 @@ Mat ObjectDetected::White_Line(const cv::Mat iframe)
             int gray_next = (iframe.data[(i * iframe.cols * 3) + ((j + 1) * 3) + 0] + iframe.data[(i * iframe.cols * 3) + ((j + 1) * 3) + 1] + iframe.data[(i * iframe.cols * 3) + ((j + 1) * 3) + 2]) / 3;
             int gray_next2 = (iframe.data[(i * iframe.cols * 3) + ((j + 2) * 3) + 0] + iframe.data[(i * iframe.cols * 3) + ((j + 2) * 3) + 1] + iframe.data[(i * iframe.cols * 3) + ((j + 2) * 3) + 2]) / 3;
             //int gray = 170;
-            if (gray_present <= 69 && gray_next <= 169 && gray_next2 <= 169)
+            if (gray_present <= 70 && gray_next <= 70 && gray_next2 <= 70)
             //if (iframe.data[(i * iframe.cols * 3) + (j * 3) + 0] < gray && iframe.data[(i * iframe.cols * 3) + (j * 3) + 1] < gray && iframe.data[(i * iframe.cols * 3) + (j * 3) + 2] < gray) 
             {
                 threshold.data[(i * threshold.cols * 3) + (j * 3) + 0] = 0;
@@ -48,9 +49,14 @@ Mat ObjectDetected::White_Line(const cv::Mat iframe)
                 threshold.data[(i * threshold.cols * 3) + (j * 3) + 2] = 255;
             }
         }
-    }*/
+    }
+    Mat element = getStructuringElement(MORPH_RECT, Size(6,6));
+    Mat element_1 = getStructuringElement(MORPH_RECT, Size(9,9));
+    morphologyEx(threshold, threshold, CV_MOP_OPEN, element);
+    morphologyEx(threshold, threshold, CV_MOP_CLOSE, element_1);
+    morphologyEx(threshold, threshold, CV_MOP_OPEN, element);
     Mat edge;
-    edge = iframe.clone();
+    cv::Canny(threshold, edge, 50, 150, 3);
     edge=convertTo3Channels(edge);
     //cv::imshow("edge", edge);
     //=====================draw the scan line===========
@@ -142,7 +148,7 @@ Mat ObjectDetected::White_Line(const cv::Mat iframe)
                 {
                     tmp.x = -1;
                     tmp.y = -1;
-                    tmp.scan_line_cnt = angle_be / 5;
+                    tmp.scan_line_cnt = angle_be / 10;
                     Filed_feature_point.push_back(tmp);
                 }
                 break;
@@ -166,6 +172,7 @@ Mat ObjectDetected::FindObject(const cv::Mat iframe)
 
     //cascader2soccer.detectMultiScale(gray, soccer_data, 1.1, 10, 0, Size(20, 20));
     //cascader2goal.detectMultiScale(gray, goal_data, 1.1, 10, 0, Size(20, 20));
+    ROS_INFO("11");
     for (size_t t = 0; t < soccer_data.size(); t++)
 	{
 		rectangle(oframe, soccer_data[t], Scalar(255, 0, 0), 2, 8, 0);

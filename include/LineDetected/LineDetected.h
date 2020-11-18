@@ -5,33 +5,29 @@
 using namespace cv;
 using namespace std;
 
+struct LineINF
+{
+    Distance middlepoint;
+    double Line_length;
+    double Line_theta;   
+};
+
 
 class LineDetected : public ModelBase 
 {
     public:
-        int ErRoR;
-        
+        int frame_rows;
+        int frame_cols;
         vector<Vec4i> all_lines;
         vector<Vec4i> tmp;
+        vector<Vec4i> check_lines;
         vector<Vec4i> reduce_similar_lines;
         vector<Vec4i> merge_similar_lines;
-        vector<int> ROI_point_tmp;
         LineDetected();
         ~LineDetected();
         //---------------------------------------
         Mat ImagePreprocessing(const Mat iframe);
-        Mat GreenField;
-        Mat img_hsv;
-        int Huemin;
-        int Huemax;
-        int Saturationmin;
-        int Saturationmax;
-        int Brightnessmin;
-        int Brightnessmax;
-        int H;
-        int S;
-        int V;
-        int ROI_point;
+        Mat ImageCanny(const Mat iframe);
         //-------------------------------------
         double dis2(coordinate a, coordinate b) ;
         //-------------------------------------
@@ -54,17 +50,18 @@ class LineDetected : public ModelBase
         double YDistance;
         double theta;
         int thetaZeroY;
+        int thetaZeroX;
         Vec4i NewLine;
+        Vec4i MaxLine;
+        int hough_threshold;
+        double hough_minLineLength;
+        double hough_maxLineGap;
         //-------------------------------------
         vector<Vec4i> complement(vector<Vec4i>  all_line,Vec4i remove) ;
         //-------------------------------------
-        Mat Merge_similar_line(const Mat canny_iframe,const Mat original_frame);
+        int checkline(Mat image_Enhance,Mat canny,Vec4i line);
         //-------------------------------------
-        int getHistograph(const Mat grayImage);
-        Mat hist;
-        int i_diff;
-        int temp_max;
-        int i_max;
-        int temp_min;
-        int i_min;
+        Mat Merge_similar_line(const Mat iframe,const Mat canny_iframe,const Mat original_frame);
+        //-------------------------------------
+        Mat nocheckline(const Mat iframe,const Mat canny_iframe,const Mat original_frame);
 };

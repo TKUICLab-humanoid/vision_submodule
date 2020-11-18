@@ -19,6 +19,7 @@
 #include "tku_msgs/SensorPackage.h"
 #include "tku_msgs/SoccerData.h"
 #include "tku_msgs/SoccerDataList.h"
+#include "tku_msgs/ImageProcess.h"
 
 #include "tku_msgs/ButtonColorForm.h"
 #include "tku_msgs/HSVInfo.h"
@@ -45,8 +46,12 @@ class Vision_main : public LineDetected
         ~Vision_main();
         void strategy_main();
         void strategy_init();
+
+        void SaveHeadPosition();
+	    string DtoS(double value);
     public:
         void GetImagesourceFunction(const sensor_msgs::ImageConstPtr& msg);
+        void GetImageProcessParameter(const tku_msgs::ImageProcess &msg);
         void ModelingFunction(const tku_msgs::ButtonColorForm& msg);
         void ChangeHSVValue(const tku_msgs::HSVValue& msg);
         bool LoadHSVInfo(tku_msgs::HSVInfo::Request &HSVreq, tku_msgs::HSVInfo::Response &HSVres);
@@ -54,6 +59,13 @@ class Vision_main : public LineDetected
         bool CallSaveHSVFunction(tku_msgs::SaveHSV::Request &req, tku_msgs::SaveHSV::Response &res);
         void GetIMUDataFunction(const tku_msgs::SensorPackage &msg);
         void HeadAngleFunction(const tku_msgs::HeadPackage &msg);
+        void StartFunction(const std_msgs::Bool& msg);
+	    void DIOackFunction(const std_msgs::Int16 &msg);
+
+    public:
+        bool is_start;
+        vector<int> Horizontal_Head_vector;
+        vector<int> Vertical_Head_vector;
     private:
         motordata Horizontal_Head;
         motordata Vertical_Head;
@@ -70,6 +82,7 @@ class Vision_main : public LineDetected
         ros::NodeHandle *nh;
 
         ros::Subscriber Imagesource_subscriber;
+        ros::Subscriber ImageProcessPara_subscriber;
         ros::Subscriber HeadAngle_subscriber;
         ros::Subscriber IMUData_Subscriber;
         //--------------HSV---------------
@@ -79,7 +92,8 @@ class Vision_main : public LineDetected
         ros::ServiceServer Build_service;
         ros::ServiceServer Save_service;
         //--------------------------------
-        ros::Publisher Distance_Publisher;
+        ros::Subscriber Start_Subscriber;
+	    ros::Subscriber DIO_Ack_Subscriber;
 
         ros::Publisher ObservationData_Publisher;
         ros::Publisher ImageLengthData_Publisher;

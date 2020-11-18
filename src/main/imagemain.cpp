@@ -5,8 +5,11 @@ Vision_main::Vision_main(ros::NodeHandle &nh)
     this->nh = &nh;
     image_transport::ImageTransport it(nh);
     Imagesource_subscriber = nh.subscribe("/usb_cam/image_raw", 1, &Vision_main::GetImagesourceFunction,this);
+    ImageProcessPara_subscriber = nh.subscribe("/vision_web/ImageProcessPara", 1, &Vision_main::GetImageProcessParameter,this);
     HeadAngle_subscriber = nh.subscribe("/package/HeadMotor", 10, &Vision_main::HeadAngleFunction,this);
     IMUData_Subscriber = nh.subscribe("/package/sensorpackage", 1, &Vision_main::GetIMUDataFunction,this);
+    Start_Subscriber = nh.subscribe("/web/start", 10, &Vision_main::StartFunction,this);
+    DIO_Ack_Subscriber = nh.subscribe("/package/FPGAack", 10, &Vision_main::DIOackFunction,this);
     
     //--------------HSV---------------
     ModelingButton_subscriber = nh.subscribe("ColorModelForm_Topic", 1000, &Vision_main::ModelingFunction,this);
@@ -25,6 +28,9 @@ Vision_main::Vision_main(ros::NodeHandle &nh)
 
     pitch_pre = 0.0;
     roll_pre = 0.0;
+
+    Horizontal_Head_vector.clear();
+    Vertical_Head_vector.clear();
 }
 Vision_main::~Vision_main()
 {
@@ -106,8 +112,7 @@ void Vision_main::HeadAngleFunction(const tku_msgs::HeadPackage &msg)
         Vertical_Head.pos = msg.Position;
         Vertical_Head.speed = msg.Speed;
     }
-    ROS_INFO("Vertical_Head_ver = %d",Vertical_Head.pos);
-    ROS_INFO("Horizontal_Head_ver = %d",Horizontal_Head.pos);
+    ROS_INFO("Head_ver = %d",Vertical_Head.pos);
     calcImageAngle(Horizontal_Head,Vertical_Head);
     ImageLengthData.focus = camera2robot_dis;
     ImageLengthData.top = image_top_length;
@@ -139,6 +144,40 @@ void Vision_main::GetIMUDataFunction(const tku_msgs::SensorPackage &msg)
             pitch_pre = Robot_Pitch;
         }
         //ROS_INFO("Robot_Roll = %f",Robot_Roll);
+    }
+}
+
+void Vision_main::GetImageProcessParameter(const tku_msgs::ImageProcess &msg)
+{
+    hough_threshold = msg.hough_threshold;
+    hough_minLineLength = msg.hough_minLineLength;
+    hough_maxLineGap = msg.hough_maxLineGap;
+}
+
+void Vision_main::StartFunction(const std_msgs::Bool &msg)
+{
+    if(msg.data)
+    {
+        ROS_INFO("start");
+        is_start = true;
+    }
+    else
+    {
+        ROS_INFO("stop");
+        is_start = false;
+    }
+}
+
+void Vision_main::DIOackFunction(const std_msgs::Int16 &msg)
+{
+    // if(!isInitialize())return;
+    if(msg.data & 0x10)
+    {
+        is_start = true;
+    }
+    else
+    {
+        is_start = false;
     }
 }
 
@@ -185,6 +224,18 @@ void Vision_main::strategy_main()
 {
     if(!buffer.empty())
     {
+        if(is_start)
+        {
+            Horizontal_Head_vector.push_back(Horizontal_Head.pos);
+            Vertical_Head_vector.push_back(Vertical_Head.pos);
+        }
+        else
+        {
+            if(!Horizontal_Head_vector.empty())
+            {
+                SaveHeadPosition();
+            }
+        }
         Mat oframe = buffer.clone();
         line(oframe, Point(oframe.cols/2,oframe.rows), Point(oframe.cols/2,0), Scalar(0,0,255), 1);
         line(oframe, Point(0,oframe.rows/2), Point(oframe.cols,oframe.rows/2), Scalar(0,0,255), 1);
@@ -192,7 +243,9 @@ void Vision_main::strategy_main()
         //imshow("oframe",oframe);
 
         Mat imagePreprocessing = ImagePreprocessing(buffer);
-        //Mat line = Merge_similar_line(imagePreprocessing,buffer);
+        Mat imagecanny = ImageCanny(imagePreprocessing);
+        Mat line = Merge_similar_line(imagePreprocessing,imagecanny,buffer);
+        //Mat QAZ = nocheckline(imagePreprocessing,imagecanny,buffer);
 	    //imshow("line",line);
 	
         cv::Mat Object_frame = FindObject(buffer);
@@ -207,7 +260,7 @@ void Vision_main::strategy_main()
         cv::warpAffine(buffer, dst, rot_mat, dst_sz);
         //imshow("dst",dst);
 
-        cv::Mat monitor = White_Line(imagePreprocessing);
+        cv::Mat monitor = White_Line(buffer);
 
         calcImageAngle(Horizontal_Head,Vertical_Head);
         ImageLengthData.focus = camera2robot_dis;
@@ -218,21 +271,13 @@ void Vision_main::strategy_main()
         ImageLengthData.horizontal_head_angle = Horizontal_Head_Angle;
         ImageLengthData_Publisher.publish(ImageLengthData);
         //ROS_INFO("ImageLengthData.focus = %d",ImageLengthData.focus);
-        /*ROS_INFO("ImageLengthData.top = %d",ImageLengthData.top);
+        ROS_INFO("ImageLengthData.top = %d",ImageLengthData.top);
         ROS_INFO("ImageLengthData.bottom = %d",ImageLengthData.bottom);
         ROS_INFO("ImageLengthData.top_width = %d",ImageLengthData.top_width);
-        ROS_INFO("ImageLengthData.bottom_width = %d",ImageLengthData.bottom_width);*/
+        ROS_INFO("ImageLengthData.bottom_width = %d",ImageLengthData.bottom_width);
         tku_msgs::FeaturePoint feature_point_tmp;
         int distance_last = -1;
         int scan_line_last;
-        if(Filed_feature_point.size() < 40)     // no feature point = 36
-        {
-            whiteline_flag = false;
-        }
-        else
-        {
-            whiteline_flag = true;
-        }
         for(int i = 0; i < Filed_feature_point.size(); i++)
         {
             Distance distance;
@@ -300,6 +345,15 @@ void Vision_main::strategy_main()
                     circle(monitor, Point(Filed_feature_point[i].x, Filed_feature_point[i].y), 3, Scalar(0, 255, 255), 3);
                 }
             }
+            /*if(Observation_Data.scan_line.size() < Filed_feature_point[i].scan_line_cnt)
+            {
+                Observation_Data.scan_line.push_back(feature_point_tmp);
+                feature_point_tmp.feature_point.clear();
+            }
+            tmp.x_dis = distance.x_dis;
+            tmp.y_dis = distance.y_dis;
+            tmp.dis = distance.dis;
+            feature_point_tmp.feature_point.push_back(tmp);*/
             if(i == (Filed_feature_point.size() - 1))
             {
                 if(scan_line_last == Filed_feature_point[i].scan_line_cnt)
@@ -333,9 +387,17 @@ void Vision_main::strategy_main()
                 Observation_Data.scan_line.push_back(feature_point_tmp);
                 feature_point_tmp.feature_point.clear();
             }
+            /*if(i == 25)
+            {
+                ROS_INFO("vertical_angle = %f",vertical_angle);
+                ROS_INFO("horizontal_angle = %f",horizontal_angle);
+            }*/
+        }
+        for(int i = 0; i < Observation_Data.scan_line[18].feature_point.size(); i++)
+        {
+            ROS_INFO("x = %d , y = %d , dis = %d",Observation_Data.scan_line[18].feature_point[i].x_dis,Observation_Data.scan_line[18].feature_point[i].y_dis,Observation_Data.scan_line[18].feature_point[i].dis);
         }
         resize(monitor, monitor, cv::Size(320, 240));
-        namedWindow("monitor",WINDOW_NORMAL);
         imshow("monitor",monitor);
         if(soccer_data.size() == 0 && goal_data.size() == 0)
         {
@@ -359,10 +421,10 @@ void Vision_main::strategy_main()
                 {
                     tku_msgs::SoccerData tmp;
                     Distance distance;
-                    // ROS_INFO("Soccer_X = %d",soccer_data[t].x);
-                    // ROS_INFO("Soccer_Y = %d",soccer_data[t].y);
-                    // ROS_INFO("Soccer_Height = %d",soccer_data[t].height);
-                    // ROS_INFO("Soccer_Width = %d\n",soccer_data[t].width);
+                    ROS_INFO("Soccer_X = %d",soccer_data[t].x);
+                    ROS_INFO("Soccer_Y = %d",soccer_data[t].y);
+                    ROS_INFO("Soccer_Height = %d",soccer_data[t].height);
+                    ROS_INFO("Soccer_Width = %d\n",soccer_data[t].width);
 
                     tmp.x = soccer_data[t].x;
                     tmp.y = soccer_data[t].y;
@@ -377,9 +439,9 @@ void Vision_main::strategy_main()
                     tmp.distance.dis = distance.dis;
                     Soccer.ObjectList.push_back(tmp);
                     cnt++;
-                    // ROS_INFO("mode = %d",tmp.object_mode);
-                    // ROS_INFO("x_soccer = %d",Soccer.ObjectList[t].x);
-		            // ROS_INFO("soccer_dis = %d",tmp.distance);
+                    ROS_INFO("mode = %d",tmp.object_mode);
+                    ROS_INFO("x_soccer = %d",Soccer.ObjectList[t].x);
+		            ROS_INFO("soccer_dis = %d",tmp.distance);
                 }
                 soccer_data.clear();
             }
@@ -389,10 +451,10 @@ void Vision_main::strategy_main()
                 {
                     tku_msgs::SoccerData tmp;
                     Distance distance;
-                    // ROS_INFO("goal_data_X = %d",goal_data[t].x);
-                    // ROS_INFO("goal_data_Y = %d",goal_data[t].y);
-                    // ROS_INFO("goal_data_Height = %d",goal_data[t].height);
-                    // ROS_INFO("goal_data_Width = %d\n",goal_data[t].width);
+                    ROS_INFO("goal_data_X = %d",goal_data[t].x);
+                    ROS_INFO("goal_data_Y = %d",goal_data[t].y);
+                    ROS_INFO("goal_data_Height = %d",goal_data[t].height);
+                    ROS_INFO("goal_data_Width = %d\n",goal_data[t].width);
 
                     tmp.x = goal_data[t].x;
                     tmp.y = goal_data[t].y;
@@ -407,7 +469,7 @@ void Vision_main::strategy_main()
                     tmp.distance.dis = distance.dis;
                     Soccer.ObjectList.push_back(tmp);
                     cnt++;
-                    // ROS_INFO("mode = %d",tmp.object_mode);
+                    ROS_INFO("mode = %d",tmp.object_mode);
                 }
                 goal_data.clear();
             }
@@ -436,6 +498,47 @@ void Vision_main::strategy_main()
         Monitor_Frame_Publisher.publish(msg_monitor);
         Measure_Frame_Publisher.publish(msg_measure);
 
+        whiteline_flag = false;
         waitKey(1);
     }
+}
+
+void Vision_main::SaveHeadPosition()
+{
+    ROS_INFO("Horizontal_Head_vector size = %d",Horizontal_Head_vector.size());
+    ROS_INFO("Vertical_Head_vector size = %d",Vertical_Head_vector.size());
+    string savedText = "Horizontal_Head\tVertical_Head\n";
+    char path[200];
+    string abs_path = ros::package::getPath("strategy") + "/Parameter";
+    strcpy(path, abs_path.c_str());
+    strcat(path, "/HeadPosition_Record.ods");
+    //char filename[]="/home/iclab/Desktop/OBS0722SLOW/newsystem/src/strategy/src/spartanrace/Parameter/Trajectory_Record.ods";
+
+    fstream fp;
+    fp.open(path, ios::out);
+
+    fp<<savedText;
+
+    for(int i = 0; i < Horizontal_Head_vector.size(); i++)
+    {
+        savedText = DtoS(Horizontal_Head_vector[i]) + "\t"
+                + DtoS(Vertical_Head_vector[i]) + "\n";
+
+        fp<<savedText;
+    }
+
+    Horizontal_Head_vector.clear();
+    Vertical_Head_vector.clear();
+
+    fp.close();
+}
+
+string Vision_main::DtoS(double value)
+{
+    string str;
+    std::stringstream buf;
+    buf << value;
+    str = buf.str();
+
+    return str;
 }

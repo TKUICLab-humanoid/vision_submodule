@@ -51,6 +51,7 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y)
     }
     else
     {
+        whiteline_flag = true;
         if(height_cnt > 240)
         {
             error_y = height_cnt - 240.0;
@@ -108,10 +109,10 @@ void FeatureDistance::calcImageAngle(motordata Horizontal_Head,motordata Vertica
     image_top_width_length = (camera_height / cos((VFOV + image_bottom_angle) * DEG2RAD)) * tan(half_HFOV_angle * DEG2RAD);
     image_bottom_width_length = (camera_height / cos(image_bottom_angle * DEG2RAD)) * tan(half_HFOV_angle * DEG2RAD);
 
-    /*ROS_INFO("camera_height = %f",camera_height);
+    ROS_INFO("camera_height = %f",camera_height);
     ROS_INFO("camera2robot_dis = %f",camera2robot_dis);
     ROS_INFO("image_bottom_angle = %f",image_bottom_angle);
-    ROS_INFO("RobotHeight = %f",RobotHeight);*/
+    ROS_INFO("RobotHeight = %f",RobotHeight);
 }
 
 void FeatureDistance::calcMotorAngle(int Horizontal_pos,int Vertical_pos)

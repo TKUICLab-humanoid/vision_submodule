@@ -2,29 +2,40 @@
 #include <algorithm>
 LineDetected::LineDetected()
 {
-    ErRoR = 65;
     mX = 0;
     mY = 0;
-    temp_max = 0; 
+    /*temp_max = 0; 
     i_max = 0; 
     temp_min = 0; 
     i_min = 0;
+    Huemin =0;
+    Huemax=0;
+    Saturationmin=0;
+    Saturationmax=0;
+    Brightnessmin=0;
+    Brightnessmax=0;*/
 
+    hough_threshold = 100;
+    hough_minLineLength = 60.0;
+    hough_maxLineGap = 40.0;
 }
 LineDetected::~LineDetected()
 {
     
 }
-
 Mat LineDetected::ImagePreprocessing(const Mat iframe)
 {
-    blur(iframe,iframe,Size(3,3));
-    //濾除非場地部份
-    Mat mask = Mat::zeros(iframe.rows,iframe.cols, CV_8UC3); 
-    Mat Kernel = (Mat_<float>(3, 3) << 0, -1, 0, -1, 6.9, -1, 0, -1, 0);
+    Mat ll = iframe.clone();
+    blur(ll,ll,Size(3,3));
+    frame_rows = iframe.rows;
+    frame_cols = iframe.cols;
+    
+    //濾除非場地部份(laplace)
+    Mat mask = Mat::zeros(ll.rows,ll.cols, CV_8UC3); 
+    Mat Kernel = (Mat_<float>(3, 3) << 0, -1, 0, 0, 6, 0, 0, -1, 0);
     Mat imageEnhance;
-    filter2D(iframe, imageEnhance, CV_8UC3, Kernel);
-
+    filter2D(ll, imageEnhance, CV_8UC3, Kernel);
+    
     Mat imageGamma = Mat::zeros(imageEnhance.rows,imageEnhance.cols, CV_32FC3); 
     for(int row = 0; row < imageEnhance.rows; row++)
     {
@@ -35,100 +46,69 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
             imageGamma.at<Vec3f>(row, col)[2] = (imageEnhance.at<Vec3b>(row, col)[2]) * (imageEnhance.at<Vec3b>(row, col)[2]) * (imageEnhance.at<Vec3b>(row, col)[2]);
         }
     }
+    
     normalize(imageGamma, imageGamma, 0, 255, NORM_MINMAX);
     convertScaleAbs(imageGamma, imageGamma);
-    //namedWindow("imageGamma",WINDOW_NORMAL);
-    //imshow("imageGamma",imageGamma);
-
-    int R_value = 150;
+    //imageGamma_image_clone = imageGamma.clone();
+    imshow("imageGamma",imageGamma);
+    /*int R_value = 25;
     int G_value = 220;
-    int B_value = 220;
-    Mat nobackgroud_image;
-
-    if(Vertical_Head_Angle > 50.0)
+    int B_value = 150;*/
+    //濾除非場地部份(Convex Hull)
+    /*for(int col = 0; col < imageGamma.cols; col++)
     {
-        for(int col = 0; col < imageGamma.cols; col++)
+        for(int row = 0; row < imageGamma.rows; row++)
         {
-            for(int row = imageGamma.rows - 1; row > 0; row--)
+            int b = imageGamma.at<Vec3b>(row, col)[0];
+            int g = imageGamma.at<Vec3b>(row, col)[1];
+            int r = imageGamma.at<Vec3b>(row, col)[2];
+            if( g == 255)
             {
-                int b = imageGamma.at<Vec3b>(row, col)[0];
-                int g = imageGamma.at<Vec3b>(row, col)[1];
-                int r = imageGamma.at<Vec3b>(row, col)[2];
-                if( g >= G_value) //0:Y452X61
-                {
-                    /*if((b > 230 && g > 230 && r < 150) || (b == 255 && g == 255 && r == 255))
-                    {
-                        int b2 = imageGamma.at<Vec3b>(row - 3, col)[0];
-                        int g2 = imageGamma.at<Vec3b>(row - 3, col)[1];
-                        int r2 = imageGamma.at<Vec3b>(row - 3, col)[2];
-                        if(b2 > 230 && g2 > 230 && r2 < 150 || (b2 == 255 && g2 == 255 && r2 == 255))
-                        {
-                            int b3 = imageGamma.at<Vec3b>(row - 9, col)[0];
-                            int g3 = imageGamma.at<Vec3b>(row - 9, col)[1];
-                            int r3 = imageGamma.at<Vec3b>(row - 9, col)[2];
-                            if(b3 > 230 && g3 > 230 && r3 < 150 || (b3 == 255 && g3 == 255 && r3 == 255))
-                            {
-                                break;
-                            }
-                        }
-                    }*/
-                    mask.at<Vec3b>(row, col)[0] = 255;
-                    mask.at<Vec3b>(row, col)[1] = 255;
-                    mask.at<Vec3b>(row, col)[2] = 255;
-                }
-                else
-                {
-                    break;
-                } 
+                ROI_point_tmp.push_back(row); 
+            }else if( )
+            {
+
             }
         }
-
-        //Mat mask_element = getStructuringElement(MORPH_RECT, Size(3, 3)); 
-        //morphologyEx(mask, mask, CV_MOP_OPEN, mask_element); 
-        imageGamma.copyTo(nobackgroud_image,mask);
-    }
-    else
+    }*/
+    for(int col = 0; col < imageGamma.cols; col++)
     {
-        nobackgroud_image = imageGamma.clone();
-    }
-    namedWindow("nobackgroud_image",WINDOW_NORMAL);
-    imshow("nobackgroud_image",nobackgroud_image);
-  
-    for(int row = 0; row < nobackgroud_image.rows;row++)
-    {
-        for(int col = 0; col < nobackgroud_image.cols;col++)
+        for(int row = 0; row < imageGamma.rows; row++)
         {
-            int b = nobackgroud_image.at<Vec3b>(row, col)[0];
-            int g = nobackgroud_image.at<Vec3b>(row, col)[1];
-            int r = nobackgroud_image.at<Vec3b>(row, col)[2];
-            if(b >= B_value && g >= G_value && r <= R_value)
+            int b = imageGamma.at<Vec3b>(row, col)[0];
+            int g = imageGamma.at<Vec3b>(row, col)[1];
+            int r = imageGamma.at<Vec3b>(row, col)[2];
+            if( g == 255 && b == 255 && r == 255 )
             {
-                nobackgroud_image.at<Vec3b>(row, col)[0] = 255;
-                nobackgroud_image.at<Vec3b>(row, col)[1] = 255;
-                nobackgroud_image.at<Vec3b>(row, col)[2] = 255;
+                mask.at<Vec3b>(row, col)[0] = 255;
+                mask.at<Vec3b>(row, col)[1] = 255;
+                mask.at<Vec3b>(row, col)[2] = 255;
             }
-            else
+            else if( g > 50 && b <= 20 && r <= 180)
             {
-                nobackgroud_image.at<Vec3b>(row, col)[0] = 0;
-                nobackgroud_image.at<Vec3b>(row, col)[1] = 0;
-                nobackgroud_image.at<Vec3b>(row, col)[2] = 0;
-            }
+                mask.at<Vec3b>(row, col)[0] = 0;
+                mask.at<Vec3b>(row, col)[1] = 255;
+                mask.at<Vec3b>(row, col)[2] = 0;
+            }else{
+                mask.at<Vec3b>(row, col)[0] = 0;
+            } 
         }
     }
-    Mat element = getStructuringElement(MORPH_RECT, Size(15, 15));
-    Mat element_2 = getStructuringElement(MORPH_RECT, Size(5, 5));
-    dilate(nobackgroud_image,element,element);
-    erode(nobackgroud_image,element,element_2);
+    Mat mask_element = getStructuringElement(MORPH_RECT, Size(15, 15)); 
+    morphologyEx(mask, mask, CV_MOP_CLOSE, mask_element); 
+    imshow("mask",mask);
+    return mask;
+}
 
-    element = getStructuringElement(MORPH_RECT, Size(2,2));
-    element_2 = getStructuringElement(MORPH_RECT, Size(15,15));
-    morphologyEx(nobackgroud_image, nobackgroud_image, CV_MOP_CLOSE, element_2);
-    morphologyEx(nobackgroud_image, nobackgroud_image, CV_MOP_OPEN, element);
-    
-    Mat edge;
-    Canny(nobackgroud_image, edge, 50, 150, 3);
-    
-    return  edge;
+Mat LineDetected::ImageCanny(const Mat iframe)
+{     
+    Mat GreenField = iframe.clone() ;
+    cvtColor(GreenField,GreenField,COLOR_BGR2GRAY);
+    threshold(GreenField,GreenField,165,255,THRESH_BINARY);
+    Canny(GreenField, GreenField, 50, 150, 3);
+    //imshow("GreenField1",GreenField);
+    imshow("GreenField",GreenField);
+    return  GreenField ;
 }
 
 double LineDetected::dis2(coordinate a, coordinate b)                //點a、b距離的平方
@@ -155,13 +135,43 @@ int LineDetected::dir(coordinate A, coordinate B, coordinate P)      //點P與�
 
 double LineDetected::disMin(coordinate A, coordinate B, coordinate P)//點P到線段AB的最短距離
 {
-	double r = ((P.X-A.X)*(B.X-A.X) + (P.Y-A.Y)*(B.Y-A.Y)) / dis2(A, B);
-	if (r <= 0) return sqrt(dis2(A, P));
-	else if (r >= 1) return sqrt(dis2(B, P));
+	Distance distance;
+    Distance distance1;
+    Distance distance2;
+
+    distance = measure(A.X,A.Y);
+    distance1 = measure(B.X,B.Y);
+    distance2 = measure(P.X,P.Y);//distance.y_dis , distance.dis ,distance.x_dis
+
+    coordinate AT;
+    coordinate BT;
+    coordinate PT;
+    if(A.X <= frame_rows)
+    {
+        AT = {-distance.x_dis,distance.y_dis};
+    }else{
+        AT = {distance.x_dis,distance.y_dis};
+    }
+    if(B.X <= frame_rows)
+    {
+        BT = {-distance1.x_dis,distance1.y_dis};
+    }else{
+        BT = {distance1.x_dis,distance1.y_dis};
+    }
+    if(P.X <= frame_rows)
+    {
+        PT = {-distance2.x_dis,distance2.y_dis};
+    }else{
+        PT = {distance2.x_dis,distance2.y_dis};
+    }
+      
+    double rr = ((PT.X-AT.X)*(BT.X-AT.X) + (PT.Y-AT.Y)*(BT.Y-AT.Y)) / dis2(AT, BT);
+    if (rr <= 0) return sqrt(dis2(AT, PT));
+	else if (rr >= 1) return sqrt(dis2(BT, PT));
 	else
 	{
-		double AC = r*sqrt(dis2(A,B));
-		return sqrt(dis2(A,P)-AC*AC);
+		double AC = rr *sqrt(dis2(AT,BT));
+		return sqrt(dis2(AT,PT)-AC*AC);
 	}
 }
 
@@ -172,31 +182,33 @@ double LineDetected::MinDistance(Vec4i X,Vec4i Y)
     coordinate Ystart = {Y[0],Y[1]};
     coordinate Yend = {Y[2],Y[3]};
 
-    coordinate Xline = {Xend.X - Xstart.X , Xend.Y-Xstart.Y};
-    coordinate Yline = {Yend.X - Ystart.X , Yend.Y-Ystart.Y};
-
     if (dir(Xstart, Xend, Ystart) * dir(Xstart, Xend, Yend) <= 0 && 
         dir(Ystart, Yend, Xstart) * dir(Ystart, Yend, Xend) <= 0)  //兩線段相交, 距離為0
 	{
         return 0;
     }else{                                                   //如不相交, 則最短距離為每個端點到另一條線段距離的最小值
         double XYMinDistance = min(min(min(disMin(Xstart, Xend, Ystart), disMin(Xstart, Xend, Yend)), disMin(Ystart, Yend, Xstart)),disMin(Ystart,Yend,Xend));
+        //ROS_INFO("disMin(Xstart, Xend, Ystart) = %f ",disMin(Xstart, Xend, Ystart));
+        //ROS_INFO("disMin(Xstart, Xend, Yend) = %f ",disMin(Xstart, Xend, Yend));
+        //ROS_INFO("disMin(Ystart, Yend, Xstart) = %f ",disMin(Ystart, Yend, Xstart));
+        //ROS_INFO("disMin(Ystart, Yend, Xend) = %f ",disMin(Ystart, Yend, Xend));
+        //ROS_INFO("XYMinDistance = %f ",XYMinDistance);
         return XYMinDistance;
     }
 }
 
 double LineDetected::AngleDiff(Vec4i X,Vec4i Y)
 {
-    coordinate Xstart = {X[0],X[1]};
-    coordinate Xend = {X[2],X[3]};
-    coordinate Ystart = {Y[0],Y[1]};
-    coordinate Yend = {Y[2],Y[3]};
+    Distance Xstart_ = measure(X[0],X[1]);
+    Distance Xend_ = measure(X[2],X[3]);
+    Distance Ystart_ = measure(Y[0],Y[1]);
+    Distance Yend_ = measure(Y[2],Y[3]);
 
-    if((Xend.X-Xstart.X) == 0 ) mX = 90;
-    else mX = atan2((Xend.Y-Xstart.Y),(Xend.X-Xstart.X))*180/CV_PI;
-    if((Yend.X-Ystart.X) == 0)  mY = 90;
-    else mY = atan2((Yend.Y-Ystart.Y),(Yend.X-Ystart.X))*180/CV_PI;
-    
+    Vec4i newX = {Xstart_.x_dis,Xstart_.y_dis,Xend_.x_dis,Xend_.y_dis};
+    Vec4i newY = {Ystart_.x_dis,Ystart_.y_dis,Yend_.x_dis,Yend_.y_dis};
+    mX = Slope(newX);
+    mY = Slope(newY);
+
     if( mX >= 0 && mY >= 0 || mX <= 0 && mY <= 0 ) return abs( mX - mY );
     else if( mX > 0 && mY < 0 ) return mX + abs(mY);
     else if( mX < 0 && mY > 0 ) return abs(mX) + mY;
@@ -213,7 +225,12 @@ coordinate LineDetected::Midpoint(Vec4i line)
 double LineDetected::Slope(Vec4i line)
 {
     if((line[2]-line[0]) == 0) return 90;
-    else return atan2((double(line[3])-double(line[1])),(double(line[2])-double(line[0])))*(180.0/CV_PI);
+    else {
+        double s = atan2((double(line[3])-double(line[1])),(double(line[2])-double(line[0])))*(180.0/CV_PI);
+        if(s > 90) return -180+s;
+        else if(s < -90) return 180+s;
+        else return s;
+    }
 }
 
 void LineDetected::Merge(Vec4i X,Vec4i Y)
@@ -230,18 +247,26 @@ void LineDetected::Merge(Vec4i X,Vec4i Y)
     
     if(XDistance >= YDistance) theta = Slope(X);
     else theta = Slope(Y);
-
     NewLine = {0,0,0,0};
     if(theta == 0)
     {
-        thetaZeroY = (Xstart.Y + Ystart.Y)/2;
+        //ROS_INFO("theta == %f",theta);
+        thetaZeroY = Xstart.Y;
         int thetaZeroX[4] =  { Xstart.X,Xend.X,Ystart.X,Yend.X};
         sort(thetaZeroX, thetaZeroX + 4);
         NewLine = {thetaZeroX[0],thetaZeroY,thetaZeroX[3],thetaZeroY};
+    }else if(theta == 90) 
+    {
+        //ROS_INFO("theta == %f",theta);
+        thetaZeroX = Xstart.X;
+        int thetaZeroY[4] =  { Xstart.Y,Xend.Y,Ystart.Y,Yend.Y};
+        sort(thetaZeroY, thetaZeroY + 4);
+        NewLine = {thetaZeroX,thetaZeroY[0],thetaZeroX,thetaZeroY[3]};
     }else
     {
+        //ROS_INFO("theta == %f",theta);
         double r = XDistance/(XDistance + YDistance);
-        coordinate P = { int((r * Xm.X)+((1-r)*Ym.X) ), int((r * Xm.Y) + ((1 - r) * Ym.Y))};
+        coordinate P = { round((r * Xm.X)+((1-r)*Ym.X)), round((r * Xm.Y) + ((1 - r) * Ym.Y))};
         double Za = tan ( theta * CV_PI / 180.0);
         double Zb = double(P.Y) - (Za * double(P.X)); 
 
@@ -304,8 +329,89 @@ void LineDetected::Merge(Vec4i X,Vec4i Y)
             NewLine = {x3,y3,x4,y4};
         }
     }
-    printf("NewLine[0]=%d NewLine[1]=%d NewLine[2]=%d NewLine[3]=%d\n",NewLine[0],NewLine[1],NewLine[2],NewLine[3]);
+    //printf("NewLine[0]=%d NewLine[1]=%d NewLine[2]=%d NewLine[3]=%d  solpe = %f \n",NewLine[0],NewLine[1],NewLine[2],NewLine[3],Slope(NewLine));
 }
+
+int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
+{ 
+    coordinate Xstart ;
+    coordinate Xend ;
+    
+    if( line[0] > line[2] )
+    {
+        Xstart = {line[2],line[3]};
+        Xend = {line[0],line[1]};
+    }else{
+        Xstart = {line[0],line[1]};
+        Xend = {line[2],line[3]};
+    }
+
+    int Vgreen = 0;
+    int Vwhite = 0;
+    int Vedge = 0;
+    double m = Slope(line)* CV_PI / 180.0;
+    double n = Slope(line);
+    //ROS_INFO("---n = %f ,m = %f --\n",n,m);
+    double length = sqrt(dis2(Xstart,Xend));
+    int length_unitX = 0;
+    int length_unitY = 0;
+    for(size_t i = 0 ;i < 8;i++)
+    {
+        if(n != 90)
+        {   
+            if( (n > 90 && n< 270)|| (n <-90 && n>-270))
+            {
+                length_unitX = int((length/7)*i)*cos(CV_PI - abs(m));
+                length_unitY = int((length/7)*i)*sin(CV_PI - abs(m));
+            }else{
+                length_unitX = int(((length/7)*i)*cos(m));
+                length_unitY = int(((length/7)*i)*sin(m));
+            }
+        }else{
+            if(line[1]>line[3])
+            {
+                length_unitX = 0;
+                length_unitY = -(length/7)*i;
+            }else{
+                length_unitX = 0;
+                length_unitY = (length/7)*i;
+            }        
+        }
+        double diff = 0;
+        for(int row = Xstart.Y + length_unitY ; row > 0; row--)
+        {
+            int b = image_Enhance.at<Vec3b>(row, Xstart.X + length_unitX)[0];
+            int g = image_Enhance.at<Vec3b>(row, Xstart.X + length_unitX)[1];
+            int r = image_Enhance.at<Vec3b>(row, Xstart.X + length_unitX)[2];
+                        
+            if(g >= 235 && b <=50 && r <= 50)
+            {
+                int checkgreenX = Xstart.X + length_unitX;
+                int checkgreenY = row;
+                Distance checkgreen = measure(checkgreenX,checkgreenY);
+                Distance checkpoint = measure(checkgreenX,Xstart.Y + length_unitY);
+                diff = sqrt(pow((checkgreen.x_dis-checkpoint.x_dis),2)+pow((checkgreen.y_dis-checkpoint.y_dis),2));
+            }else{
+                break;
+            }          
+        }
+        if( diff <= 10 )
+        {
+            Vgreen++;
+        }
+        int b1 = image_Enhance.at<Vec3b>(Xstart.Y + length_unitY, Xstart.X + length_unitX)[0];
+        int g1 = image_Enhance.at<Vec3b>(Xstart.Y + length_unitY, Xstart.X + length_unitX)[1];
+        int r1 = image_Enhance.at<Vec3b>(Xstart.Y + length_unitY, Xstart.X + length_unitX)[2];
+        if(g1 >= 235 && b1 >=235 && r1 >= 235)
+        {
+            Vwhite++;
+        }
+    }
+    ROS_INFO("Vwhite = %d , Vgreen  = %d",Vwhite , Vgreen );
+    if(Vwhite > 6 && Vgreen > 6 ) return 1;
+    else return 0;
+}
+
 
 vector<Vec4i> LineDetected::complement(vector<Vec4i> all_line,Vec4i remove) 
 {    
@@ -319,106 +425,287 @@ vector<Vec4i> LineDetected::complement(vector<Vec4i> all_line,Vec4i remove)
     return all_line;
 }
 
-Mat LineDetected::Merge_similar_line(const Mat canny_iframe,const Mat original_frame)
+Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,const Mat original_frame)
 {
     tmp.clear();
+    check_lines.clear();
     all_lines.clear();
     reduce_similar_lines.clear();
-    HoughLinesP(canny_iframe,all_lines,1,CV_PI/180,110,50,30); 
+    merge_similar_lines.clear();
+
+    //ROS_INFO("hough_threshold = %d hough_minLineLength = %f hough_maxLineGap = %f",hough_threshold,hough_minLineLength,hough_maxLineGap);
+    HoughLinesP(canny_iframe,all_lines,1,CV_PI/180,hough_threshold,hough_minLineLength,hough_maxLineGap); 
+    
+    Mat original_frame0=iframe.clone();
     Mat original_frame1=original_frame.clone();
+    Mat original_frame2=original_frame.clone();
+
     int all_lines_Size = all_lines.size();
     merge_similar_lines = all_lines;
     
-    ROS_INFO("all_lines_Size = %d",all_lines_Size);
+    //ROS_INFO("all_lines_Size = %d",all_lines_Size);
     ROS_INFO("/---------------start-------------/");
     for(size_t i = 0 ; i < all_lines.size(); i++)
     {
-        //ROS_INFO("/---------------first[%d]-------------/",i+1);
         Vec4i X = all_lines[i];
-        //line( original_frame1, Point(X[0], X[1]), Point(X[2], X[3]), Scalar(255,0,0), 2, CV_AA);
+        //ROS_INFO("all_line(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",i,X[0],X[1],X[2],X[3],Slope(X));
         merge_similar_lines = complement(merge_similar_lines,X);
-        all_lines_Size--;
-        //ROS_INFO("merge_similar_lines = %d",merge_similar_lines.size());
+        int merge_similar_lines_SIZE = merge_similar_lines.size();
+        int check = 0;
         for(size_t j = 0 ; j < merge_similar_lines.size(); j++)
         {
-            //ROS_INFO("/---------------second[%d]-------------/",j+1);
             Vec4i Y = merge_similar_lines[j];
+            //ROS_INFO("merge_similar_lines(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",j,Y[0],Y[1],Y[2],Y[3],Slope(Y));
             //ROS_INFO("MinDistance = %f",MinDistance(X,Y));
             //ROS_INFO("AngleDiff = %f",AngleDiff(X,Y));
-            if(MinDistance(X,Y) < 30 && AngleDiff(X,Y) < 1)
+            if(MinDistance(X,Y) < 20 && AngleDiff(X,Y) < 5)
             {
-                //ROS_INFO("stage 2");
+                //ROS_INFO("--------Merge--------");
                 Merge(X,Y);
-                reduce_similar_lines.push_back(NewLine);
-                merge_similar_lines = complement(merge_similar_lines,Y);
-                all_lines_Size--;
+                int checklinenum = checkline(original_frame0,canny_iframe,NewLine);
+                //ROS_INFO("checkline = %d \n",checklinenum);
+                if(checklinenum == 1)
+                {
+                    check = 1; 
+                    if(AngleDiff(X,NewLine) < 1 || AngleDiff(Y,NewLine) < 1)
+                    {
+                        reduce_similar_lines.push_back(NewLine);
+                        merge_similar_lines = complement(merge_similar_lines,Y);
+                        all_lines = complement(all_lines,Y);
+                        all_lines_Size -= 2;
+                        //ROS_INFO("all_lines_Size (After Merge ) '%d' = %d",j,all_lines_Size);
+                        j--;
+                    }else{
+                        break;
+                        //ROS_INFO("Merge ERROR");
+                    }
+                }else{
+                    check = 0; 
+                    ROS_INFO("Not Line");
+                } 
+                                
+            }else{
+                //ROS_INFO("all_lines_Size (NO Merge ) '%d' = %d",j,all_lines_Size);
             }
-        }
-        if(merge_similar_lines.size() == all_lines_Size) reduce_similar_lines.push_back(X);
-    }
-    ROS_INFO("reduce_similar_lines.size(2) = %d",reduce_similar_lines.size());
-
-    //int reduce_similar_lines_size = reduce_similar_lines.size();
-    /*for(size_t i = 0 ; i < reduce_similar_lines.size(); i++)
-    {
-        Vec4i R = reduce_similar_lines[i];
-        reduce_similar_lines = complement(reduce_similar_lines,R);
-        int reduce_similar_lines_SIZE = reduce_similar_lines.size();
-        for(size_t j = 0 ; j < reduce_similar_lines.size(); j++)
+        }       
+        int Maxdis =0;
+        //ROS_INFO("reduce_similar_lines = %d",reduce_similar_lines.size());
+        if(merge_similar_lines.size()>0)
         {
-            Vec4i N = reduce_similar_lines[j];
-            if(MinDistance(R,N) < 5 && AngleDiff(R,N) < 1)
+            if(reduce_similar_lines.size()>1)
             {
-                ROS_INFO("2222222222222");
-                Merge(R,N);
-                tmp.push_back(NewLine);
-                reduce_similar_lines = complement(reduce_similar_lines,N);
-                reduce_similar_lines_SIZE --;
+                ROS_INFO("--------------------------");
+                tmp = reduce_similar_lines;
+                for(size_t k=0 ; k < reduce_similar_lines.size() ; k++)
+                {
+                    Vec4i doublecheck1 = reduce_similar_lines[k];
+                    tmp = complement(tmp,doublecheck1);
+                    for(size_t l=0 ; l < tmp.size() ; l++)
+                    {
+                        Vec4i doublecheck2 = tmp[l];
+                        Merge(doublecheck1,doublecheck2); 
+                        coordinate NewLinestart = {NewLine[0],NewLine[1]};
+                        coordinate NewLineend = {NewLine[2],NewLine[3]};
+                        int newlineDistance = sqrt(dis2(NewLinestart,NewLineend));
+                        if( newlineDistance >=  Maxdis)
+                        {
+                            MaxLine = NewLine;
+                        }                 
+                    }
+                }
+                //ROS_INFO("MaxLine = (x1= %d ,y1 = %d ,x2 = %d ,y2 = %d)",MaxLine[0],MaxLine[1],MaxLine[2],MaxLine[3]);
+                check_lines.push_back(MaxLine);
             }
-        }
-        if(reduce_similar_lines.size() == reduce_similar_lines_SIZE )
+            if(reduce_similar_lines.size() == 1)
+            {
+                //ROS_INFO("push_back(reduce_similar_lines[0])");
+                check_lines.push_back(reduce_similar_lines[0]);
+            }
+            if(merge_similar_lines.size() == merge_similar_lines_SIZE && check != 0){
+                //ROS_INFO("push_back(X)");
+                check_lines.push_back(X);
+            }
+            reduce_similar_lines.clear();
+        }else if(reduce_similar_lines.size() == 1)
         {
-            ROS_INFO("555555");
-            tmp.push_back(R);
+            //ROS_INFO("push_back(reduce_similar_lines[0])");
+            check_lines.push_back(reduce_similar_lines[0]);
+        }else if(check != 0){
+            //ROS_INFO("push_back(X)");
+            check_lines.push_back(X);
         }
-    }*/
+        reduce_similar_lines.clear();    
+        all_lines_Size ++;
+
+    }
+    ROS_INFO("check_lines.size(1) = %d",check_lines.size());
 
     ROS_INFO("/---------------finish-------------/");
-    ROS_INFO("reduce_similar_lines.size(2) = %d",reduce_similar_lines.size());
-    for( size_t i = 0; i < reduce_similar_lines.size(); i++ )
-	{
-        Vec4i l = reduce_similar_lines[i];   
-	    line( original_frame, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(255,255,0), 3, CV_AA);
+    for(size_t i = 0 ; i < all_lines.size(); i++)
+    {
+        Vec4i X = all_lines[i];
+        line( original_frame1, Point(X[0], X[1]), Point(X[2], X[3]), Scalar(255,0,0), 2, CV_AA);
     }
-    //imshow("original_frame1",original_frame1);
-    //imshow("original_frame",original_frame);
+    for( size_t i = 0; i < check_lines.size(); i++ )
+	{
+        Vec4i l = check_lines[i]; 
+	    LineINF lineinf;
+        coordinate midpoint = Midpoint(l);
+        Distance start_ = measure(l[0],l[1]);
+        Distance end_ = measure(l[2],l[3]);
+        double dis =  (start_.x_dis - end_.x_dis)*(start_.x_dis - end_.x_dis) + (start_.y_dis - end_.y_dis)*(start_.y_dis - end_.y_dis);
+        lineinf.middlepoint = measure(midpoint.X,midpoint.Y);
+        lineinf.Line_length = sqrt(dis);
+        coordinate FOV_Bottom_POS = {image_bottom_width_length/2,0};
+        double   AdotB = FOV_Bottom_POS.X*lineinf.middlepoint.x_dis + FOV_Bottom_POS.Y*lineinf.middlepoint.y_dis;
+        lineinf.Line_theta = acos((AdotB)/((image_bottom_width_length/2)*(lineinf.middlepoint.dis)))*180/CV_PI;
+        /*ROS_INFO("check_lines(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",i,l[0],l[1],l[2],l[3],Slope(l));
+        ROS_INFO("lineinf.middlepoint (%d) = (x_dis = %d ,y_dis = %d ,dis = %d )",i,lineinf.middlepoint.x_dis,lineinf.middlepoint.y_dis,lineinf.middlepoint.dis);
+        ROS_INFO("lineinf.Line_length (%d) =  %f ",i,lineinf.Line_length);
+        ROS_INFO("lineinf.Line_theta (%d) =  %f ",i,lineinf.Line_theta);*/
+        line( original_frame2, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0,0,255), 2, CV_AA);
+        circle(original_frame2, Point(midpoint.X, midpoint.Y), 1, Scalar(0, 255, 0), -1);
+    }
+    imshow("original_frame1",original_frame1);
+    imshow("original_frame2",original_frame2);
     
-    return original_frame;
+    return original_frame2;
 }
 
-int LineDetected::getHistograph(const Mat grayImage)
+/*Mat LineDetected::nocheckline(const Mat iframe,const Mat canny_iframe,const Mat original_frame)
 {
-    int channels[]={0};
-	const int histSize[]={256};
-	float range[]={0,256};
-	const float* ranges[]={range};
-	calcHist(&grayImage,1,channels,Mat(),hist,1,histSize,ranges,true,false);
-	double maxValue=0;
-	minMaxLoc(hist,0,&maxValue,0,0);
-	int rows=cvRound(maxValue);
-	for(int i=0;i<256;i++)
+    tmp.clear();
+    check_lines.clear();
+    all_lines.clear();
+    reduce_similar_lines.clear();
+    merge_similar_lines.clear();
+
+    //ROS_INFO("hough_threshold = %d hough_minLineLength = %f hough_maxLineGap = %f",hough_threshold,hough_minLineLength,hough_maxLineGap);
+    HoughLinesP(canny_iframe,all_lines,1,CV_PI/180,hough_threshold,hough_minLineLength,hough_maxLineGap); 
+    
+    Mat original_frame3=original_frame.clone();
+
+    int all_lines_Size = all_lines.size();
+    merge_similar_lines = all_lines;
+    
+    //ROS_INFO("all_lines_Size = %d",all_lines_Size);
+    ROS_INFO("/---------------start-------------/");
+    for(size_t i = 0 ; i < all_lines.size(); i++)
+    {
+        Vec4i X = all_lines[i];
+        //ROS_INFO("all_line(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",i,X[0],X[1],X[2],X[3],Slope(X));
+        merge_similar_lines = complement(merge_similar_lines,X);
+        int merge_similar_lines_SIZE = merge_similar_lines.size();
+        for(size_t j = 0 ; j < merge_similar_lines.size(); j++)
+        {
+            Vec4i Y = merge_similar_lines[j];
+            //ROS_INFO("merge_similar_lines(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",j,Y[0],Y[1],Y[2],Y[3],Slope(Y));
+            //ROS_INFO("MinDistance = %f",MinDistance(X,Y));
+            //ROS_INFO("AngleDiff = %f",AngleDiff(X,Y));
+            if(MinDistance(X,Y) < 20 && AngleDiff(X,Y) < 1)
+            {
+                //ROS_INFO("--------Merge--------");
+                Merge(X,Y);
+                //int checklinenum = checkline(original_frame0,canny_iframe,NewLine);
+                //ROS_INFO("checkline = %d \n",checklinenum);
+                //if(checklinenum == 1)
+                //{
+                    //check = 1; 
+                    if(AngleDiff(X,NewLine) < 0.5 || AngleDiff(Y,NewLine) < 0.5)
+                    {
+                        reduce_similar_lines.push_back(NewLine);
+                        merge_similar_lines = complement(merge_similar_lines,Y);
+                        all_lines = complement(all_lines,Y);
+                        all_lines_Size -= 2;
+                        //ROS_INFO("all_lines_Size (After Merge ) '%d' = %d",j,all_lines_Size);
+                        j--;
+                    }else{
+                        break;
+                        //ROS_INFO("Merge ERROR");
+                    }
+                /*}else{
+                    //check = 0; 
+                    ROS_INFO("Not Line");
+                } */
+                                
+            /*}else{
+                //ROS_INFO("all_lines_Size (NO Merge ) '%d' = %d",j,all_lines_Size);
+            }
+        }       
+        int Maxdis =0;
+        //ROS_INFO("reduce_similar_lines = %d",reduce_similar_lines.size());
+        if(merge_similar_lines.size()>0)
+        {
+            if(reduce_similar_lines.size()>1)
+            {
+                ROS_INFO("--------------------------");
+                tmp = reduce_similar_lines;
+                for(size_t k=0 ; k < reduce_similar_lines.size() ; k++)
+                {
+                    Vec4i doublecheck1 = reduce_similar_lines[k];
+                    tmp = complement(tmp,doublecheck1);
+                    for(size_t l=0 ; l < tmp.size() ; l++)
+                    {
+                        Vec4i doublecheck2 = tmp[l];
+                        Merge(doublecheck1,doublecheck2); 
+                        coordinate NewLinestart = {NewLine[0],NewLine[1]};
+                        coordinate NewLineend = {NewLine[2],NewLine[3]};
+                        int newlineDistance = sqrt(dis2(NewLinestart,NewLineend));
+                        if( newlineDistance >=  Maxdis)
+                        {
+                            MaxLine = NewLine;
+                        }                 
+                    }
+                }
+                //ROS_INFO("MaxLine = (x1= %d ,y1 = %d ,x2 = %d ,y2 = %d)",MaxLine[0],MaxLine[1],MaxLine[2],MaxLine[3]);
+                check_lines.push_back(MaxLine);
+            }
+            if(reduce_similar_lines.size() == 1)
+            {
+                //ROS_INFO("push_back(reduce_similar_lines[0])");
+                check_lines.push_back(reduce_similar_lines[0]);
+            }
+            if(merge_similar_lines.size() == merge_similar_lines_SIZE /*&& check != 0*/){
+                //ROS_INFO("push_back(X)");
+            /*    check_lines.push_back(X);
+            }
+            reduce_similar_lines.clear();
+        }else if(reduce_similar_lines.size() == 1)
+        {
+            //ROS_INFO("push_back(reduce_similar_lines[0])");
+            check_lines.push_back(reduce_similar_lines[0]);
+        }else /*if(check != 0)*/{
+            //ROS_INFO("push_back(X)");
+        /*    check_lines.push_back(X);
+        }
+        reduce_similar_lines.clear();    
+        all_lines_Size ++;
+
+    }
+    ROS_INFO("check_lines.size(1) = %d",check_lines.size());
+
+    ROS_INFO("/---------------finish-------------/");
+    for( size_t i = 0; i < check_lines.size(); i++ )
 	{
-		int temp=(int)(hist.at<float>(i,0));
-        if (i>=10&&temp_max<=temp)
-        {
-            temp_max=temp;
-            i_min = i;
-        }
-        if (temp > 0)
-        {
-            temp_min=temp;
-            i_max = i;
-        }
-	}
-    return (i_max-i_min)*0.5+i_min;	
-}
+        Vec4i l = check_lines[i]; 
+	    LineINF lineinf;
+        coordinate midpoint = Midpoint(l);
+        Distance start_ = measure(l[0],l[1]);
+        Distance end_ = measure(l[2],l[3]);
+        double dis =  (start_.x_dis - end_.x_dis)*(start_.x_dis - end_.x_dis) + (start_.y_dis - end_.y_dis)*(start_.y_dis - end_.y_dis);
+        lineinf.middlepoint = measure(midpoint.X,midpoint.Y);
+        lineinf.Line_length = sqrt(dis);
+        coordinate FOV_Bottom_POS = {image_bottom_width_length/2,0};
+        double   AdotB = FOV_Bottom_POS.X*lineinf.middlepoint.x_dis + FOV_Bottom_POS.Y*lineinf.middlepoint.y_dis;
+        lineinf.Line_theta = acos((AdotB)/((image_bottom_width_length/2)*(lineinf.middlepoint.dis)))*180/CV_PI;
+        /*ROS_INFO("check_lines(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",i,l[0],l[1],l[2],l[3],Slope(l));
+        ROS_INFO("lineinf.middlepoint (%d) = (x_dis = %d ,y_dis = %d ,dis = %d )",i,lineinf.middlepoint.x_dis,lineinf.middlepoint.y_dis,lineinf.middlepoint.dis);
+        ROS_INFO("lineinf.Line_length (%d) =  %f ",i,lineinf.Line_length);
+        ROS_INFO("lineinf.Line_theta (%d) =  %f ",i,lineinf.Line_theta);*/
+       /* line( original_frame3, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(255,28,150), 2, CV_AA);
+        circle(original_frame3, Point(midpoint.X, midpoint.Y), 1, Scalar(0, 255, 0), -1);
+    }
+    imshow("original_frame3",original_frame3);
+    
+    return original_frame3;
+}*/
