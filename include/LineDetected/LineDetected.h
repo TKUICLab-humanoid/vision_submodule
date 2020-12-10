@@ -1,7 +1,13 @@
 #include "ModelBase/ModelBase.h"
 #include <cmath>
 #include <algorithm>
+#include <image_transport/image_transport.h>
 
+#include "sensor_msgs/Image.h"
+#include <sensor_msgs/image_encodings.h>
+#include <std_msgs/Int16.h>
+#include <std_msgs/Bool.h>
+#include <std_msgs/Float32.h>
 using namespace cv;
 using namespace std;
 
@@ -9,8 +15,7 @@ using namespace std;
 class LineDetected : public ModelBase 
 {
     public:
-        int ErRoR;
-        
+    
         vector<Vec4i> all_lines;
         vector<Vec4i> tmp;
         vector<Vec4i> reduce_similar_lines;
@@ -20,8 +25,17 @@ class LineDetected : public ModelBase
         ~LineDetected();
         //---------------------------------------
         Mat ImagePreprocessing(const Mat iframe);
-        Mat GreenField;
-        Mat img_hsv;
+        Mat orign;
+        Mat imageGamma;
+        Mat nobackgroud_image;
+        Mat morph;
+        Mat edge;
+        int Bluev;
+        int Greenv;
+        int Redv;
+        int R_value;
+        int G_value;
+        int B_value;
         int Huemin;
         int Huemax;
         int Saturationmin;

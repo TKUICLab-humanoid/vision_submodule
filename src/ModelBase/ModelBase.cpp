@@ -1,9 +1,10 @@
 #include <ModelBase/ModelBase.h>
 
 ModelBase* Model_Base = new ModelBase();
+
 ModelBase::ModelBase()
 {
-    this->ImageSize = IMAGEHEIGHT * IMAGEWIDTH * 3;
+    ImageSize = IMAGEHEIGHT * IMAGEWIDTH * 3;
     this->bmpSample = new unsigned char [ ColorDeep * ColorDeep * ColorDeep ];
     this->TableBMPtoHSV = new unsigned char[ ColorDeep * ColorDeep * ColorDeep * 3];
     this->Label_Model = new unsigned char [ IMAGEHEIGHT * IMAGEWIDTH];
@@ -65,7 +66,15 @@ ModelBase::ModelBase()
     this->HtmpValue = 0.0;
     this->StmpValue = 0.0;
     this->VtmpValue = 0.0;
-//---------------------------------------
+
+//-----------BGR threshold------------------
+    BGRColorRange = new BGRRange;
+    BGRColorRange->BuValue = 0;
+    BGRColorRange->GrValue = 0;
+    BGRColorRange->ReValue = 0;
+    BGRColorRange->ParameterName = "[BGRColorRange]";
+    tool = ToolInstance::getInstance();
+
 }
 ModelBase::~ModelBase()
 {
@@ -77,6 +86,7 @@ ModelBase::~ModelBase()
         delete [] this->HSVColorRange[ColorRangeCnt];
     }
     delete [] this->HSVColorRange;
+    delete BGRColorRange;
 }
 
 void ModelBase::HSV_BuildingTable()
@@ -589,4 +599,64 @@ float ModelBase::VofRGBtoHSV(float rValue, float gValue, float bValue)
 {
     this->ExecuteMaxMin(rValue, gValue, bValue);
     return this->maxHSV;
+}
+
+//-----------BGR threshold-------------------
+
+void ModelBase::LoadBGRFile()
+{
+    // BGRColorRange->RValue = 0.0;
+    // BGRColorRange->GValue = 0.0;
+    // BGRColorRange->BValue = 0.0;
+    fstream fin;
+    char line[100]; 
+    char path[200];
+    std::string PATH = tool->getPackagePath("strategy");
+    strcpy(path, PATH.c_str());
+    strcat(path, "/BGR_Value.ini");
+    
+    fin.open(path, ios::in);
+    //fin.open(("../../Parameter/Color_Model_Data/ColorModelData.ini"), ios::in);
+    try
+    {
+        ROS_INFO("path = %s",path);
+        fin.getline(line,sizeof(line),'\n');
+        BGRColorRange->BuValue = tool->readvalue(fin, "BValue", 0);
+        BGRColorRange->GrValue = tool->readvalue(fin, "GValue", 0);
+        BGRColorRange->ReValue = tool->readvalue(fin, "RValue", 0);
+        ROS_INFO("B = %d G = %d R = %d",BGRColorRange->BuValue,BGRColorRange->GrValue,BGRColorRange->ReValue);
+
+        fin.close();
+    }
+    catch(exception e)
+    {
+    }
+}
+void ModelBase::SaveBGRFile()
+{
+    char path[200];
+    printf("%s",path);
+    std::string PATH = tool->getPackagePath("strategy");
+    strcpy(path, PATH.c_str());
+    strcat(path, "/BGR_Value.ini");
+    try
+    {
+//       ofstream OutFile(sFileName.c_str());
+        ofstream OutFile(path);
+        OutFile << BGRColorRange->ParameterName;
+        OutFile << "\n";
+        OutFile << "BValue = ";
+        OutFile << BGRColorRange->BuValue;
+        OutFile << "\n";
+        OutFile << "GValue = ";
+        OutFile << BGRColorRange->GrValue;
+        OutFile << "\n";
+        OutFile << "RValue = ";
+        OutFile << BGRColorRange->ReValue;
+        OutFile << "\n";
+        OutFile.close();
+    }
+    catch( exception e )
+    {
+    }
 }

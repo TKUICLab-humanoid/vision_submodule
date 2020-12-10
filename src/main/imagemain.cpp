@@ -14,23 +14,65 @@ Vision_main::Vision_main(ros::NodeHandle &nh)
     HSV_service = nh.advertiseService("LoadHSVInfo", &Vision_main::LoadHSVInfo,this);
     Build_service = nh.advertiseService("BuildModel", &Vision_main::CallBuildFunction,this);
     Save_service = nh.advertiseService("SaveHSV", &Vision_main::CallSaveHSVFunction,this);
+
+    //--------------BGR---------------
+    BGRValue_subscriber = nh.subscribe("BGRValue_Topic", 1000, &Vision_main::ChangeBGRValue,this);
+    BGR_service = nh.advertiseService("LoadBGRInfo", &Vision_main::LoadBGRInfo,this);
     //--------------------------------
     ObservationData_Publisher = nh.advertise<tku_msgs::ObservationData>("/vision/observation_data", 10);
     ImageLengthData_Publisher = nh.advertise<tku_msgs::ImageLengthData>("/vision/imagelength_data", 10);
     SoccerData_Publisher = nh.advertise<tku_msgs::SoccerDataList>("/vision/soccer_topic",10);
 
     Object_Frame_Publisher = it.advertise("/vision/object_image", 1);
+    morphologyEx_Frame_Publisher = it.advertise("/vision/morphologyEx_image", 1);
+    edge_Frame_Publisher = it.advertise("/vision/edge_image", 1);
     Monitor_Frame_Publisher = it.advertise("/vision/monitor_image", 1);
     Measure_Frame_Publisher = it.advertise("/vision/measure_image", 1);
+    blur_Frame_Publisher = it.advertise("/vision/blur_image", 1);
+    Gamma_Frame_Publisher = it.advertise("/vision/Gamma_image", 1);
+    nobackgroud_Frame_Publisher = it.advertise("/vision/nobackgroud_image", 1);
+
 
     pitch_pre = 0.0;
     roll_pre = 0.0;
+    B_ = 0;
+    G_ = 0;
+    R_ = 0;
+
 }
 Vision_main::~Vision_main()
 {
     
 }
 
+void Vision_main::ChangeBGRValue(const tku_msgs::BGRValue& msg)
+{
+    Model_Base->BGRColorRange->BuValue = (float)msg.BValue;
+    Model_Base->BGRColorRange->GrValue = (float)msg.GValue;
+    Model_Base->BGRColorRange->ReValue = (float)msg.RValue;
+    Model_Base->SaveBGRFile();
+}
+
+void Vision_main::LoadBGRValue()
+{
+    ROS_INFO("LoadBGRValue");
+    Model_Base->LoadBGRFile();
+    ROS_INFO("LoadBGRValue");
+    B_ = Model_Base->BGRColorRange->BuValue;
+    G_ = Model_Base->BGRColorRange->GrValue;
+    R_ = Model_Base->BGRColorRange->ReValue;
+    ROS_INFO("B = %d G = %d R = %d",B_,G_,R_);
+}
+
+
+bool Vision_main::LoadBGRInfo(tku_msgs::BGRInfo::Request &req, tku_msgs::BGRInfo::Response &res)
+{
+    res.BValue = B_;
+    res.GValue = G_;
+    res.RValue = R_;
+    return true;
+    
+}
 void Vision_main::ModelingFunction(const tku_msgs::ButtonColorForm& msg)
 {
     if(msg.BuildingModel)
@@ -148,12 +190,13 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "vision");
 
     ros::NodeHandle nh;
+    ROS_INFO("strategy_init");
 	Vision_main vision_main(nh);
 
     ros::spinOnce();
 
     ros::Rate loop_rate(60);
-
+    ROS_INFO("strategy_init");
     vision_main.strategy_init();
 
    while (nh.ok())
@@ -168,6 +211,7 @@ int main(int argc, char** argv)
 
 void Vision_main::strategy_init()
 {
+    ROS_INFO("strategy_init");
     CalcRobotHeight();
     if(!cascader2soccer.load(GetPath("cascade2soccer.xml")))
     {
@@ -179,6 +223,7 @@ void Vision_main::strategy_init()
         ROS_INFO("could not load cascader2goal.xml");
 
     }
+    LoadBGRValue();
 }
 
 void Vision_main::strategy_main()
@@ -193,7 +238,7 @@ void Vision_main::strategy_main()
 
         Mat imagePreprocessing = ImagePreprocessing(buffer);
         //Mat line = Merge_similar_line(imagePreprocessing,buffer);
-	    //imshow("line",line);
+	    // imshow("imagePreprocessing",imagePreprocessing);
 	
         cv::Mat Object_frame = FindObject(buffer);
         //imshow("Object_frame", Object_frame);
@@ -335,8 +380,8 @@ void Vision_main::strategy_main()
             }
         }
         resize(monitor, monitor, cv::Size(320, 240));
-        namedWindow("monitor",WINDOW_NORMAL);
-        imshow("monitor",monitor);
+        // namedWindow("monitor",WINDOW_NORMAL);
+        // imshow("monitor",monitor);
         if(soccer_data.size() == 0 && goal_data.size() == 0)
         {
             tku_msgs::SoccerData tmp;
@@ -432,10 +477,21 @@ void Vision_main::strategy_main()
         msg_object = cv_bridge::CvImage(std_msgs::Header(), "bgr8", Object_frame).toImageMsg();
         msg_monitor = cv_bridge::CvImage(std_msgs::Header(), "bgr8", monitor).toImageMsg();
         msg_measure = cv_bridge::CvImage(std_msgs::Header(), "bgr8", oframe).toImageMsg();
+        msg_blur = cv_bridge::CvImage(std_msgs::Header(), "bgr8", orign).toImageMsg();
+        msg_imageGamma = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imageGamma).toImageMsg();
+        msg_nobackgroud = cv_bridge::CvImage(std_msgs::Header(), "bgr8", nobackgroud_image).toImageMsg();
+        msg_morphologyEx = cv_bridge::CvImage(std_msgs::Header(), "bgr8", morph).toImageMsg();
+        msg_edge = cv_bridge::CvImage(std_msgs::Header(), "bgr8", edge).toImageMsg();
+    
         Object_Frame_Publisher.publish(msg_object);
         Monitor_Frame_Publisher.publish(msg_monitor);
         Measure_Frame_Publisher.publish(msg_measure);
+        blur_Frame_Publisher.publish(msg_blur);
+        Gamma_Frame_Publisher.publish(msg_imageGamma);
+        nobackgroud_Frame_Publisher.publish(msg_nobackgroud);
+        morphologyEx_Frame_Publisher.publish(msg_morphologyEx);
+        edge_Frame_Publisher.publish(msg_edge);
 
-        waitKey(1);
+        waitKey(10);
     }
 }

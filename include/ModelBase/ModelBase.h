@@ -11,6 +11,8 @@
 #define ColorDeep 256
 //----------------msgs----------------
 #include "tku_msgs/LabelModelObjectList.h"
+#include "tku_msgs/BGRValue.h"
+#include "tku_msgs/BGRInfo.h"
 //----------------libs----------------
 #include "tku_libs/strategy_info.h"
 #include "tku_libs/TKU_tool.h"
@@ -35,6 +37,14 @@ struct ColorRange
     string LabelName;
 };
 
+struct BGRRange
+{
+    float BuValue;
+    float GrValue;
+    float ReValue;
+    string ParameterName;
+};
+
 class ModelBase : public FeatureDistance
 {
     private:
@@ -51,9 +61,7 @@ class ModelBase : public FeatureDistance
         ModelBase();
         ~ModelBase();
 
-        RosCommunication* ros_com ;
-		StrategyInfo* strategy_info;
-		Tool* tool;
+		ToolInstance *tool;
     
     //----------TModelUnit------------------
         ColorRange* hsvColorRange;
@@ -90,8 +98,13 @@ class ModelBase : public FeatureDistance
         void SaveColorRangeFile();
         void LoadColorRangeFile();
         ColorRange** HSVColorRange;
-    //---------------------------------------
+    // ---------------------------------------
 //    std_msgs::Int16MultiArray labelmodel;
+    
+    //---------BGR Test-------------
+        void SaveBGRFile();
+        void LoadBGRFile();
+        BGRRange* BGRColorRange;
 };
 extern ModelBase* Model_Base;
 #endif // TMODELUNIT_H

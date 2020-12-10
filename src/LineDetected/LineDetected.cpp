@@ -1,14 +1,16 @@
 #include <LineDetected/LineDetected.h>
-#include <algorithm>
+
 LineDetected::LineDetected()
 {
-    ErRoR = 65;
     mX = 0;
     mY = 0;
     temp_max = 0; 
     i_max = 0; 
     temp_min = 0; 
     i_min = 0;
+    // Model_Base->BGRColorRange->RValue = 0;
+    // Model_Base->BGRColorRange->GValue = 0;
+    // Model_Base->BGRColorRange->BValue = 0;
 
 }
 LineDetected::~LineDetected()
@@ -18,14 +20,16 @@ LineDetected::~LineDetected()
 
 Mat LineDetected::ImagePreprocessing(const Mat iframe)
 {
-    blur(iframe,iframe,Size(3,3));
+    orign = iframe.clone();
+    blur(orign,orign,Size(10,10));
+    resize(orign, orign, cv::Size(320, 240));
     //濾除非場地部份
-    Mat mask = Mat::zeros(iframe.rows,iframe.cols, CV_8UC3); 
-    Mat Kernel = (Mat_<float>(3, 3) << 0, -1, 0, -1, 6.9, -1, 0, -1, 0);
+    Mat mask = Mat::zeros(orign.rows,orign.cols, CV_8UC3); 
+    Mat Kernel = (Mat_<float>(3, 3) << 0, -1, 0, -1, 6, -1, 0, -1, 0);
     Mat imageEnhance;
-    filter2D(iframe, imageEnhance, CV_8UC3, Kernel);
+    filter2D(orign, imageEnhance, CV_8UC3, Kernel);
 
-    Mat imageGamma = Mat::zeros(imageEnhance.rows,imageEnhance.cols, CV_32FC3); 
+    imageGamma = Mat::zeros(imageEnhance.rows,imageEnhance.cols, CV_32FC3); 
     for(int row = 0; row < imageEnhance.rows; row++)
     {
         for(int col = 0; col < imageEnhance.cols; col++)
@@ -39,11 +43,11 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
     convertScaleAbs(imageGamma, imageGamma);
     //namedWindow("imageGamma",WINDOW_NORMAL);
     //imshow("imageGamma",imageGamma);
+    
+    R_value = Model_Base->BGRColorRange->ReValue;
+    G_value = Model_Base->BGRColorRange->GrValue;
+    B_value = Model_Base->BGRColorRange->BuValue;
 
-    int R_value = 150;
-    int G_value = 220;
-    int B_value = 220;
-    Mat nobackgroud_image;
 
     if(Vertical_Head_Angle > 50.0)
     {
@@ -91,8 +95,10 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
     {
         nobackgroud_image = imageGamma.clone();
     }
-    namedWindow("nobackgroud_image",WINDOW_NORMAL);
-    imshow("nobackgroud_image",nobackgroud_image);
+    
+    
+    // namedWindow("nobackgroud_image",WINDOW_NORMAL);
+    // imshow("nobackgroud_image",nobackgroud_image);
   
     for(int row = 0; row < nobackgroud_image.rows;row++)
     {
@@ -115,19 +121,18 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
             }
         }
     }
+    morph = nobackgroud_image.clone();
     Mat element = getStructuringElement(MORPH_RECT, Size(15, 15));
     Mat element_2 = getStructuringElement(MORPH_RECT, Size(5, 5));
-    dilate(nobackgroud_image,element,element);
-    erode(nobackgroud_image,element,element_2);
+    dilate(morph,element,element);
+    erode(morph,element,element_2);
 
     element = getStructuringElement(MORPH_RECT, Size(2,2));
     element_2 = getStructuringElement(MORPH_RECT, Size(15,15));
-    morphologyEx(nobackgroud_image, nobackgroud_image, CV_MOP_CLOSE, element_2);
-    morphologyEx(nobackgroud_image, nobackgroud_image, CV_MOP_OPEN, element);
+    morphologyEx(morph, morph, CV_MOP_CLOSE, element_2);
+    morphologyEx(morph, morph, CV_MOP_OPEN, element);
     
-    Mat edge;
-    Canny(nobackgroud_image, edge, 50, 150, 3);
-    
+    Canny(morph, edge, 50, 150, 3);
     return  edge;
 }
 
