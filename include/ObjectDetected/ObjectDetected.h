@@ -9,7 +9,7 @@ class ObjectDetected : public VisionBase
     private:
 
     public:
-        vector<feature_point> Filed_feature_point;
+        vector<feature_point> Field_feature_point;
         vector<Rect> soccer_data;
         vector<Rect> goal_data;
 

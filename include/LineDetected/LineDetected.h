@@ -11,16 +11,22 @@
 using namespace cv;
 using namespace std;
 
-
+struct LineINF
+{
+    Distance middlepoint;
+    double Line_length;
+    double Line_theta;   
+};
 class LineDetected : public ModelBase 
 {
     public:
     
         vector<Vec4i> all_lines;
         vector<Vec4i> tmp;
+        vector<Vec4i> check_lines;
         vector<Vec4i> reduce_similar_lines;
         vector<Vec4i> merge_similar_lines;
-        vector<int> ROI_point_tmp;
+        // vector<int> ROI_point_tmp;
         LineDetected();
         ~LineDetected();
         //---------------------------------------
@@ -63,22 +69,21 @@ class LineDetected : public ModelBase
         //-------------------------------------
         double Slope(Vec4i line);
         //-------------------------------------
+        Mat ImageCanny(const Mat iframe);
         void Merge(Vec4i X,Vec4i Y);
         double XDistance;
         double YDistance;
         double theta;
         int thetaZeroY;
         Vec4i NewLine;
+        Vec4i MaxLine;
+        int hough_threshold;
+        double hough_minLineLength;
+        double hough_maxLineGap;
+        int checkline(const Mat image_Enhance,const Mat canny,Vec4i line);
         //-------------------------------------
         vector<Vec4i> complement(vector<Vec4i>  all_line,Vec4i remove) ;
         //-------------------------------------
-        Mat Merge_similar_line(const Mat canny_iframe,const Mat original_frame);
+        Mat Merge_similar_line(const Mat iframe,const Mat canny_iframe,const Mat original_frame);
         //-------------------------------------
-        int getHistograph(const Mat grayImage);
-        Mat hist;
-        int i_diff;
-        int temp_max;
-        int i_max;
-        int temp_min;
-        int i_min;
 };

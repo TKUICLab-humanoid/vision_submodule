@@ -48,6 +48,7 @@ class Vision_main : public LineDetected
         void strategy_init();
     public:
         void GetImagesourceFunction(const sensor_msgs::ImageConstPtr& msg);
+        void DepthCallback(const sensor_msgs::ImageConstPtr& depth_img);
         void ModelingFunction(const tku_msgs::ButtonColorForm& msg);
         void ChangeHSVValue(const tku_msgs::HSVValue& msg);
         bool LoadHSVInfo(tku_msgs::HSVInfo::Request &HSVreq, tku_msgs::HSVInfo::Response &HSVres);

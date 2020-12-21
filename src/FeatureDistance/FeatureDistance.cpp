@@ -36,61 +36,148 @@ FeatureDistance::~FeatureDistance()
 
 }
 
-Distance FeatureDistance::measure(int Feature_x, int Feature_y)
+Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType cameratype)
 {
     float width_cnt = (float)Feature_x;
     float height_cnt = (float)Feature_y;
     float error_y;
     float error_x;
+    float depth_scale = 0.1;//0.1為cm 1為mm
+    float distance_sum = 0;
+    int effective_pixel = 0;
+    float effective_distance = 0;
+    Size range = Size(4,4);
+    Rect RectRange(Feature_x-range.width/2,Feature_y-range.height/2,range.width,range.height);
     Distance distance;
-    if(width_cnt == -1 && height_cnt == -1)
+    if(RectRange.y < 0)
     {
-        distance.x_dis = -1;
-        distance.y_dis = -1;
-        distance.dis = -1;
+        RectRange.y = 0;
     }
-    else
+    if(RectRange.x < 0)
     {
-        if(height_cnt > 240)
-        {
-            error_y = height_cnt - 240.0;
-            vertical_angle = image_bottom_angle + half_VFOV_angle - atan2(error_y , 640) * 180 / PI;
-            distance.y_dis = camera_height * tan(vertical_angle * DEG2RAD) + camera2robot_dis;
-        }
-        else
-        {
-            error_y = 240.0 - height_cnt;
-            vertical_angle = image_bottom_angle + half_VFOV_angle + atan2(error_y , 640) * 180 / PI;
-            distance.y_dis = camera_height * tan(vertical_angle * DEG2RAD) + camera2robot_dis;
-        }
-        if(width_cnt > 320)
-        {
-            error_x = width_cnt - 320.0;
-            horizontal_angle = atan2(error_x, image_center_horizontal_length) * 180 / PI;   //325.534
-            distance.x_dis = (camera_height / cos(vertical_angle * DEG2RAD)) * tan(horizontal_angle * DEG2RAD);
-        }
-        else
-        {
-            error_x = 320.0 - width_cnt;
-            horizontal_angle = atan2(error_x, image_center_horizontal_length) * 180 / PI;   //325.534
-            distance.x_dis = -((camera_height / cos(vertical_angle * DEG2RAD)) * tan(horizontal_angle * DEG2RAD));
-        }
-        distance.dis = sqrt(pow(distance.y_dis,2) + pow(distance.x_dis,2));
+        RectRange.x = 0;
     }
-    if(Horizontal_Head_Angle != 0)
+    if(RectRange.y >479)
     {
-        if(Horizontal_Head_Angle < 0)
-        {
-            distance.y_dis = distance.dis * cos(Horizontal_Head_Angle * DEG2RAD);
-            distance.x_dis = distance.x_dis - (distance.dis * sin(Horizontal_Head_Angle * DEG2RAD));
-        }
-        else
-        {
-            distance.y_dis = distance.dis * cos(Horizontal_Head_Angle * DEG2RAD);
-            distance.x_dis = distance.x_dis - (distance.dis * sin(Horizontal_Head_Angle * DEG2RAD));
-        }
+        RectRange.y = 473;
     }
+    if(RectRange.x > 639)
+    {       
+        RectRange.y = 633;
+    }
+    //ROS_INFO("*************distances.x_dis = %d",distance.x_dis);
+    //ROS_INFO("*************distances.y_dis = %d",distance.y_dis);
+    //ROS_INFO("*************distances.dis = %d",distance.dis);  
+    switch(cameratype)
+    {
+        case CameraType::stereo:
+            //ROS_INFO("------------distances.x_dis = %d",distance.x_dis);
+            //ROS_INFO("------------distances.y_dis = %d",distance.y_dis);
+            //ROS_INFO("------------distances.dis = %d",distance.dis);  
+            //ROS_INFO("stereo");
+            
+            if(!depth_buffer.empty())
+            {
+                for(int y=RectRange.y;y<RectRange.y+RectRange.height;y++){
+                    for(int x=RectRange.x;x<RectRange.x+RectRange.width;x++){
+                        //如果深度图下該點像素不為0，表示有距離信息
+                        if(depth_buffer.at<uint16_t>(y,x)){
+                            distance_sum+=depth_scale*depth_buffer.at<uint16_t>(y,x);
+                            effective_pixel++;
+                        }
+                    }
+                }         
+                effective_distance = (distance_sum/float(effective_pixel));
+                //ROS_INFO("distance_sum = %f , effective_pixel = %d ",distance_sum,effective_pixel);
+                if(Feature_x == 320 && Feature_y ==240)
+                {
+                    // cout<<"effective_distance :"<<effective_distance<<" cm"<<endl;
+                    // ROS_INFO("camera_height = %f",camera_height);
+                    // ROS_INFO("RobotHeight = %f",RobotHeight);
+                }
+                //distance.dis = int(effective_distance);
 
+                if(effective_distance > camera_height && effective_distance < 500)
+                {
+                    float camera_angle = acos(camera_height / effective_distance) * RAD2DEG - (round(AVGERRORANGLE) + (Vertical_Head_Angle-28.65)/8.785) ;
+                    if(Feature_x == 320 && Feature_y ==240)
+                    {
+                        // ROS_INFO("AVGERRORANGLE + (Vertical_Head_Angle-28.65)/8.785 = %f, AVGERRORANGLE * (Vertical_Head_Angle/0.08789 - 1300)/100 = %f,Moving_angle_error = %f ,acos(camera_height / effective_distance) * RAD2DEG = %f",AVGERRORANGLE + (Vertical_Head_Angle-28.65)/8.785,AVGERRORANGLE * (Vertical_Head_Angle/0.08789 - 1300)/100,Moving_angle_error,acos(camera_height / effective_distance) * RAD2DEG); 
+                        // ROS_INFO("camera_angle = %f, camera_angle_offest = %f , camera2robot_dis = %f",camera_angle,camera_angle_offest,+ camera2robot_dis); 
+                    }
+                    float dist = effective_distance * sin(camera_angle* DEG2RAD);
+                    distance.x_dis = int(round(dist * sin(Horizontal_Head_Angle * DEG2RAD)));
+                    distance.y_dis = int(round(dist * cos(Horizontal_Head_Angle * DEG2RAD)));
+                    distance.dis = int(round(sqrt(pow(distance.x_dis,2)+pow(distance.y_dis,2))));
+                    //ROS_INFO("effective_distance = %f , dist = %f ,camera_angle = %f, camera_height = %f",effective_distance,dist,camera_angle,camera_height);
+                    //ROS_INFO("break");
+                    //ROS_INFO("++++++++++++++distances.x_dis = %d",distance.x_dis);
+                    //ROS_INFO("++++++++++++++distances.y_dis = %d",distance.y_dis);
+                    //ROS_INFO("++++++++++++++distances.dis = %d",distance.dis);       
+                }
+                break;
+            }
+ 
+        case CameraType::Monocular:
+
+            //ROS_INFO("Monocular");
+            //if(width_cnt == -1 && height_cnt == -1)
+            //{
+
+            //}
+            //else
+            //{
+                if(height_cnt > 240)
+                {
+                    error_y = height_cnt - 240.0;
+                    vertical_angle = image_bottom_angle + half_VFOV_angle - atan2(error_y , 640) * 180 / PI;
+                   // ROS_INFO("error_y = %f, vertical_angle = %f, image_bottom_angle = %f, half_VFOV_angle = %f ",error_y,vertical_angle,image_bottom_angle,half_VFOV_angle);
+                    distance.y_dis = int(round(camera_height * tan(vertical_angle * DEG2RAD) + camera2robot_dis));
+                }
+                else
+                {
+                    error_y = 240.0 - height_cnt;
+                    vertical_angle = image_bottom_angle + half_VFOV_angle + atan2(error_y , 640) * 180 / PI;
+                    if(Feature_x == 320 && Feature_y ==240)
+                    {
+                        // ROS_INFO("error_y = %f, vertical_angle = %f, image_bottom_angle = %f, half_VFOV_angle = %f,camera2robot_dis = %f ",error_y,vertical_angle,image_bottom_angle,half_VFOV_angle,camera2robot_dis);
+                    }
+                    
+                    distance.y_dis = int(round(camera_height * tan(vertical_angle * DEG2RAD) /*- camera2robot_dis*/));
+                }
+                if(width_cnt > 320)
+                {
+                    error_x = width_cnt - 320.0;
+                    horizontal_angle = atan2(error_x, image_center_horizontal_length) * 180 / PI;   //325.534
+                    distance.x_dis = (camera_height / cos(vertical_angle * DEG2RAD)) * tan(horizontal_angle * DEG2RAD);
+                }
+                else
+                {
+                    error_x = 320.0 - width_cnt;
+                    horizontal_angle = atan2(error_x, image_center_horizontal_length) * 180 / PI;   //325.534
+                    distance.x_dis = -((camera_height / cos(vertical_angle * DEG2RAD)) * tan(horizontal_angle * DEG2RAD));
+                }
+                distance.dis = sqrt(pow(distance.y_dis,2) + pow(distance.x_dis,2));
+            //}
+            if(Horizontal_Head_Angle != 0)
+            {
+                if(Horizontal_Head_Angle < 0)
+                {
+                    distance.y_dis = distance.dis * cos(Horizontal_Head_Angle * DEG2RAD);
+                    distance.x_dis = distance.x_dis - (distance.dis * sin(Horizontal_Head_Angle * DEG2RAD));
+                }
+                else
+                {
+                    distance.y_dis = distance.dis * cos(Horizontal_Head_Angle * DEG2RAD);
+                    distance.x_dis = distance.x_dis - (distance.dis * sin(Horizontal_Head_Angle * DEG2RAD));
+                }
+            }
+            //ROS_INFO("distance_d.x_dis = %d",distance.x_dis);
+            //ROS_INFO("distance_d.y_dis = %d",distance.y_dis);
+            //ROS_INFO("distance_d.dis = %d",distance.dis);
+            break;
+        
+    }
     return distance;
 }
 

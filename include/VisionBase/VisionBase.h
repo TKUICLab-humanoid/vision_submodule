@@ -27,6 +27,7 @@
 #define HFOV            48.3473     //Horizontal FOV (deg) 52.3473  67.3801
 #define AVGERRORANGLE   5.3      //Motor angle - the angle of image bottom
 #define DEG2RAD         M_PI/180
+#define RAD2DEG        180/M_PI
 
 using namespace std;
 using namespace cv;
@@ -56,14 +57,19 @@ struct Distance
     int y_dis;
     int dis;
 };
-
+enum class CameraType
+{
+    Monocular = 1,
+    stereo = 2
+};
 class VisionBase
 {
     protected:
         vector<double> Angle_sin;
         vector<double> Angle_cos;
     public:
-        cv::Mat buffer;
+        cv::Mat color_buffer;
+        cv::Mat depth_buffer;
         cv::Mat orign;
         cv::Mat visual_map;
 
