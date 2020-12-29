@@ -5,24 +5,22 @@ Vision_main::Vision_main(ros::NodeHandle &nh)
     this->nh = &nh;
     image_transport::ImageTransport it(nh);
     
-    //for realsense D435i
-    // Imagesource_subscriber = nh.subscribe("/camera/color/image_raw", 1, &Vision_main::GetImagesourceFunction,this);
-    // Depthimage_subscriber = nh.subscribe("/camera/aligned_depth_to_color/image_raw", 1, &Vision_main::DepthCallback,this);
+    // for realsense D435i
+    Imagesource_subscriber = nh.subscribe("/camera/color/image_raw", 1, &Vision_main::GetImagesourceFunction,this);
+    Depthimage_subscriber = nh.subscribe("/camera/aligned_depth_to_color/image_raw", 1, &Vision_main::DepthCallback,this);
     
-    Imagesource_subscriber = nh.subscribe("/usb_cam/image_raw", 1, &Vision_main::GetImagesourceFunction,this);
+    // Imagesource_subscriber = nh.subscribe("/usb_cam/image_raw", 1, &Vision_main::GetImagesourceFunction,this);
     HeadAngle_subscriber = nh.subscribe("/package/HeadMotor", 10, &Vision_main::HeadAngleFunction,this);
     IMUData_Subscriber = nh.subscribe("/package/sensorpackage", 1, &Vision_main::GetIMUDataFunction,this);
-    
-    //--------------HSV---------------
-    ModelingButton_subscriber = nh.subscribe("ColorModelForm_Topic", 1000, &Vision_main::ModelingFunction,this);
-    HSVValue_subscriber = nh.subscribe("HSVValue_Topic", 1000, &Vision_main::ChangeHSVValue,this);
-    HSV_service = nh.advertiseService("LoadHSVInfo", &Vision_main::LoadHSVInfo,this);
-    Build_service = nh.advertiseService("BuildModel", &Vision_main::CallBuildFunction,this);
-    Save_service = nh.advertiseService("SaveHSV", &Vision_main::CallSaveHSVFunction,this);
 
     //--------------BGR---------------
     BGRValue_subscriber = nh.subscribe("BGRValue_Topic", 1000, &Vision_main::ChangeBGRValue,this);
     BGR_service = nh.advertiseService("LoadBGRInfo", &Vision_main::LoadBGRInfo,this);
+    
+    //--------------Hough-------------
+    HoughValue_subscriber = nh.subscribe("HoughValue_Topic", 1000, &Vision_main::ChangeHoughValue,this);
+    Hough_service = nh.advertiseService("LoadHoughInfo", &Vision_main::LoadHoughInfo,this);
+    
     //--------------------------------
     ObservationData_Publisher = nh.advertise<tku_msgs::ObservationData>("/vision/observation_data", 10);
     ImageLengthData_Publisher = nh.advertise<tku_msgs::ImageLengthData>("/vision/imagelength_data", 10);
@@ -31,6 +29,7 @@ Vision_main::Vision_main(ros::NodeHandle &nh)
     Object_Frame_Publisher = it.advertise("/vision/object_image", 1);
     morphologyEx_Frame_Publisher = it.advertise("/vision/morphologyEx_image", 1);
     edge_Frame_Publisher = it.advertise("/vision/edge_image", 1);
+    mask_Frame_Publisher = it.advertise("/vision/mask_image", 1);
     Monitor_Frame_Publisher = it.advertise("/vision/monitor_image", 1);
     Measure_Frame_Publisher = it.advertise("/vision/measure_image", 1);
     blur_Frame_Publisher = it.advertise("/vision/blur_image", 1);
@@ -61,7 +60,7 @@ void Vision_main::DepthCallback(const sensor_msgs::ImageConstPtr& depth_img)
     }
     catch (cv_bridge::Exception& e)
     {
-      ROS_ERROR("cv_bridge exception: %s", e.what());
+      ROS_ERROR("DepthCallback cv_bridge exception: %s", e.what());
       return;
     }
     cout << "image data(240, 320): " << (depth_buffer.at<uint16_t>(240, 320))*0.1 <<" cm" << endl;//獲取圖像坐標240,320的深度值,單位是公分
@@ -78,13 +77,11 @@ void Vision_main::LoadBGRValue()
 {
     ROS_INFO("LoadBGRValue");
     Model_Base->LoadBGRFile();
-    ROS_INFO("LoadBGRValue");
     B_ = Model_Base->BGRColorRange->BuValue;
     G_ = Model_Base->BGRColorRange->GrValue;
     R_ = Model_Base->BGRColorRange->ReValue;
-    ROS_INFO("B = %d G = %d R = %d",B_,G_,R_);
+    ROS_INFO("B = %f G = %f R = %f",B_,G_,R_);
 }
-
 
 bool Vision_main::LoadBGRInfo(tku_msgs::BGRInfo::Request &req, tku_msgs::BGRInfo::Response &res)
 {
@@ -94,55 +91,31 @@ bool Vision_main::LoadBGRInfo(tku_msgs::BGRInfo::Request &req, tku_msgs::BGRInfo
     return true;
     
 }
-void Vision_main::ModelingFunction(const tku_msgs::ButtonColorForm& msg)
+//-------------待修-----------
+void Vision_main::ChangeHoughValue(const tku_msgs::HoughValue& msg)
 {
-    if(msg.BuildingModel)
-    {
-        Model_Base->isBuildModel = true;
-    }
-    else
-    {
-        Model_Base->isBuildModel = false;
-    }
+    hough_threshold = (float)msg.Hough_threshold;
+    hough_minLineLength = (float)msg.Hough_minLineLength;
+    hough_maxLineGap = (float)msg.Hough_maxLineGap;
+    SaveHoughFile();
 }
 
-void Vision_main::ChangeHSVValue(const tku_msgs::HSVValue& msg)
+void Vision_main::LoadHoughValue()
 {
-    Model_Base->hsvColorRange->HueMax = (float)msg.HMax/HueScrollBarMax;
-    Model_Base->hsvColorRange->HueMin = (float)msg.HMin/HueScrollBarMax;
-    Model_Base->hsvColorRange->SaturationMax = (float)msg.SMax/SaturationScrollBarMax;
-    Model_Base->hsvColorRange->SaturationMin = (float)msg.SMin/SaturationScrollBarMax;
-    Model_Base->hsvColorRange->BrightnessMax = (float)msg.VMax/BrightnessScrollBarMax;
-    Model_Base->hsvColorRange->BrightnessMin = (float)msg.VMin/BrightnessScrollBarMax;
+    LoadHoughFile();
+    threshold_ = hough_threshold;
+    minLineLength_ = hough_minLineLength;
+    maxLineGap_ = hough_maxLineGap;
+    ROS_INFO("threshold_ = %d minLineLength_ = %d maxLineGap_ = %d",threshold_,minLineLength_,maxLineGap_);
 }
-bool Vision_main::LoadHSVInfo(tku_msgs::HSVInfo::Request &HSVreq, tku_msgs::HSVInfo::Response &HSVres)
+bool Vision_main::LoadHoughInfo(tku_msgs::HoughInfo::Request &req, tku_msgs::HoughInfo::Response &res)
 {
-    Model_Base->hsvColorRange = Model_Base->HSVColorRange[HSVreq.ColorLabel];
-    Model_Base->ColorSelected = HSVreq.ColorLabel;
-    HSVres.Hmax = Model_Base->HSVColorRange[HSVreq.ColorLabel]->HueMax * HueScrollBarMax;
-    HSVres.Hmin = Model_Base->HSVColorRange[HSVreq.ColorLabel]->HueMin * HueScrollBarMax;
-    HSVres.Smax = Model_Base->HSVColorRange[HSVreq.ColorLabel]->SaturationMax * SaturationScrollBarMax;
-    HSVres.Smin = Model_Base->HSVColorRange[HSVreq.ColorLabel]->SaturationMin * SaturationScrollBarMax;
-    HSVres.Vmax = Model_Base->HSVColorRange[HSVreq.ColorLabel]->BrightnessMax * BrightnessScrollBarMax;
-    HSVres.Vmin = Model_Base->HSVColorRange[HSVreq.ColorLabel]->BrightnessMin * BrightnessScrollBarMax;
+    res.Hough_threshold = threshold_;
+    res.Hough_minLineLength = minLineLength_;
+    res.Hough_maxLineGap = maxLineGap_;
     return true;
 }
-bool Vision_main::CallBuildFunction(tku_msgs::BuildModel::Request &req, tku_msgs::BuildModel::Response &res)
-{
-    if(req.Build)
-    {
-        Model_Base->HSV_BuildingColorModel();
-        res.Already = true;
-    }
-}
-bool Vision_main::CallSaveHSVFunction(tku_msgs::SaveHSV::Request &req, tku_msgs::SaveHSV::Response &res)
-{
-    if(req.Save)
-    {
-        Model_Base->SaveColorRangeFile();
-        res.Already = true;
-    }
-}
+
 void Vision_main::GetImagesourceFunction(const sensor_msgs::ImageConstPtr& msg)
 {
     cv_bridge::CvImagePtr cv_ptr;
@@ -153,7 +126,7 @@ void Vision_main::GetImagesourceFunction(const sensor_msgs::ImageConstPtr& msg)
     }
     catch (cv_bridge::Exception& e)
     {
-      ROS_ERROR("cv_bridge exception: %s", e.what());
+      ROS_ERROR("GetImagesourceFunction cv_bridge exception: %s", e.what());
       return;
     }
 }
@@ -258,9 +231,9 @@ void Vision_main::strategy_main()
         //imshow("oframe",oframe);
 
         Mat imagePreprocessing = ImagePreprocessing(color_buffer);
-        Mat aftercanny = ImageCanny(imagePreprocessing);
+        edge = ImageCanny(imagePreprocessing);
         
-
+        Mat aftercanny = edge.clone();
         Mat line = Merge_similar_line(imagePreprocessing,aftercanny,color_buffer);
 	    imshow("line",line);
 	
@@ -498,6 +471,15 @@ void Vision_main::strategy_main()
         //ROS_INFO("distance_y = %d",FeaturePoint_distance.y_dis[18]);
         Observation_Data.scan_line.clear();
 
+        resize(orign, orign, cv::Size(320, 240));
+        resize(imageGamma, imageGamma, cv::Size(320, 240));
+        resize(nobackgroud_image, nobackgroud_image, cv::Size(320, 240));
+        resize(morph, morph, cv::Size(320, 240));
+        resize(edge, edge, cv::Size(320, 240));
+        resize(Gmask, Gmask, cv::Size(320, 240));
+
+        
+        
         msg_object = cv_bridge::CvImage(std_msgs::Header(), "bgr8", Object_frame).toImageMsg();
         msg_monitor = cv_bridge::CvImage(std_msgs::Header(), "bgr8", monitor).toImageMsg();
         msg_measure = cv_bridge::CvImage(std_msgs::Header(), "bgr8", oframe).toImageMsg();
@@ -505,7 +487,8 @@ void Vision_main::strategy_main()
         msg_imageGamma = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imageGamma).toImageMsg();
         msg_nobackgroud = cv_bridge::CvImage(std_msgs::Header(), "bgr8", nobackgroud_image).toImageMsg();
         msg_morphologyEx = cv_bridge::CvImage(std_msgs::Header(), "bgr8", morph).toImageMsg();
-        msg_edge = cv_bridge::CvImage(std_msgs::Header(), "bgr8", edge).toImageMsg();
+        msg_edge = cv_bridge::CvImage(std_msgs::Header(), "mono8", edge).toImageMsg();
+        msg_mask = cv_bridge::CvImage(std_msgs::Header(), "mono8", Gmask).toImageMsg();
     
         Object_Frame_Publisher.publish(msg_object);
         Monitor_Frame_Publisher.publish(msg_monitor);
@@ -515,7 +498,8 @@ void Vision_main::strategy_main()
         nobackgroud_Frame_Publisher.publish(msg_nobackgroud);
         morphologyEx_Frame_Publisher.publish(msg_morphologyEx);
         edge_Frame_Publisher.publish(msg_edge);
+        mask_Frame_Publisher.publish(msg_mask);
 
-        waitKey(10);
+        waitKey(1);
     }
 }

@@ -624,7 +624,7 @@ void ModelBase::LoadBGRFile()
         BGRColorRange->BuValue = tool->readvalue(fin, "BValue", 0);
         BGRColorRange->GrValue = tool->readvalue(fin, "GValue", 0);
         BGRColorRange->ReValue = tool->readvalue(fin, "RValue", 0);
-        ROS_INFO("B = %d G = %d R = %d",BGRColorRange->BuValue,BGRColorRange->GrValue,BGRColorRange->ReValue);
+        // ROS_INFO("B = %f G = %f R = %f",BGRColorRange->BuValue,BGRColorRange->GrValue,BGRColorRange->ReValue);
 
         fin.close();
     }
@@ -660,3 +660,6 @@ void ModelBase::SaveBGRFile()
     {
     }
 }
+
+
+

@@ -24,6 +24,8 @@
 #include "tku_msgs/HSVInfo.h"
 #include "tku_msgs/HSVValue.h"
 #include "tku_msgs/BGRValue.h"
+#include "tku_msgs/HoughValue.h"
+#include "tku_msgs/HoughInfo.h"
 #include "tku_msgs/BuildModel.h"
 #include "tku_msgs/SaveHSV.h"
 #include "tku_msgs/ColorData.h"
@@ -59,8 +61,12 @@ class Vision_main : public LineDetected
         void ChangeBGRValue(const tku_msgs::BGRValue& msg);
         bool LoadBGRInfo(tku_msgs::BGRInfo::Request &req, tku_msgs::BGRInfo::Response &res);
         void LoadBGRValue();
+        void ChangeHoughValue(const tku_msgs::HoughValue& msg);
+        void LoadHoughValue();
+        bool LoadHoughInfo(tku_msgs::HoughInfo::Request &req, tku_msgs::HoughInfo::Response &res);
 
         float B_,G_,R_;
+        float threshold_,minLineLength_,maxLineGap_;
     private:
         motordata Horizontal_Head;
         motordata Vertical_Head;
@@ -77,6 +83,7 @@ class Vision_main : public LineDetected
         ros::NodeHandle *nh;
 
         ros::Subscriber Imagesource_subscriber;
+        ros::Subscriber Depthimage_subscriber;
         ros::Subscriber HeadAngle_subscriber;
         ros::Subscriber IMUData_Subscriber;
         //--------------HSV---------------
@@ -90,8 +97,13 @@ class Vision_main : public LineDetected
         //---------------BGR--------------
         ros::Subscriber BGRValue_subscriber;
         ros::ServiceServer BGR_service;
+        
+        //--------------Hough-------------
+        ros::Subscriber HoughValue_subscriber;
+        ros::ServiceServer Hough_service;
+       
+       
         ros::Publisher Distance_Publisher;
-
         ros::Publisher ObservationData_Publisher;
         ros::Publisher ImageLengthData_Publisher;
         ros::Publisher IMUDataRequest_Publisher; 
@@ -103,6 +115,7 @@ class Vision_main : public LineDetected
         sensor_msgs::ImagePtr msg_nobackgroud;
         sensor_msgs::ImagePtr msg_morphologyEx;
         sensor_msgs::ImagePtr msg_edge;
+        sensor_msgs::ImagePtr msg_mask;
         image_transport::Publisher blur_Frame_Publisher;
         image_transport::Publisher Gamma_Frame_Publisher;
         image_transport::Publisher nobackgroud_Frame_Publisher;
@@ -111,6 +124,7 @@ class Vision_main : public LineDetected
         image_transport::Publisher Object_Frame_Publisher;
         image_transport::Publisher Monitor_Frame_Publisher;
         image_transport::Publisher Measure_Frame_Publisher;
+        image_transport::Publisher mask_Frame_Publisher;
     private:
         float pitch_pre;
         float roll_pre;

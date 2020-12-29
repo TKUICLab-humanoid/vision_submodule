@@ -117,9 +117,9 @@ Mat ObjectDetected::White_Line(const cv::Mat iframe)
                 break;
             }
         }
-        ROS_INFO("Field_feature_point.angle %d = %d",angle_be,Field_feature_point.size());
+        // ROS_INFO("Field_feature_point.angle %d = %d",angle_be,Field_feature_point.size());
     }
-    ROS_INFO("Field_feature_point.size = %d",Field_feature_point.size());
+    // ROS_INFO("Field_feature_point.size = %d",Field_feature_point.size());
     // ROS_INFO("Field_feature_point.scan_line_cnt = %d",Field_feature_point[Field_feature_point.size() - 1].scan_line_cnt);
     return oframe;
 }

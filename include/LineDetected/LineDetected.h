@@ -22,6 +22,7 @@ class LineDetected : public ModelBase
     public:
     
         vector<Vec4i> all_lines;
+        vector<Vec4i> all_lines1;
         vector<Vec4i> tmp;
         vector<Vec4i> check_lines;
         vector<Vec4i> reduce_similar_lines;
@@ -36,6 +37,7 @@ class LineDetected : public ModelBase
         Mat nobackgroud_image;
         Mat morph;
         Mat edge;
+        Mat Gmask;
         int Bluev;
         int Greenv;
         int Redv;
@@ -80,10 +82,14 @@ class LineDetected : public ModelBase
         int hough_threshold;
         double hough_minLineLength;
         double hough_maxLineGap;
+        void LoadHoughFile();
+        void SaveHoughFile();
         int checkline(const Mat image_Enhance,const Mat canny,Vec4i line);
         //-------------------------------------
         vector<Vec4i> complement(vector<Vec4i>  all_line,Vec4i remove) ;
         //-------------------------------------
         Mat Merge_similar_line(const Mat iframe,const Mat canny_iframe,const Mat original_frame);
         //-------------------------------------
+        Mat fitLineRANSAC(Mat drawing,vector<vector<Point> > allfieldpoints);
+
 };
