@@ -38,6 +38,9 @@ class LineDetected : public ModelBase
         Mat morph;
         Mat edge;
         Mat Gmask;
+        Mat original_frame;
+        Mat hough_frame;
+        Mat merge_hough_frame;
         int Bluev;
         int Greenv;
         int Redv;

@@ -79,7 +79,7 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
     findContours( morph, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
 
     Mat green_mask( orign.size(), CV_8U, Scalar(0));
-
+    Gmask = Mat::zeros(orign.rows,orign.cols, CV_8U); 
     // Find the convex hull object for each contour
     vector<vector<Point> >hull(contours.size());
     vector<vector<Point> >greenhull;
@@ -110,7 +110,7 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
     //         circle(drawing,greenhull[i][j],2,Scalar(0,0,255),CV_FILLED,-1);
     //     }
     // }
-    imageGamma.copyTo(nobackgroud_image,Gmask);
+    orign.copyTo(nobackgroud_image,Gmask);
     // imshow("drawing",drawing);
 
     for(int col = 0; col < nobackgroud_image.cols;col++)
@@ -428,16 +428,17 @@ vector<Vec4i> LineDetected::complement(vector<Vec4i> all_line,Vec4i remove)
     return all_line;
 }
 
-Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,const Mat original_frame)
+Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,const Mat ori_frame)
 {
     tmp.clear();
     check_lines.clear();
     all_lines.clear();
     reduce_similar_lines.clear();
     merge_similar_lines.clear();
-    Mat original_frame0=iframe.clone();
-    Mat original_frame1=original_frame.clone();
-    Mat original_frame2=original_frame.clone();
+
+    original_frame = iframe.clone();
+    hough_frame = ori_frame.clone();
+    merge_hough_frame = ori_frame.clone();
     // ROS_INFO("hough_threshold = %d hough_minLineLength = %f hough_maxLineGap = %f",hough_threshold,hough_minLineLength,hough_maxLineGap);
     HoughLinesP(canny_iframe,all_lines,1,CV_PI/180,hough_threshold,hough_minLineLength,hough_maxLineGap); 
     all_lines1 = all_lines;
@@ -464,7 +465,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
             {
                 //ROS_INFO("--------Merge--------");
                 Merge(X,Y);
-                int checklinenum = checkline(original_frame0,canny_iframe,NewLine);
+                int checklinenum = checkline(original_frame,canny_iframe,NewLine);
                 //ROS_INFO("checkline = %d \n",checklinenum);
                 if(checklinenum == 1)
                 {
@@ -547,7 +548,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
     for(size_t i = 0 ; i < all_lines1.size(); i++)
     {
         Vec4i X = all_lines1[i];
-        line( original_frame1, Point(X[0], X[1]), Point(X[2], X[3]), Scalar(255,0,0), 2, CV_AA);
+        line( hough_frame, Point(X[0], X[1]), Point(X[2], X[3]), Scalar(255,0,0), 2, CV_AA);
     }
     
     for( size_t i = 0; i < check_lines.size(); i++ )
@@ -567,16 +568,16 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
         ROS_INFO("lineinf.middlepoint (%d) = (x_dis = %d ,y_dis = %d ,dis = %d )",i,lineinf.middlepoint.x_dis,lineinf.middlepoint.y_dis,lineinf.middlepoint.dis);
         ROS_INFO("lineinf.Line_length (%d) =  %f ",i,lineinf.Line_length);
         ROS_INFO("lineinf.Line_theta (%d) =  %f ",i,lineinf.Line_theta);*/
-        line( original_frame2, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0,0,255), 2, CV_AA);
-        circle(original_frame2, Point(midpoint.X, midpoint.Y), 1, Scalar(0, 255, 0), -1);
+        line( merge_hough_frame, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0,0,255), 2, CV_AA);
+        circle(merge_hough_frame, Point(midpoint.X, midpoint.Y), 1, Scalar(0, 255, 0), -1);
     }
-    imshow("original_frame1",original_frame1);
-    //imshow("original_frame2",original_frame2);
+    // imshow("hough_frame",hough_frame);
+    // imshow("merge_hough_frame",merge_hough_frame);
     
-    return original_frame2;
+    return merge_hough_frame;
 }
 
-//-----------Hough threshold-------------------待修
+//-----------Hough threshold-------------------
 void LineDetected::LoadHoughFile()
 {
     fstream fin;

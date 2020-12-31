@@ -27,16 +27,12 @@ Vision_main::Vision_main(ros::NodeHandle &nh)
     SoccerData_Publisher = nh.advertise<tku_msgs::SoccerDataList>("/vision/soccer_topic",10);
 
     Object_Frame_Publisher = it.advertise("/vision/object_image", 1);
-    morphologyEx_Frame_Publisher = it.advertise("/vision/morphologyEx_image", 1);
-    edge_Frame_Publisher = it.advertise("/vision/edge_image", 1);
     mask_Frame_Publisher = it.advertise("/vision/mask_image", 1);
     Monitor_Frame_Publisher = it.advertise("/vision/monitor_image", 1);
     Measure_Frame_Publisher = it.advertise("/vision/measure_image", 1);
-    blur_Frame_Publisher = it.advertise("/vision/blur_image", 1);
     Gamma_Frame_Publisher = it.advertise("/vision/Gamma_image", 1);
-    nobackgroud_Frame_Publisher = it.advertise("/vision/nobackgroud_image", 1);
-
-
+    MerHough_Publisher = it.advertise("/vision/merhough_image", 1);
+    
     pitch_pre = 0.0;
     roll_pre = 0.0;
     B_ = 0;
@@ -91,7 +87,7 @@ bool Vision_main::LoadBGRInfo(tku_msgs::BGRInfo::Request &req, tku_msgs::BGRInfo
     return true;
     
 }
-//-------------待修-----------
+
 void Vision_main::ChangeHoughValue(const tku_msgs::HoughValue& msg)
 {
     hough_threshold = (float)msg.Hough_threshold;
@@ -234,8 +230,8 @@ void Vision_main::strategy_main()
         edge = ImageCanny(imagePreprocessing);
         
         Mat aftercanny = edge.clone();
-        Mat line = Merge_similar_line(imagePreprocessing,aftercanny,color_buffer);
-	    imshow("line",line);
+        merge_hough_frame = Merge_similar_line(imagePreprocessing,aftercanny,color_buffer);
+	    // imshow("line",line);
 	
         cv::Mat Object_frame = FindObject(color_buffer);
         //imshow("Object_frame", Object_frame);
@@ -471,34 +467,42 @@ void Vision_main::strategy_main()
         //ROS_INFO("distance_y = %d",FeaturePoint_distance.y_dis[18]);
         Observation_Data.scan_line.clear();
 
-        resize(orign, orign, cv::Size(320, 240));
+        // resize(orign, orign, cv::Size(320, 240));
         resize(imageGamma, imageGamma, cv::Size(320, 240));
         resize(nobackgroud_image, nobackgroud_image, cv::Size(320, 240));
-        resize(morph, morph, cv::Size(320, 240));
+        // resize(morph, morph, cv::Size(320, 240));
         resize(edge, edge, cv::Size(320, 240));
         resize(Gmask, Gmask, cv::Size(320, 240));
+        resize(hough_frame, hough_frame, cv::Size(320, 240));
+        resize(merge_hough_frame, merge_hough_frame, cv::Size(320, 240));
 
+        Mat MyCombine(Gmask.rows, Gmask.cols*2, CV_8UC1, Scalar(0,255,255));
+        Gmask.copyTo(MyCombine(Rect(0,0,Gmask.cols,Gmask.rows)));
+	    edge.copyTo(MyCombine(Rect(Gmask.cols,0,Gmask.cols,Gmask.rows)));
         
+        Mat MyCombine1(Gmask.rows, Gmask.cols*2, CV_8UC3, Scalar(0,255,255));
+        imageGamma.copyTo(MyCombine1(Rect(0,0,imageGamma.cols,imageGamma.rows)));
+	    nobackgroud_image.copyTo(MyCombine1(Rect(imageGamma.cols,0,imageGamma.cols,imageGamma.rows)));
+        
+        Mat MyCombine2(hough_frame.rows, hough_frame.cols*2, CV_8UC3, Scalar(0,255,255));
+        hough_frame.copyTo(MyCombine1(Rect(0,0,hough_frame.cols,hough_frame.rows)));
+	    merge_hough_frame.copyTo(MyCombine1(Rect(hough_frame.cols,0,hough_frame.cols,hough_frame.rows)));
         
         msg_object = cv_bridge::CvImage(std_msgs::Header(), "bgr8", Object_frame).toImageMsg();
         msg_monitor = cv_bridge::CvImage(std_msgs::Header(), "bgr8", monitor).toImageMsg();
         msg_measure = cv_bridge::CvImage(std_msgs::Header(), "bgr8", oframe).toImageMsg();
-        msg_blur = cv_bridge::CvImage(std_msgs::Header(), "bgr8", orign).toImageMsg();
-        msg_imageGamma = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imageGamma).toImageMsg();
-        msg_nobackgroud = cv_bridge::CvImage(std_msgs::Header(), "bgr8", nobackgroud_image).toImageMsg();
-        msg_morphologyEx = cv_bridge::CvImage(std_msgs::Header(), "bgr8", morph).toImageMsg();
-        msg_edge = cv_bridge::CvImage(std_msgs::Header(), "mono8", edge).toImageMsg();
-        msg_mask = cv_bridge::CvImage(std_msgs::Header(), "mono8", Gmask).toImageMsg();
+        msg_mask = cv_bridge::CvImage(std_msgs::Header(), "mono8", MyCombine).toImageMsg();
+        msg_imageGamma = cv_bridge::CvImage(std_msgs::Header(), "bgr8", MyCombine1).toImageMsg();
+        msg_hough = cv_bridge::CvImage(std_msgs::Header(), "bgr8", MyCombine2).toImageMsg();
+
     
         Object_Frame_Publisher.publish(msg_object);
         Monitor_Frame_Publisher.publish(msg_monitor);
         Measure_Frame_Publisher.publish(msg_measure);
-        blur_Frame_Publisher.publish(msg_blur);
         Gamma_Frame_Publisher.publish(msg_imageGamma);
-        nobackgroud_Frame_Publisher.publish(msg_nobackgroud);
-        morphologyEx_Frame_Publisher.publish(msg_morphologyEx);
-        edge_Frame_Publisher.publish(msg_edge);
         mask_Frame_Publisher.publish(msg_mask);
+        MerHough_Publisher.publish(msg_hough);
+
 
         waitKey(1);
     }

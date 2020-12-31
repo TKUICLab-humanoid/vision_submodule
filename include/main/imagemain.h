@@ -3,7 +3,6 @@
 
 #include <ros/ros.h>
 #include <image_transport/image_transport.h>
-
 #include "sensor_msgs/Image.h"
 #include <sensor_msgs/image_encodings.h>
 #include <std_msgs/Int16.h>
@@ -110,21 +109,26 @@ class Vision_main : public LineDetected
         ros::Publisher SoccerData_Publisher;
 
 
-        sensor_msgs::ImagePtr msg_blur;
+        // sensor_msgs::ImagePtr msg_blur;
         sensor_msgs::ImagePtr msg_imageGamma;
-        sensor_msgs::ImagePtr msg_nobackgroud;
-        sensor_msgs::ImagePtr msg_morphologyEx;
-        sensor_msgs::ImagePtr msg_edge;
+        // sensor_msgs::ImagePtr msg_nobackgroud;
+        // sensor_msgs::ImagePtr msg_morphologyEx;
+        // sensor_msgs::ImagePtr msg_edge;
         sensor_msgs::ImagePtr msg_mask;
-        image_transport::Publisher blur_Frame_Publisher;
+        // sensor_msgs::ImagePtr msg_orihough;
+        sensor_msgs::ImagePtr msg_hough;
+        // image_transport::Publisher blur_Frame_Publisher;
         image_transport::Publisher Gamma_Frame_Publisher;
         image_transport::Publisher nobackgroud_Frame_Publisher;
-        image_transport::Publisher morphologyEx_Frame_Publisher;
-        image_transport::Publisher edge_Frame_Publisher;
+        // image_transport::Publisher morphologyEx_Frame_Publisher;
+        // image_transport::Publisher edge_Frame_Publisher;
         image_transport::Publisher Object_Frame_Publisher;
         image_transport::Publisher Monitor_Frame_Publisher;
         image_transport::Publisher Measure_Frame_Publisher;
         image_transport::Publisher mask_Frame_Publisher;
+        // image_transport::Publisher OriHough_Publisher;
+        image_transport::Publisher MerHough_Publisher;
+
     private:
         float pitch_pre;
         float roll_pre;
