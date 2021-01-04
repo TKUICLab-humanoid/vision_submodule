@@ -59,7 +59,7 @@ void Vision_main::DepthCallback(const sensor_msgs::ImageConstPtr& depth_img)
       ROS_ERROR("DepthCallback cv_bridge exception: %s", e.what());
       return;
     }
-    cout << "image data(240, 320): " << (depth_buffer.at<uint16_t>(240, 320))*0.1 <<" cm" << endl;//獲取圖像坐標240,320的深度值,單位是公分
+    // cout << "image data(240, 320): " << (depth_buffer.at<uint16_t>(240, 320))*0.1 <<" cm" << endl;//獲取圖像坐標240,320的深度值,單位是公分
 }
 void Vision_main::ChangeBGRValue(const tku_msgs::BGRValue& msg)
 {
@@ -275,7 +275,7 @@ void Vision_main::strategy_main()
         {
             Distance distance;
             tku_msgs::Distance tmp;
-            distance = measure(Field_feature_point[i].x,Field_feature_point[i].y,CameraType::Monocular);
+            distance = measure(Field_feature_point[i].x,Field_feature_point[i].y,CameraType::stereo);
             if(i == 0)
             {
                 tmp.x_dis = distance.x_dis;
@@ -409,7 +409,7 @@ void Vision_main::strategy_main()
                     tmp.object_mode = 0;
                     int x = soccer_data[t].x + (soccer_data[t].width / 2);
                     int y = soccer_data[t].y + soccer_data[t].height;
-                    distance = measure(x,y,CameraType::Monocular);
+                    distance = measure(x,y,CameraType::stereo);
                     tmp.distance.x_dis = distance.x_dis;
                     tmp.distance.y_dis = distance.y_dis;
                     tmp.distance.dis = distance.dis;
@@ -439,7 +439,7 @@ void Vision_main::strategy_main()
                     tmp.object_mode = 1;
                     int x = soccer_data[t].x + (soccer_data[t].width / 2);
                     int y = soccer_data[t].y + soccer_data[t].height;
-                    distance = measure(x,y,CameraType::Monocular);
+                    distance = measure(x,y,CameraType::stereo);
                     tmp.distance.x_dis = distance.x_dis;
                     tmp.distance.y_dis = distance.y_dis;
                     tmp.distance.dis = distance.dis;
@@ -480,13 +480,13 @@ void Vision_main::strategy_main()
         Gmask.copyTo(MyCombine(Rect(0,0,Gmask.cols,Gmask.rows)));
 	    edge.copyTo(MyCombine(Rect(Gmask.cols,0,Gmask.cols,Gmask.rows)));
         
-        Mat MyCombine1(Gmask.rows, Gmask.cols*2, CV_8UC3, Scalar(0,255,255));
+        Mat MyCombine1(imageGamma.rows, imageGamma.cols*2, CV_8UC3, Scalar(0,255,255));
         imageGamma.copyTo(MyCombine1(Rect(0,0,imageGamma.cols,imageGamma.rows)));
 	    nobackgroud_image.copyTo(MyCombine1(Rect(imageGamma.cols,0,imageGamma.cols,imageGamma.rows)));
         
         Mat MyCombine2(hough_frame.rows, hough_frame.cols*2, CV_8UC3, Scalar(0,255,255));
-        hough_frame.copyTo(MyCombine1(Rect(0,0,hough_frame.cols,hough_frame.rows)));
-	    merge_hough_frame.copyTo(MyCombine1(Rect(hough_frame.cols,0,hough_frame.cols,hough_frame.rows)));
+        hough_frame.copyTo(MyCombine2(Rect(0,0,hough_frame.cols,hough_frame.rows)));
+	    merge_hough_frame.copyTo(MyCombine2(Rect(hough_frame.cols,0,hough_frame.cols,hough_frame.rows)));
         
         msg_object = cv_bridge::CvImage(std_msgs::Header(), "bgr8", Object_frame).toImageMsg();
         msg_monitor = cv_bridge::CvImage(std_msgs::Header(), "bgr8", monitor).toImageMsg();

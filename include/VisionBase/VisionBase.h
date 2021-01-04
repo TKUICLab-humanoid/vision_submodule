@@ -1,4 +1,5 @@
 #include <ros/ros.h>
+#include <librealsense2/rs.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -61,6 +62,19 @@ enum class CameraType
 {
     Monocular = 1,
     stereo = 2
+};
+
+struct Pixel3Dpoint{
+  float x;
+  float y;
+  float z;
+};
+
+struct Intrinsicscolor{
+  float PPX;
+  float PPY;
+  float Fx;
+  float Fy;
 };
 class VisionBase
 {

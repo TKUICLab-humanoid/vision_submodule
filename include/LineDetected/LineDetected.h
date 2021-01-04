@@ -94,5 +94,8 @@ class LineDetected : public ModelBase
         Mat Merge_similar_line(const Mat iframe,const Mat canny_iframe,const Mat original_frame);
         //-------------------------------------
         Mat fitLineRANSAC(Mat drawing,vector<vector<Point> > allfieldpoints);
+        Pixel3Dpoint deproject_pixel2point(coordinate point,float depth);
+        double calculate_3D(coordinate a, coordinate b);
+
 
 };

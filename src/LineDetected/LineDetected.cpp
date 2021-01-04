@@ -155,6 +155,25 @@ Mat LineDetected::ImageCanny(const Mat iframe)
     return  edge ;
 }
 
+Pixel3Dpoint LineDetected::deproject_pixel2point(coordinate point,float depth)
+{
+    Pixel3Dpoint pixel3Dpoint;
+    Intrinsicscolor color_Intrinsics={312.2850,249.5522,615.0078,615.1781};
+    pixel3Dpoint.x = depth * (point.X - color_Intrinsics.PPX)/color_Intrinsics.Fx;
+    pixel3Dpoint.y = depth * (point.Y - color_Intrinsics.PPY)/color_Intrinsics.Fy;
+    pixel3Dpoint.z = depth;
+    return pixel3Dpoint;
+}
+double LineDetected::calculate_3D(coordinate a, coordinate b)
+{
+    float pointA = (depth_buffer.at<uint16_t>(a.X, a.Y))*0.1 ;
+    float pointB = (depth_buffer.at<uint16_t>(b.X, b.Y))*0.1 ;
+    Pixel3Dpoint A = deproject_pixel2point(a,pointA);
+    Pixel3Dpoint B = deproject_pixel2point(b,pointB);
+
+    return sqrt(pow((A.x-B.x),2)+pow((A.y-B.y),2)+pow((A.z-B.z),2));;
+}
+
 double LineDetected::dis2(coordinate a, coordinate b)                //點a、b距離的平方
 {
 	return (a.X - b.X)*(a.X - b.X) + (a.Y-b.Y)*(a.Y-b.Y);
@@ -179,14 +198,22 @@ int LineDetected::dir(coordinate A, coordinate B, coordinate P)      //點P與�
 
 double LineDetected::disMin(coordinate A, coordinate B, coordinate P)//點P到線段AB的最短距離
 {
-	double r = ((P.X-A.X)*(B.X-A.X) + (P.Y-A.Y)*(B.Y-A.Y)) / dis2(A, B);
-	if (r <= 0) return sqrt(dis2(A, P));
-	else if (r >= 1) return sqrt(dis2(B, P));
+    double r = ((P.X-A.X)*(B.X-A.X) + (P.Y-A.Y)*(B.Y-A.Y)) / dis2(A, B);
+	double dist,dist1;
+    if (r <= 0) 
+    {
+        dist = calculate_3D(A, P);
+    }
+	else if (r >= 1) {
+        dist = calculate_3D(B, P);
+    }
 	else
 	{
-		double AC = r*sqrt(dis2(A,B));
-		return sqrt(dis2(A,P)-AC*AC);
+		double AC = r*calculate_3D(A, B);
+        dist1 = calculate_3D(A, P);
+        dist = sqrt(pow(dist1,2)-AC*AC);
 	}
+    return dist;
 }
 
 double LineDetected::MinDistance(Vec4i X,Vec4i Y)
@@ -392,14 +419,14 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
             {
                 int checkgreenX = Xstart.X + length_unitX;
                 int checkgreenY = row;
-                Distance checkgreen = measure(checkgreenX,checkgreenY,CameraType::Monocular);
-                Distance checkpoint = measure(checkgreenX,Xstart.Y + length_unitY,CameraType::Monocular);
+                Distance checkgreen = measure(checkgreenX,checkgreenY,CameraType::stereo);
+                Distance checkpoint = measure(checkgreenX,Xstart.Y + length_unitY,CameraType::stereo);
                 diff = sqrt(pow((checkgreen.x_dis-checkpoint.x_dis),2)+pow((checkgreen.y_dis-checkpoint.y_dis),2));
             }else{
                 break;
             }          
         }
-        if( diff <= 10 )
+        if( diff <= 5 )
         {
             Vgreen++;
         }
@@ -446,7 +473,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
     int all_lines_Size = all_lines.size();
     merge_similar_lines = all_lines;
     
-    //ROS_INFO("all_lines_Size = %d",all_lines_Size);
+    ROS_INFO("all_lines_Size = %d",all_lines_Size);
     ROS_INFO("/---------------start-------------/");
     for(size_t i = 0 ; i < all_lines.size(); i++)
     {
@@ -459,7 +486,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
         {
             Vec4i Y = merge_similar_lines[j];
             // ROS_INFO("merge_similar_lines(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",j,Y[0],Y[1],Y[2],Y[3],Slope(Y));
-            // ROS_INFO("MinDistance = %f",MinDistance(X,Y));
+            ROS_INFO("MinDistance = %f",MinDistance(X,Y));
             // ROS_INFO("AngleDiff = %f",AngleDiff(X,Y));
             if(MinDistance(X,Y) < 20 && AngleDiff(X,Y) < 2)
             {
@@ -541,7 +568,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
         all_lines_Size ++;
 
     }
-    ROS_INFO("check_lines.size(1) = %d",check_lines.size());
+    ROS_INFO("check_lines.size = %d",check_lines.size());
 
     ROS_INFO("/---------------finish-------------/");
     
@@ -556,10 +583,10 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
         Vec4i l = check_lines[i]; 
 	    LineINF lineinf;
         coordinate midpoint = Midpoint(l);
-        Distance start_ = measure(l[0],l[1],CameraType::Monocular);
-        Distance end_ = measure(l[2],l[3],CameraType::Monocular);
+        Distance start_ = measure(l[0],l[1],CameraType::stereo);
+        Distance end_ = measure(l[2],l[3],CameraType::stereo);
         double dis =  (start_.x_dis - end_.x_dis)*(start_.x_dis - end_.x_dis) + (start_.y_dis - end_.y_dis)*(start_.y_dis - end_.y_dis);
-        lineinf.middlepoint = measure(midpoint.X,midpoint.Y,CameraType::Monocular);
+        lineinf.middlepoint = measure(midpoint.X,midpoint.Y,CameraType::stereo);
         lineinf.Line_length = sqrt(dis);
         coordinate FOV_Bottom_POS = {image_bottom_width_length/2,0};
         double   AdotB = FOV_Bottom_POS.X*lineinf.middlepoint.x_dis + FOV_Bottom_POS.Y*lineinf.middlepoint.y_dis;
