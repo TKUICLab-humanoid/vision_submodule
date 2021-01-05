@@ -18,8 +18,24 @@ LineDetected::~LineDetected()
     
 }
 
+double timeStart, timeEnd;
+timespec time1, time2;
+
+timespec LineDetected::diff(timespec start, timespec end) 
+{
+  timespec temp;
+  if ((end.tv_nsec - start.tv_nsec) < 0) {
+    temp.tv_sec = end.tv_sec - start.tv_sec - 1;
+    temp.tv_nsec = 1000000000 + end.tv_nsec - start.tv_nsec;
+  } else {
+    temp.tv_sec = end.tv_sec - start.tv_sec;
+    temp.tv_nsec = end.tv_nsec - start.tv_nsec;
+  }
+  return temp;
+}
 Mat LineDetected::ImagePreprocessing(const Mat iframe)
 {
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
     orign = iframe.clone();
     blur(orign,orign,Size(3,3));
     int frame_rows = iframe.rows;
@@ -141,6 +157,9 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
     dilate(nobackgroud_image,nobackgroud_image,greenmask_element);
     //imshow("nobackgroud_image1",nobackgroud_image);
     // resize(nobackgroud_image, nobackgroud_image, cv::Size(320, 240));
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time2);
+    cout << "imageprocessing total time (clock_gettime) = " << diff(time1, time2).tv_sec << ":" << diff(time1, time2).tv_nsec << endl;
+
     return nobackgroud_image;
 }
 
@@ -157,21 +176,47 @@ Mat LineDetected::ImageCanny(const Mat iframe)
 
 Pixel3Dpoint LineDetected::deproject_pixel2point(coordinate point,float depth)
 {
-    Pixel3Dpoint pixel3Dpoint;
+    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
+    // ROS_INFO("deproject_pixel2point");
+    Pixel3Dpoint pixel3Dpoint = {0,0,0};
     Intrinsicscolor color_Intrinsics={312.2850,249.5522,615.0078,615.1781};
     pixel3Dpoint.x = depth * (point.X - color_Intrinsics.PPX)/color_Intrinsics.Fx;
     pixel3Dpoint.y = depth * (point.Y - color_Intrinsics.PPY)/color_Intrinsics.Fy;
     pixel3Dpoint.z = depth;
+    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time2);
+    // cout << "deproject_pixel2point total time (clock_gettime) = " << diff(time1, time2).tv_sec << ":" << diff(time1, time2).tv_nsec << endl;
     return pixel3Dpoint;
 }
 double LineDetected::calculate_3D(coordinate a, coordinate b)
 {
-    float pointA = (depth_buffer.at<uint16_t>(a.X, a.Y))*0.1 ;
-    float pointB = (depth_buffer.at<uint16_t>(b.X, b.Y))*0.1 ;
-    Pixel3Dpoint A = deproject_pixel2point(a,pointA);
-    Pixel3Dpoint B = deproject_pixel2point(b,pointB);
-
-    return sqrt(pow((A.x-B.x),2)+pow((A.y-B.y),2)+pow((A.z-B.z),2));;
+    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
+    // ROS_INFO("calculate_3D");
+    float pointA = 0;
+    float pointB = 0;
+    if(!depth_buffer.empty())
+    {
+        pointA = (depth_buffer.at<uint16_t>(a.X, a.Y))*0.1 ;
+        pointB = (depth_buffer.at<uint16_t>(b.X, b.Y))*0.1 ;
+    }
+    
+    Pixel3Dpoint A = {0,0,0};
+    Pixel3Dpoint B = {0,0,0};
+    if((pointA && pointB) != 0.0)
+    {
+        // ROS_INFO("!= 0");
+        A = deproject_pixel2point(a,pointA);
+        B = deproject_pixel2point(b,pointB);
+    }else{
+        // ROS_INFO("== 0");
+        A = {float(a.X),float(a.Y),0.0};
+        B = {float(b.X),float(b.Y),0.0};
+    }
+    // ROS_INFO("A.x = %f,A.y = %f,A.z = %f",A.x,A.y,A.z);
+    // ROS_INFO("B.x = %f,B.y = %f,B.z = %f",B.x,B.y,B.z);
+    double dist = sqrt(pow((A.x-B.x),2)+pow((A.y-B.y),2)+pow((A.z-B.z),2));
+    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time2);
+    // cout << "calculate_3D total time (clock_gettime) = " << diff(time1, time2).tv_sec << ":" << diff(time1, time2).tv_nsec << endl;
+    return dist;
 }
 
 double LineDetected::dis2(coordinate a, coordinate b)                //點a、b距離的平方
@@ -198,8 +243,11 @@ int LineDetected::dir(coordinate A, coordinate B, coordinate P)      //點P與�
 
 double LineDetected::disMin(coordinate A, coordinate B, coordinate P)//點P到線段AB的最短距離
 {
+    // ROS_INFO("disMin");
+    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
     double r = ((P.X-A.X)*(B.X-A.X) + (P.Y-A.Y)*(B.Y-A.Y)) / dis2(A, B);
-	double dist,dist1;
+	double dist = 0;
+    double dist1 = 0;
     if (r <= 0) 
     {
         dist = calculate_3D(A, P);
@@ -213,11 +261,14 @@ double LineDetected::disMin(coordinate A, coordinate B, coordinate P)//點P到�
         dist1 = calculate_3D(A, P);
         dist = sqrt(pow(dist1,2)-AC*AC);
 	}
+    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time2);
+    // cout << "disMin total time (clock_gettime) = " << diff(time1, time2).tv_sec << ":" << diff(time1, time2).tv_nsec << endl;
     return dist;
 }
 
 double LineDetected::MinDistance(Vec4i X,Vec4i Y)
 {
+    // ROS_INFO("MinDistance");
     coordinate Xstart = {X[0],X[1]};
     coordinate Xend = {X[2],X[3]};
     coordinate Ystart = {Y[0],Y[1]};
@@ -274,6 +325,8 @@ double LineDetected::Slope(Vec4i line)
 
 void LineDetected::Merge(Vec4i X,Vec4i Y)
 {
+    // ROS_INFO("Merge");
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
     coordinate Xm = Midpoint(X);
     coordinate Ym = Midpoint(Y);
     coordinate Xstart = {X[0],X[1]};
@@ -360,11 +413,15 @@ void LineDetected::Merge(Vec4i X,Vec4i Y)
             NewLine = {x3,y3,x4,y4};
         }
     }
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time2);
+    cout << "Merge total time (clock_gettime) = " << diff(time1, time2).tv_sec << ":" << diff(time1, time2).tv_nsec << endl;
     // printf("NewLine[0]=%d NewLine[1]=%d NewLine[2]=%d NewLine[3]=%d\n",NewLine[0],NewLine[1],NewLine[2],NewLine[3]);
 }
 
 int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
 { 
+    // ROS_INFO("checkline");
+    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
     coordinate Xstart ;
     coordinate Xend ;
     
@@ -383,7 +440,7 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
     double m = Slope(line)* DEG2RAD;
     double n = Slope(line);
     //ROS_INFO("---n = %f ,m = %f --\n",n,m);
-    double length = sqrt(dis2(Xstart,Xend));
+    double length = sqrt(dis2(Xstart,Xend));//calculate_3D(Xstart,Xend);
     int length_unitX = 0;
     int length_unitY = 0;
     for(size_t i = 0 ;i < 8;i++)
@@ -415,13 +472,16 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
             int g = image_Enhance.at<Vec3b>(row, Xstart.X + length_unitX)[1];
             int r = image_Enhance.at<Vec3b>(row, Xstart.X + length_unitX)[2];
                         
-            if(g >= 235 && b <=50 && r <= 50)
+            if(g >= 245 && b <=10 && r <= 10)
             {
-                int checkgreenX = Xstart.X + length_unitX;
-                int checkgreenY = row;
-                Distance checkgreen = measure(checkgreenX,checkgreenY,CameraType::stereo);
-                Distance checkpoint = measure(checkgreenX,Xstart.Y + length_unitY,CameraType::stereo);
-                diff = sqrt(pow((checkgreen.x_dis-checkpoint.x_dis),2)+pow((checkgreen.y_dis-checkpoint.y_dis),2));
+                // ROS_INFO("diff");
+                coordinate checkgreen = {Xstart.X + length_unitX,row};
+                coordinate checkpoint = {Xstart.X + length_unitX,Xstart.Y + length_unitY};
+                // int checkgreenX = Xstart.X + length_unitX;
+                // int checkgreenY = row;
+                // Distance checkgreen = measure(checkgreenX,checkgreenY,CameraType::stereo);
+                // Distance checkpoint = measure(checkgreenX,Xstart.Y + length_unitY,CameraType::stereo);
+                diff = calculate_3D(checkgreen,checkpoint);//sqrt(pow((checkgreen.x_dis-checkpoint.x_dis),2)+pow((checkgreen.y_dis-checkpoint.y_dis),2));
             }else{
                 break;
             }          
@@ -438,7 +498,9 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
             Vwhite++;
         }
     }
-    ROS_INFO("Vwhite = %d , Vgreen  = %d",Vwhite , Vgreen );
+    // ROS_INFO("Vwhite = %d , Vgreen  = %d",Vwhite , Vgreen );
+    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time2);
+    // cout << "checkline total time (clock_gettime) = " << diff(time1, time2).tv_sec << ":" << diff(time1, time2).tv_nsec << endl;
     if(Vwhite > 6 && Vgreen > 6 ) return 1;
     else return 0;
 }
@@ -457,12 +519,12 @@ vector<Vec4i> LineDetected::complement(vector<Vec4i> all_line,Vec4i remove)
 
 Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,const Mat ori_frame)
 {
-    tmp.clear();
-    check_lines.clear();
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
     all_lines.clear();
+    tmp.clear();
     reduce_similar_lines.clear();
     merge_similar_lines.clear();
-
+    check_lines.clear();
     original_frame = iframe.clone();
     hough_frame = ori_frame.clone();
     merge_hough_frame = ori_frame.clone();
@@ -471,10 +533,10 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
     all_lines1 = all_lines;
 
     int all_lines_Size = all_lines.size();
+    // ROS_INFO("all_lines_Size = %d",all_lines_Size);
+    // ROS_INFO("/---------------start-------------/");
     merge_similar_lines = all_lines;
-    
-    ROS_INFO("all_lines_Size = %d",all_lines_Size);
-    ROS_INFO("/---------------start-------------/");
+
     for(size_t i = 0 ; i < all_lines.size(); i++)
     {
         Vec4i X = all_lines[i];
@@ -486,9 +548,9 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
         {
             Vec4i Y = merge_similar_lines[j];
             // ROS_INFO("merge_similar_lines(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",j,Y[0],Y[1],Y[2],Y[3],Slope(Y));
-            ROS_INFO("MinDistance = %f",MinDistance(X,Y));
+            // ROS_INFO("MinDistance = %f",MinDistance(X,Y));
             // ROS_INFO("AngleDiff = %f",AngleDiff(X,Y));
-            if(MinDistance(X,Y) < 20 && AngleDiff(X,Y) < 2)
+            if(MinDistance(X,Y) < 5 && AngleDiff(X,Y) < 2 )
             {
                 //ROS_INFO("--------Merge--------");
                 Merge(X,Y);
@@ -511,7 +573,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
                     }
                 }else{
                     check = 0; 
-                    ROS_INFO("Not same Line");
+                    // ROS_INFO("Not same Line");
                 } 
                                 
             }else{
@@ -524,7 +586,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
         {
             if(reduce_similar_lines.size()>1)
             {
-                ROS_INFO("--------------------------");
+                // ROS_INFO("--------------------------");
                 tmp = reduce_similar_lines;
                 for(size_t k=0 ; k < reduce_similar_lines.size() ; k++)
                 {
@@ -534,13 +596,16 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
                     {
                         Vec4i doublecheck2 = tmp[l];
                         Merge(doublecheck1,doublecheck2); 
+                        tmp = complement(tmp,doublecheck2);
+                        reduce_similar_lines = complement(reduce_similar_lines,doublecheck2);
                         coordinate NewLinestart = {NewLine[0],NewLine[1]};
                         coordinate NewLineend = {NewLine[2],NewLine[3]};
                         int newlineDistance = sqrt(dis2(NewLinestart,NewLineend));
                         if( newlineDistance >=  Maxdis)
                         {
                             MaxLine = NewLine;
-                        }                 
+                            Maxdis = newlineDistance;
+                        }                
                     }
                 }
                 //ROS_INFO("MaxLine = (x1= %d ,y1 = %d ,x2 = %d ,y2 = %d)",MaxLine[0],MaxLine[1],MaxLine[2],MaxLine[3]);
@@ -566,11 +631,10 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
         }
         reduce_similar_lines.clear();    
         all_lines_Size ++;
-
     }
-    ROS_INFO("check_lines.size = %d",check_lines.size());
+    // ROS_INFO("check_lines.size = %d",check_lines.size());
 
-    ROS_INFO("/---------------finish-------------/");
+    // ROS_INFO("/---------------finish-------------/");
     
     for(size_t i = 0 ; i < all_lines1.size(); i++)
     {
@@ -600,7 +664,8 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
     }
     // imshow("hough_frame",hough_frame);
     // imshow("merge_hough_frame",merge_hough_frame);
-    
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time2);
+    cout << "Merge_similar_line total time (clock_gettime) = " << diff(time1, time2).tv_sec << ":" << diff(time1, time2).tv_nsec << endl;
     return merge_hough_frame;
 }
 
