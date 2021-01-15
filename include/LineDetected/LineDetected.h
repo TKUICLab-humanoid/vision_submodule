@@ -8,26 +8,26 @@
 #include <std_msgs/Int16.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Float32.h>
+#include "tku_msgs/ObservationData.h"
+#include "tku_msgs/LineData.h"
+#include "tku_msgs/Cooridinate.h"
+#include "tku_msgs/AllLineData.h"
+
 using namespace cv;
 using namespace std;
 
-struct LineINF
-{
-    Distance middlepoint;
-    double Line_length;
-    double Line_theta;   
-};
 class LineDetected : public ModelBase 
 {
+
     public:
-    
+        tku_msgs::ObservationData JustLine_Data;
         vector<Vec4i> all_lines;
         vector<Vec4i> all_lines1;
         vector<Vec4i> tmp;
         vector<Vec4i> check_lines;
         vector<Vec4i> reduce_similar_lines;
         vector<Vec4i> merge_similar_lines;
-        // vector<int> ROI_point_tmp;
+
         LineDetected();
         ~LineDetected();
         //---------------------------------------

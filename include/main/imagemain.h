@@ -11,6 +11,7 @@
 //-----------tku_msgs--------------
 #include "tku_msgs/HeadPackage.h"
 #include "tku_msgs/ObservationData.h"
+#include "tku_msgs/LineData.h"
 #include "tku_msgs/FeaturePoint.h"
 #include "tku_msgs/Distance.h"
 #include "tku_msgs/ImageLengthData.h"

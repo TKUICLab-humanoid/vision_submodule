@@ -232,7 +232,7 @@ void Vision_main::strategy_main()
         Mat aftercanny = edge.clone();
         merge_hough_frame = Merge_similar_line(imagePreprocessing,aftercanny,color_buffer);
 	    // imshow("line",line);
-	
+        Observation_Data.landmark = JustLine_Data.landmark;
         cv::Mat Object_frame = FindObject(color_buffer);
         //imshow("Object_frame", Object_frame);
 
@@ -466,7 +466,7 @@ void Vision_main::strategy_main()
         //ROS_INFO("distance_x = %d",FeaturePoint_distance.x_dis[18]);
         //ROS_INFO("distance_y = %d",FeaturePoint_distance.y_dis[18]);
         Observation_Data.scan_line.clear();
-
+        Observation_Data.landmark.clear();
         // resize(orign, orign, cv::Size(320, 240));
         resize(imageGamma, imageGamma, cv::Size(320, 240));
         resize(nobackgroud_image, nobackgroud_image, cv::Size(320, 240));
