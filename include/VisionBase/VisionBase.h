@@ -33,7 +33,7 @@
 using namespace std;
 using namespace cv;
 
-struct coordinate
+struct Coordinate
 {
     int X;
     int Y;
@@ -76,6 +76,11 @@ struct Intrinsicscolor{
   float Fx;
   float Fy;
 };
+
+static bool tocompare(Vec4i &s1, Vec4i &s2){
+   return s1[0] > s2[0];
+}
+
 class VisionBase
 {
     protected:
@@ -98,4 +103,6 @@ class VisionBase
         double CalcRobotHeight();
         
         string GetPath(string file_name);
+        Point MinIntersectPoint(Vec4i line, Point A, double mindistance);
+
 };

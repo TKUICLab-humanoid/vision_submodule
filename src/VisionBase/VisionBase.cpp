@@ -47,3 +47,36 @@ string VisionBase::GetPath(string file_name)
 
     return path;
 }
+
+Point VisionBase::MinIntersectPoint(Vec4i line, Point A, double mindistance)
+{
+    Point start = Point(line[0],line[1]);
+    Point end = Point(line[2],line[3]);
+    int x1 = start.x;
+    int y1 = start.y;
+    int x2 = end.x;
+    int y2 = end.y;
+    float para_a = (float)(y1-y2)/(x1-x2);
+    float para_b = (float)(x1*y2-x2*y1)/(x1-x2);
+    Point minIntersectPoint = Point(0,0);
+    for(int i = 0; i < abs(x2-x1); i++ )
+    {
+        float x = 0;
+        float y = 0;
+        float dis = 0;
+        if(x2<x1)
+        {
+            x = x2 + i;
+        }else{
+            x = x1 + i;
+        }
+        y = x*para_a+para_b;
+        dis = sqrt(pow(A.x-x,2)+pow(A.y-y,2));
+        if(dis == mindistance)
+        {
+            minIntersectPoint = Point(x,y);
+        }
+    }
+    // ROS_INFO("MinIntersectPoint = (%d,%d)",minIntersectPoint.x,minIntersectPoint.y);
+    return minIntersectPoint;
+}

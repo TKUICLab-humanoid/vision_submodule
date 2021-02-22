@@ -58,11 +58,11 @@ class LineDetected : public ModelBase
         int V;
         int ROI_point;
         //-------------------------------------
-        double dis2(coordinate a, coordinate b) ;
+        double dis2(Coordinate a, Coordinate b) ;
         //-------------------------------------
-        int dir(coordinate A, coordinate B, coordinate P);
+        int dir(Coordinate A, Coordinate B, Coordinate P);
         //-------------------------------------
-        double disMin(coordinate A, coordinate B, coordinate P);
+        double disMin(Coordinate A, Coordinate B, Coordinate P,CameraType cameratype);
         //-------------------------------------
         double MinDistance(Vec4i X,Vec4i Y);
         //-------------------------------------
@@ -70,7 +70,7 @@ class LineDetected : public ModelBase
         double mX;
         double mY;
         //-------------------------------------
-        coordinate Midpoint(Vec4i line);
+        Coordinate Midpoint(Vec4i line);
         //-------------------------------------
         double Slope(Vec4i line);
         //-------------------------------------
@@ -94,8 +94,8 @@ class LineDetected : public ModelBase
         Mat Merge_similar_line(const Mat iframe,const Mat canny_iframe,const Mat original_frame);
         //-------------------------------------
         Mat fitLineRANSAC(Mat drawing,vector<vector<Point> > allfieldpoints);
-        Pixel3Dpoint deproject_pixel2point(coordinate point,float depth);
-        double calculate_3D(coordinate a, coordinate b);
+        Pixel3Dpoint deproject_pixel2point(Coordinate point,float depth);
+        double calculate_3D(Coordinate a, Coordinate b);
         timespec diff(timespec start, timespec end);
 
 

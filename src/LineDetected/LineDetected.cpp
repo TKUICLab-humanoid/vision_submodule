@@ -175,7 +175,7 @@ Mat LineDetected::ImageCanny(const Mat iframe)
     return  edge ;
 }
 
-Pixel3Dpoint LineDetected::deproject_pixel2point(coordinate point,float depth)
+Pixel3Dpoint LineDetected::deproject_pixel2point(Coordinate point,float depth)
 {
     // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
     // ROS_INFO("deproject_pixel2point");
@@ -188,7 +188,7 @@ Pixel3Dpoint LineDetected::deproject_pixel2point(coordinate point,float depth)
     // cout << "deproject_pixel2point total time (clock_gettime) = " << diff(time1, time2).tv_sec << ":" << diff(time1, time2).tv_nsec << endl;
     return pixel3Dpoint;
 }
-double LineDetected::calculate_3D(coordinate a, coordinate b)
+double LineDetected::calculate_3D(Coordinate a, Coordinate b)
 {
     // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
     // ROS_INFO("calculate_3D");
@@ -220,15 +220,15 @@ double LineDetected::calculate_3D(coordinate a, coordinate b)
     return dist;
 }
 
-double LineDetected::dis2(coordinate a, coordinate b)                //點a、b距離的平方
+double LineDetected::dis2(Coordinate a, Coordinate b)                //點a、b距離的平方
 {
 	return (a.X - b.X)*(a.X - b.X) + (a.Y-b.Y)*(a.Y-b.Y);
 }
 
-int LineDetected::dir(coordinate A, coordinate B, coordinate P)      //點P與線段AB位置關係
+int LineDetected::dir(Coordinate A, Coordinate B, Coordinate P)      //點P與線段AB位置關係
 {       
-    coordinate AB = { B.X - A.X, B.Y - A.Y };
-	coordinate AP = { P.X - A.X, P.Y - A.Y };
+    Coordinate AB = { B.X - A.X, B.Y - A.Y };
+	Coordinate AP = { P.X - A.X, P.Y - A.Y };
     double cross = AB.X*AP.Y - AB.Y*AP.X;
     double   dot = AB.X*AP.X + AB.Y*AP.Y;
    
@@ -242,26 +242,43 @@ int LineDetected::dir(coordinate A, coordinate B, coordinate P)      //點P與�
 	}                                      
 }
 
-double LineDetected::disMin(coordinate A, coordinate B, coordinate P)//點P到線段AB的最短距離
+double LineDetected::disMin(Coordinate A, Coordinate B, Coordinate P,CameraType cameratype) //點P到線段AB的最短距離
 {
     // ROS_INFO("disMin");
     // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
     double r = ((P.X-A.X)*(B.X-A.X) + (P.Y-A.Y)*(B.Y-A.Y)) / dis2(A, B);
 	double dist = 0;
     double dist1 = 0;
-    if (r <= 0) 
+    if(cameratype == CameraType::stereo)
     {
-        dist = calculate_3D(A, P);
+        if (r <= 0) 
+        {
+            dist = calculate_3D(A, P);
+        }
+        else if (r >= 1) {
+            dist = calculate_3D(B, P);
+        }
+        else
+        {
+            double AC = r*calculate_3D(A, B);
+            dist1 = calculate_3D(A, P);
+            dist = sqrt(pow(dist1,2)-AC*AC);
+        }
+    }else{
+        if (r <= 0) 
+        {
+            dist = sqrt(dis2(A, P));
+        }
+        else if (r >= 1) {
+            dist = sqrt(dis2(B, P));
+        } 
+        else
+        {
+            double AC = r*sqrt(dis2(A,B));
+            dist = sqrt(dis2(A,P)-AC*AC);
+        }
     }
-	else if (r >= 1) {
-        dist = calculate_3D(B, P);
-    }
-	else
-	{
-		double AC = r*calculate_3D(A, B);
-        dist1 = calculate_3D(A, P);
-        dist = sqrt(pow(dist1,2)-AC*AC);
-	}
+    
     // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time2);
     // cout << "disMin total time (clock_gettime) = " << diff(time1, time2).tv_sec << ":" << diff(time1, time2).tv_nsec << endl;
     return dist;
@@ -270,30 +287,27 @@ double LineDetected::disMin(coordinate A, coordinate B, coordinate P)//點P到�
 double LineDetected::MinDistance(Vec4i X,Vec4i Y)
 {
     // ROS_INFO("MinDistance");
-    coordinate Xstart = {X[0],X[1]};
-    coordinate Xend = {X[2],X[3]};
-    coordinate Ystart = {Y[0],Y[1]};
-    coordinate Yend = {Y[2],Y[3]};
-
-    coordinate Xline = {Xend.X - Xstart.X , Xend.Y-Xstart.Y};
-    coordinate Yline = {Yend.X - Ystart.X , Yend.Y-Ystart.Y};
+    Coordinate Xstart = {X[0],X[1]};
+    Coordinate Xend = {X[2],X[3]};
+    Coordinate Ystart = {Y[0],Y[1]};
+    Coordinate Yend = {Y[2],Y[3]};
 
     if (dir(Xstart, Xend, Ystart) * dir(Xstart, Xend, Yend) <= 0 && 
         dir(Ystart, Yend, Xstart) * dir(Ystart, Yend, Xend) <= 0)  //兩線段相交, 距離為0
 	{
         return 0;
     }else{                                                   //如不相交, 則最短距離為每個端點到另一條線段距離的最小值
-        double XYMinDistance = min(min(min(disMin(Xstart, Xend, Ystart), disMin(Xstart, Xend, Yend)), disMin(Ystart, Yend, Xstart)),disMin(Ystart,Yend,Xend));
+        double XYMinDistance = min(min(min(disMin(Xstart, Xend, Ystart,CameraType::stereo), disMin(Xstart, Xend, Yend,CameraType::stereo)), disMin(Ystart, Yend, Xstart,CameraType::stereo)),disMin(Ystart,Yend,Xend,CameraType::stereo));
         return XYMinDistance;
     }
 }
 
 double LineDetected::AngleDiff(Vec4i X,Vec4i Y)
 {
-    coordinate Xstart = {X[0],X[1]};
-    coordinate Xend = {X[2],X[3]};
-    coordinate Ystart = {Y[0],Y[1]};
-    coordinate Yend = {Y[2],Y[3]};
+    Coordinate Xstart = {X[0],X[1]};
+    Coordinate Xend = {X[2],X[3]};
+    Coordinate Ystart = {Y[0],Y[1]};
+    Coordinate Yend = {Y[2],Y[3]};
 
     if((Xend.X-Xstart.X) == 0 ) mX = 90;
     else mX = atan2((Xend.Y-Xstart.Y),(Xend.X-Xstart.X))*RAD2DEG;
@@ -305,9 +319,9 @@ double LineDetected::AngleDiff(Vec4i X,Vec4i Y)
     else if( mX < 0 && mY > 0 ) return abs(mX) + mY;
 }
     
-coordinate LineDetected::Midpoint(Vec4i line)
+Coordinate LineDetected::Midpoint(Vec4i line)
 {
-    coordinate midpoint ;
+    Coordinate midpoint ;
     midpoint.X = (line[2]+line[0])/2;
     midpoint.Y = (line[3]+line[1])/2;
     return midpoint;
@@ -328,12 +342,12 @@ void LineDetected::Merge(Vec4i X,Vec4i Y)
 {
     // ROS_INFO("Merge");
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
-    coordinate Xm = Midpoint(X);
-    coordinate Ym = Midpoint(Y);
-    coordinate Xstart = {X[0],X[1]};
-    coordinate Xend = {X[2],X[3]};
-    coordinate Ystart = {Y[0],Y[1]};
-    coordinate Yend = {Y[2],Y[3]};
+    Coordinate Xm = Midpoint(X);
+    Coordinate Ym = Midpoint(Y);
+    Coordinate Xstart = {X[0],X[1]};
+    Coordinate Xend = {X[2],X[3]};
+    Coordinate Ystart = {Y[0],Y[1]};
+    Coordinate Yend = {Y[2],Y[3]};
     
     XDistance = sqrt(dis2(Xstart,Xend));
     YDistance = sqrt(dis2(Ystart,Yend));
@@ -351,7 +365,7 @@ void LineDetected::Merge(Vec4i X,Vec4i Y)
     }else
     {
         double r = XDistance/(XDistance + YDistance);
-        coordinate P = { int((r * Xm.X)+((1-r)*Ym.X) ), int((r * Xm.Y) + ((1 - r) * Ym.Y))};
+        Coordinate P = { int((r * Xm.X)+((1-r)*Ym.X) ), int((r * Xm.Y) + ((1 - r) * Ym.Y))};
         double Za = tan ( theta * DEG2RAD);
         double Zb = double(P.Y) - (Za * double(P.X)); 
 
@@ -364,19 +378,19 @@ void LineDetected::Merge(Vec4i X,Vec4i Y)
         //printf("Za = %f Zb =%f m = %f SbXstart = %f SbXend = %f SbYstart = %f SbYend = %f\n",Za,Zb,m,SbXstart,SbXend,SbYstart,SbYend);
         int x1 = -(Zb-SbXstart)/(Za-m);
         int y1 = ((Za+m)*x1+(Zb+SbXstart))/2;
-        coordinate projXs={x1,y1};
+        Coordinate projXs={x1,y1};
         //printf("x1 = %d y1 =%d\n",x1,y1);
         int x2 = -(Zb-SbXend)/(Za-m);
         int y2 = ((Za+m)*x2+(Zb+SbXend))/2;
-        coordinate projXe={x2,y2};
+        Coordinate projXe={x2,y2};
         //printf("x2 = %d y2 =%d\n",x2,y2);
         int x3 = -(Zb-SbYstart)/(Za-m);
         int y3 = ((Za+m)*x3+(Zb+SbYstart))/2;
-        coordinate projYs={x3,y3};
+        Coordinate projYs={x3,y3};
         //printf("x3 = %d y3 =%d\n",x3,y3);
         int x4 = -(Zb-SbYend)/(Za-m);
         int y4 = ((Za+m)*x4+(Zb+SbYend))/2;
-        coordinate projYe={x4,y4};
+        Coordinate projYe={x4,y4};
         //printf("x4 = %d y4 =%d\n",x4,y4);
 
         double projXsToprojXe = sqrt(dis2(projXs,projXe));
@@ -423,8 +437,8 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
 { 
     // ROS_INFO("checkline");
     // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
-    coordinate Xstart ;
-    coordinate Xend ;
+    Coordinate Xstart ;
+    Coordinate Xend ;
     
     if( line[0] > line[2] )
     {
@@ -476,8 +490,8 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
             if(g >= 245 && b <=10 && r <= 10)
             {
                 // ROS_INFO("diff");
-                coordinate checkgreen = {Xstart.X + length_unitX,row};
-                coordinate checkpoint = {Xstart.X + length_unitX,Xstart.Y + length_unitY};
+                Coordinate checkgreen = {Xstart.X + length_unitX,row};
+                Coordinate checkpoint = {Xstart.X + length_unitX,Xstart.Y + length_unitY};
                 // int checkgreenX = Xstart.X + length_unitX;
                 // int checkgreenY = row;
                 // Distance checkgreen = measure(checkgreenX,checkgreenY,CameraType::stereo);
@@ -522,6 +536,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
 {
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
     all_lines.clear();
+    all_lines1.clear();
     tmp.clear();
     reduce_similar_lines.clear();
     merge_similar_lines.clear();
@@ -597,8 +612,8 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
                 for(size_t k=0 ; k < reduce_similar_lines.size() ; k++)
                 {
                     Vec4i doublecheck1 = reduce_similar_lines[k];
-                    coordinate NewLinestart;
-                    coordinate NewLineend;
+                    Coordinate NewLinestart;
+                    Coordinate NewLineend;
                     // if(th >= 0)
                     // {
                     if(k == 0)
@@ -634,8 +649,8 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
                     //     tmp2.push_back(NewLine);
                     //     tmp = complement(tmp,doublecheck2);
                     //     reduce_similar_lines = complement(reduce_similar_lines,doublecheck2);
-                    //     coordinate NewLinestart = {NewLine[0],NewLine[1]};
-                    //     coordinate NewLineend = {NewLine[2],NewLine[3]};
+                    //     Coordinate NewLinestart = {NewLine[0],NewLine[1]};
+                    //     Coordinate NewLineend = {NewLine[2],NewLine[3]};
                     //     int newlineDistance = sqrt(dis2(NewLinestart,NewLineend));
                     //     if( newlineDistance >=  Maxdis)
                     //     {
@@ -652,8 +667,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
                 //ROS_INFO("push_back(reduce_similar_lines[0])");
                 ROS_INFO("reduce_similar_lines = (x1= %d ,y1 = %d ,x2 = %d ,y2 = %d)",reduce_similar_lines[0][0],reduce_similar_lines[0][1],reduce_similar_lines[0][2],reduce_similar_lines[0][3]);
                 check_lines.push_back(reduce_similar_lines[0]);
-            }
-            if(merge_similar_lines.size() == merge_similar_lines_SIZE && check != 0){
+            }else if(merge_similar_lines.size() == merge_similar_lines_SIZE && check != 0){
                 //ROS_INFO("push_back(X)");
                 ROS_INFO("X = (x1= %d ,y1 = %d ,x2 = %d ,y2 = %d)",X[0],X[1],X[2],X[3]);
                 check_lines.push_back(X);
@@ -679,34 +693,57 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
         Vec4i X = all_lines1[i];
         line( hough_frame, Point(X[0], X[1]), Point(X[2], X[3]), Scalar(255,0,0), 2, CV_AA);
     }
+    sort(check_lines.begin(), check_lines.end(), tocompare);
     for( size_t i = 0; i < check_lines.size(); i++ )
 	{
         ROS_INFO("check_lines %d",i);
         Vec4i l = check_lines[i]; 
-        coordinate midpoint = Midpoint(l);
-        Distance middlepoint = measure(midpoint.X,midpoint.Y,CameraType::stereo);
-        Distance start_ = measure(l[0],l[1],CameraType::stereo);
-        Distance end_ = measure(l[2],l[3],CameraType::stereo);
+        Coordinate startp;
+        Coordinate endp;
+        if(l[3]>l[1])
+        {
+            startp = {l[2],l[3]};
+            endp = {l[0],l[1]};
+        }else{
+            startp = {l[0],l[1]};
+            endp = {l[2],l[3]};
+        }
+        Coordinate pointP = {320,480};
+        Coordinate midpoint = Midpoint(l);
+        // Distance middlepoint = measure(midpoint.X,midpoint.Y,CameraType::stereo);
+        Distance start_ = measure(startp.X,startp.Y,CameraType::stereo);
+        Distance end_ = measure(endp.X,endp.Y,CameraType::stereo);
         double dis =  sqrt(pow((start_.x_dis - end_.x_dis),2) + pow((start_.y_dis - end_.y_dis),2));
-	    coordinate FOV_Bottom_POS = {image_bottom_width_length/2,0};
-        double AdotB = FOV_Bottom_POS.X*middlepoint.x_dis + FOV_Bottom_POS.Y*middlepoint.y_dis;
+	    // Coordinate FOV_Bottom_POS = {image_bottom_width_length/2,0};
+        // double AdotB = FOV_Bottom_POS.X*middlepoint.x_dis + FOV_Bottom_POS.Y*middlepoint.y_dis;
         tku_msgs::LineData line_tmp;
         tku_msgs::Cooridinate mid_point;
         mid_point.x = midpoint.X;
         mid_point.y = midpoint.Y;
         tku_msgs::Cooridinate startpoint;
-        startpoint.x = l[0];
-        startpoint.y = l[1];
+        startpoint.x = startp.X;
+        startpoint.y = startp.Y;
         tku_msgs::Cooridinate endpoint;
-        endpoint.x = l[2];
-        endpoint.y = l[3];
+        endpoint.x = endp.X;
+        endpoint.y = endp.Y;
+        // tku_msgs::Distance relative_dis;
+        double mindis = disMin(startp,endp,pointP,CameraType::Monocular);//點P到線段AB的最短距離
+        Point minIntersectPoint = MinIntersectPoint(l,Point(320,480),mindis);
+        Distance relativedis = measure(minIntersectPoint.x,minIntersectPoint.y,CameraType::stereo);
+        tku_msgs::Cooridinate IntersectPoint;
+        IntersectPoint.x = minIntersectPoint.x;
+        IntersectPoint.y = minIntersectPoint.y;
+        // relative_dis.dis =  relativedis.dis;
         line_tmp.start_point = startpoint;
         line_tmp.end_point = endpoint;
         line_tmp.center_point = mid_point;
         line_tmp.Line_length = dis;
-        line_tmp.Line_theta = acos((AdotB)/((image_bottom_width_length/2)*(middlepoint.dis)))*180/CV_PI;
+        line_tmp.Line_theta = Slope(l);
+        line_tmp.relative_distance = relativedis.dis;
+        line_tmp.Nearest_point = IntersectPoint;
+        // line_tmp.Line_theta = acos((AdotB)/((image_bottom_width_length/2)*(middlepoint.dis)))*180/CV_PI;
         
-        JustLine_Data.landmark[i].all_LineData.push_back(line_tmp);
+        JustLine_Data.landmark.push_back(line_tmp);
  
         line( merge_hough_frame, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0,0,255), 2, CV_AA);
         circle(merge_hough_frame, Point(midpoint.X, midpoint.Y), 1, Scalar(0, 255, 0), -1);
@@ -717,6 +754,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
     // cout << "Merge_similar_line total time (clock_gettime) = " << diff(time1, time2).tv_sec << ":" << diff(time1, time2).tv_nsec << endl;
     return merge_hough_frame;
 }
+
 
 //-----------Hough threshold-------------------
 void LineDetected::LoadHoughFile()
