@@ -38,6 +38,10 @@ Vision_main::Vision_main(ros::NodeHandle &nh)
     B_ = 0;
     G_ = 0;
     R_ = 0;
+    Horizontal_Head.pos = 2048;
+    Horizontal_Head.speed = 10;
+    Vertical_Head.pos = 1800;
+    Vertical_Head.speed = 10;
 
 }
 Vision_main::~Vision_main()
@@ -51,7 +55,7 @@ void Vision_main::DepthCallback(const sensor_msgs::ImageConstPtr& depth_img)
     {
       cv_depth_ptr = cv_bridge::toCvCopy(depth_img, sensor_msgs::image_encodings::TYPE_16UC1);
       depth_buffer = cv_depth_ptr->image;
-      //resize(depth_buffer, depth_buffer, cv::Size(320, 240));
+      resize(depth_buffer, depth_buffer, cv::Size(640, 480));
       //imshow("depth_buffer",depth_buffer);
     }
     catch (cv_bridge::Exception& e)
@@ -117,8 +121,9 @@ void Vision_main::GetImagesourceFunction(const sensor_msgs::ImageConstPtr& msg)
     cv_bridge::CvImagePtr cv_ptr;
     try
     {
-      cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-      color_buffer = cv_ptr->image;
+        cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+        color_buffer = cv_ptr->image;
+        resize(color_buffer, color_buffer, cv::Size(640, 480));
     }
     catch (cv_bridge::Exception& e)
     {

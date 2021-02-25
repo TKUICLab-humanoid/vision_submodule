@@ -50,8 +50,5 @@ add_executable(vision
 )
 target_link_libraries(vision ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${TKU_LIBRARIES})
 
-install(FILES
-  launch/image.launch
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
-)
+
 

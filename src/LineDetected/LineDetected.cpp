@@ -35,7 +35,7 @@ timespec LineDetected::diff(timespec start, timespec end)
 }
 Mat LineDetected::ImagePreprocessing(const Mat iframe)
 {
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
+    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
     orign = iframe.clone();
     // bilateralFilter(iframe, orign, 10, 10, 10);
     blur(orign,orign,Size(3,3));
@@ -158,8 +158,8 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
     dilate(nobackgroud_image,nobackgroud_image,greenmask_element);
     //imshow("nobackgroud_image1",nobackgroud_image);
     // resize(nobackgroud_image, nobackgroud_image, cv::Size(320, 240));
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time2);
-    cout << "imageprocessing total time (clock_gettime) = " << diff(time1, time2).tv_sec << ":" << diff(time1, time2).tv_nsec << endl;
+    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time2);
+    // cout << "imageprocessing total time (clock_gettime) = " << diff(time1, time2).tv_sec << ":" << diff(time1, time2).tv_nsec << endl;
 
     return nobackgroud_image;
 }
@@ -341,7 +341,7 @@ double LineDetected::Slope(Vec4i line)
 void LineDetected::Merge(Vec4i X,Vec4i Y)
 {
     // ROS_INFO("Merge");
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
+    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
     Coordinate Xm = Midpoint(X);
     Coordinate Ym = Midpoint(Y);
     Coordinate Xstart = {X[0],X[1]};
@@ -428,7 +428,7 @@ void LineDetected::Merge(Vec4i X,Vec4i Y)
             NewLine = {x3,y3,x4,y4};
         }
     }
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time2);
+    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time2);
     // cout << "Merge total time (clock_gettime) = " << diff(time1, time2).tv_sec << ":" << diff(time1, time2).tv_nsec << endl;
     // printf("NewLine[0]=%d NewLine[1]=%d NewLine[2]=%d NewLine[3]=%d\n",NewLine[0],NewLine[1],NewLine[2],NewLine[3]);
 }
@@ -534,7 +534,7 @@ vector<Vec4i> LineDetected::complement(vector<Vec4i> all_line,Vec4i remove)
 
 Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,const Mat ori_frame)
 {
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
+    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
     all_lines.clear();
     all_lines1.clear();
     tmp.clear();
@@ -750,7 +750,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
     }
     // imshow("hough_frame",hough_frame);
     // imshow("merge_hough_frame",merge_hough_frame);
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time2);
+    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time2);
     // cout << "Merge_similar_line total time (clock_gettime) = " << diff(time1, time2).tv_sec << ":" << diff(time1, time2).tv_nsec << endl;
     return merge_hough_frame;
 }
