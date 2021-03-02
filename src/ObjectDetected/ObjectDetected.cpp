@@ -164,7 +164,7 @@ Mat ObjectDetected::FindObject(const cv::Mat iframe)
 
     cvtColor(iframe, gray, COLOR_BGR2GRAY);
 
-    //cascader2soccer.detectMultiScale(gray, soccer_data, 1.1, 10, 0, Size(20, 20));
+    cascader2soccer.detectMultiScale(gray, soccer_data, 1.1, 10, 0, Size(20, 20));
     //cascader2goal.detectMultiScale(gray, goal_data, 1.1, 10, 0, Size(20, 20));
     for (size_t t = 0; t < soccer_data.size(); t++)
 	{

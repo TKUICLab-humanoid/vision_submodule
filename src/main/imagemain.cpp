@@ -4,7 +4,12 @@ Vision_main::Vision_main(ros::NodeHandle &nh)
 {
     this->nh = &nh;
     image_transport::ImageTransport it(nh);
-    Imagesource_subscriber = nh.subscribe("/usb_cam/image_raw", 1, &Vision_main::GetImagesourceFunction,this);
+
+    // for realsense D435i
+    Depthimage_subscriber = nh.subscribe("/camera/aligned_depth_to_color/image_raw", 1, &Vision_main::DepthCallback,this);
+    Imagesource_subscriber = nh.subscribe("/camera/color/image_raw", 1, &Vision_main::GetImagesourceFunction,this);
+
+    // Imagesource_subscriber = nh.subscribe("/usb_cam/image_raw", 1, &Vision_main::GetImagesourceFunction,this);
     HeadAngle_subscriber = nh.subscribe("/package/HeadMotor", 10, &Vision_main::HeadAngleFunction,this);
     IMUData_Subscriber = nh.subscribe("/package/sensorpackage", 1, &Vision_main::GetIMUDataFunction,this);
     
@@ -29,6 +34,23 @@ Vision_main::Vision_main(ros::NodeHandle &nh)
 Vision_main::~Vision_main()
 {
     
+}
+
+void Vision_main::DepthCallback(const sensor_msgs::ImageConstPtr& depth_img) 
+{
+    cv_bridge::CvImagePtr cv_depth_ptr;
+    try
+    {
+      cv_depth_ptr = cv_bridge::toCvCopy(depth_img, sensor_msgs::image_encodings::TYPE_16UC1);
+      depth_buffer = cv_depth_ptr->image;
+      //resize(depth_buffer, depth_buffer, cv::Size(320, 240));
+      //imshow("depth_buffer",depth_buffer);
+    }
+    catch (cv_bridge::Exception& e)
+    {
+      ROS_ERROR("DepthCallback cv_bridge exception: %s", e.what());
+      return;
+    }
 }
 
 void Vision_main::ModelingFunction(const tku_msgs::ButtonColorForm& msg)
@@ -86,11 +108,11 @@ void Vision_main::GetImagesourceFunction(const sensor_msgs::ImageConstPtr& msg)
     try
     {
       cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-      buffer = cv_ptr->image;
+      color_buffer = cv_ptr->image;
     }
     catch (cv_bridge::Exception& e)
     {
-      ROS_ERROR("cv_bridge exception: %s", e.what());
+      ROS_ERROR("GetImagesourceFunction cv_bridge exception: %s", e.what());
       return;
     }
 }
@@ -126,6 +148,11 @@ void Vision_main::GetIMUDataFunction(const tku_msgs::SensorPackage &msg)
 {
     if(!msg.IMUData.empty())
     {
+        // Lee
+        Robot_Roll = msg.IMUData[0];
+        Robot_Pitch = msg.IMUData[1];
+        
+        /* LightLight
         if(msg.IMUData[0] == 0.0 && msg.IMUData[1] == 0.0 && msg.IMUData[2] == 0.0)
         {
             Robot_Pitch = pitch_pre;
@@ -138,6 +165,7 @@ void Vision_main::GetIMUDataFunction(const tku_msgs::SensorPackage &msg)
             roll_pre = Robot_Roll;
             pitch_pre = Robot_Pitch;
         }
+        */
         //ROS_INFO("Robot_Roll = %f",Robot_Roll);
     }
 }
@@ -183,28 +211,28 @@ void Vision_main::strategy_init()
 
 void Vision_main::strategy_main()
 {
-    if(!buffer.empty())
+    if(!color_buffer.empty())
     {
-        Mat oframe = buffer.clone();
+        cv::Mat oframe = color_buffer.clone();
         line(oframe, Point(oframe.cols/2,oframe.rows), Point(oframe.cols/2,0), Scalar(0,0,255), 1);
         line(oframe, Point(0,oframe.rows/2), Point(oframe.cols,oframe.rows/2), Scalar(0,0,255), 1);
         resize(oframe, oframe, cv::Size(320, 240));
         //imshow("oframe",oframe);
 
-        Mat imagePreprocessing = ImagePreprocessing(buffer);
-        //Mat line = Merge_similar_line(imagePreprocessing,buffer);
+        cv::Mat imagePreprocessing = ImagePreprocessing(color_buffer);
+        //Mat line = Merge_similar_line(imagePreprocessing,color_buffer);
 	    //imshow("line",line);
 	
-        cv::Mat Object_frame = FindObject(buffer);
+        cv::Mat Object_frame = FindObject(color_buffer);
         //imshow("Object_frame", Object_frame);
 
-        cv::Size dst_sz(buffer.cols,buffer.rows);
-        cv::Point2f center(dst_sz.height/2,dst_sz.width/2);
+        // cv::Size dst_sz(color_buffer.cols,color_buffer.rows);
+        // cv::Point2f center(dst_sz.height/2,dst_sz.width/2);
 
-        cv::Mat rot_mat = cv::getRotationMatrix2D(center, -1 * (Robot_Roll), 1.0);
+        // cv::Mat rot_mat = cv::getRotationMatrix2D(center, -1 * (Robot_Roll), 1.0);
 
-        cv::Mat dst;
-        cv::warpAffine(buffer, dst, rot_mat, dst_sz);
+        // cv::Mat dst;
+        // cv::warpAffine(color_buffer, dst, rot_mat, dst_sz);
         //imshow("dst",dst);
 
         cv::Mat monitor = White_Line(imagePreprocessing);

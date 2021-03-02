@@ -46,6 +46,7 @@ class Vision_main : public LineDetected
         void strategy_main();
         void strategy_init();
     public:
+        void DepthCallback(const sensor_msgs::ImageConstPtr& depth_img);
         void GetImagesourceFunction(const sensor_msgs::ImageConstPtr& msg);
         void ModelingFunction(const tku_msgs::ButtonColorForm& msg);
         void ChangeHSVValue(const tku_msgs::HSVValue& msg);
@@ -69,6 +70,7 @@ class Vision_main : public LineDetected
 
         ros::NodeHandle *nh;
 
+        ros::Subscriber Depthimage_subscriber;
         ros::Subscriber Imagesource_subscriber;
         ros::Subscriber HeadAngle_subscriber;
         ros::Subscriber IMUData_Subscriber;
