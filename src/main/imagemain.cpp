@@ -178,16 +178,15 @@ int main(int argc, char** argv)
     ros::NodeHandle nh;
 	Vision_main vision_main(nh);
 
-    ros::spinOnce();
-
     ros::Rate loop_rate(60);
 
+    ros::spinOnce();
     vision_main.strategy_init();
 
    while (nh.ok())
     {
-        vision_main.strategy_main();
         ros::spinOnce();
+        vision_main.strategy_main();
         loop_rate.sleep();
     }
 
@@ -196,6 +195,10 @@ int main(int argc, char** argv)
 
 void Vision_main::strategy_init()
 {
+    Roll_init = Robot_Roll;
+    Pitch_init = Robot_Pitch;
+    ROS_INFO("Roll_init: %f", Roll_init);
+    ROS_INFO("Pitch_init: %f", Pitch_init);
     CalcRobotHeight();
     if(!cascader2soccer.load(GetPath("cascade2soccer.xml")))
     {
@@ -363,8 +366,8 @@ void Vision_main::strategy_main()
             }
         }
         resize(monitor, monitor, cv::Size(320, 240));
-        namedWindow("monitor",WINDOW_NORMAL);
-        imshow("monitor",monitor);
+        // namedWindow("monitor",WINDOW_NORMAL);
+        // imshow("monitor",monitor);
         if(soccer_data.size() == 0 && goal_data.size() == 0)
         {
             tku_msgs::SoccerData tmp;

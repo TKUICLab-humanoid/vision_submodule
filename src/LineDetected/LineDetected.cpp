@@ -91,8 +91,8 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
     {
         nobackgroud_image = imageGamma.clone();
     }
-    namedWindow("nobackgroud_image",WINDOW_NORMAL);
-    imshow("nobackgroud_image",nobackgroud_image);
+    // namedWindow("nobackgroud_image",WINDOW_NORMAL);
+    // imshow("nobackgroud_image",nobackgroud_image);
   
     for(int row = 0; row < nobackgroud_image.rows;row++)
     {
