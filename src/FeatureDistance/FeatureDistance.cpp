@@ -46,9 +46,10 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y)
     double y_ratio;
     double ratio_angle;
     double xyz_dis;
-    double xy_dis;
     double x_dis;
     double y_dis;
+    double xy_dis;
+    double object_angle;
     Distance distance;
 
     if(Feature_x == -1 && Feature_y == -1)
@@ -74,26 +75,27 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y)
         if(width_cnt > 320)
         {
             error_x = width_cnt - 320.0;
-            horizontal_angle = atan2(error_x, image_center_horizontal_length) * 180 / PI;   //325.534
+            horizontal_angle = atan2(error_x, image_center_horizontal_length) * 180 / PI;
             x_ratio = (camera_height / cos(vertical_angle * DEG2RAD)) * tan(horizontal_angle * DEG2RAD);
         }
         else
         {
             error_x = 320.0 - width_cnt;
-            horizontal_angle = atan2(error_x, image_center_horizontal_length) * 180 / PI;   //325.534
-            x_ratio = (camera_height / cos(vertical_angle * DEG2RAD)) * tan(horizontal_angle * DEG2RAD);
+            horizontal_angle = atan2(error_x, image_center_horizontal_length) * 180 / PI;
+            x_ratio = -((camera_height / cos(vertical_angle * DEG2RAD)) * tan(horizontal_angle * DEG2RAD));
         }
 
-        ratio_angle = atan2(x_dis, y_dis) * 180 / PI;
+        ratio_angle = atan2(x_ratio, y_ratio) * 180 / PI;
         xyz_dis = (depth_buffer.at<uint16_t>(Feature_y, Feature_x))*0.1;//獲取圖像座標Feature_y,Feature_x的深度值,單位是公分
         x_dis = sqrt(pow(xyz_dis,2)-pow(camera_height,2)) * cos(ratio_angle * DEG2RAD);
         y_dis = sqrt(pow(xyz_dis,2)-pow(camera_height,2)) * sin(ratio_angle * DEG2RAD) + camera2robot_dis;
         xy_dis = sqrt(pow(x_dis,2)+pow(y_dis,2));
+        object_angle = atan2(x_dis, y_dis) * 180 / PI;
 
         if(Horizontal_Head_Angle != 0)
         {
-            y_dis = xy_dis * cos(Horizontal_Head_Angle * DEG2RAD);
-            x_dis = xy_dis * sin(Horizontal_Head_Angle * DEG2RAD);
+            y_dis = xy_dis * cos((Horizontal_Head_Angle + object_angle) * DEG2RAD);
+            x_dis = xy_dis * sin((Horizontal_Head_Angle + object_angle) * DEG2RAD);
         }
 
         distance.x_dis = x_dis;
