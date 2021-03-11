@@ -102,9 +102,9 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y)
         distance.y_dis = y_dis;
         distance.dis = xy_dis;
     }
-    ROS_INFO("x_dis: %lf", distance.x_dis);
-    ROS_INFO("y_dis: %lf", distance.y_dis);
-    ROS_INFO("dis: %lf", distance.dis);
+    // ROS_INFO("x_dis: %lf", distance.x_dis);
+    // ROS_INFO("y_dis: %lf", distance.y_dis);
+    // ROS_INFO("dis: %lf", distance.dis);
 
     // float width_cnt = (float)Feature_x;
     // float height_cnt = (float)Feature_y;
