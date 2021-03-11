@@ -219,7 +219,10 @@ double FeatureDistance::CalcRobotHeight()
 	char source[200];
 	char search[9] = "Desktop/"; 
 	char *loc;
+    char *src;
+    char *dst;
 	char standPath[200];
+    int length;
     int packagecnt;
     int cnt = 3;
 
@@ -229,7 +232,14 @@ double FeatureDistance::CalcRobotHeight()
 	}
 	strcpy(source, parameter_path.c_str());
 	loc = strstr(source, search);
-	strncpy(standPath, source, strlen(source)-strlen(loc)+strlen(search));
+    src = source;
+    dst = standPath;
+    length = strlen(source)-strlen(loc)+strlen(search);
+    while(length--)
+    {
+        *(dst++) = *(src++);
+    }
+    *(dst++) = '\0';
     strcat(standPath, "Standmotion/sector/29.ini");
 
     fstream fin;
