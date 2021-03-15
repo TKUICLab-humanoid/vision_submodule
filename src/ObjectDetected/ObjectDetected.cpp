@@ -59,9 +59,9 @@ Mat ObjectDetected::White_Line(const cv::Mat iframe)
     oframe = edge.clone();
     //oframe = convertTo3Channels(oframe);
     //edge = convertTo3Channels(edge);
-    int centerx = oframe.cols/2;
-    int centery = oframe.rows;
-    int OuterMsg = 600;
+    int centerx = oframe.cols / 2;
+    int centery = oframe.rows - 1;
+    int OuterMsg = 800;
     int InnerMsg = 5;
     AngleLUT();
 
@@ -72,14 +72,15 @@ Mat ObjectDetected::White_Line(const cv::Mat iframe)
         bool find_feature_flag = false;
         int angle_be = Angle_Adjustment(angle);
         int scan_line_present = angle_be / 5;
+        feature_point tmp;
+
         for (int r = InnerMsg; r <= OuterMsg; r++)
         {   
             int x_ = r * Angle_cos[angle_be];
             int y_ = r * Angle_sin[angle_be];
             int x = Frame_Area(centerx + x_, oframe.cols);
             int y = Frame_Area(centery - y_, oframe.rows);
-
-            feature_point tmp;
+            
             if (edge.data[(y * edge.cols + x) * 3 + 0] != 255)
             {
                 if (angle_be == 0 || angle_be == 180)
@@ -138,15 +139,15 @@ Mat ObjectDetected::White_Line(const cv::Mat iframe)
             }
             if(x == 0 || x == (oframe.cols - 1) || y == 0)
             {
-                if(!find_feature_flag)
-                {
-                    tmp.x = -1;
-                    tmp.y = -1;
-                    tmp.scan_line_cnt = angle_be / 5;
-                    Filed_feature_point.push_back(tmp);
-                }
                 break;
             }
+        }
+        if(!find_feature_flag)
+        {
+            tmp.x = -1;
+            tmp.y = -1;
+            tmp.scan_line_cnt = angle_be / 5;
+            Filed_feature_point.push_back(tmp);
         }
     }
     ROS_INFO("Filed_feature_point.size = %d",Filed_feature_point.size());

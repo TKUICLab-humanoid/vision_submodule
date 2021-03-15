@@ -5,9 +5,19 @@ Vision_main::Vision_main(ros::NodeHandle &nh)
     this->nh = &nh;
     image_transport::ImageTransport it(nh);
 
+    color_nh.setCallbackQueue(&color_queue);
+    color_queue.callAvailable(ros::WallDuration());
+    color_spinner = new ros::AsyncSpinner(1, &color_queue);
+    color_spinner->start();
+
+    depth_nh.setCallbackQueue(&depth_queue);
+    depth_queue.callAvailable(ros::WallDuration());
+    depth_spinner = new ros::AsyncSpinner(1, &depth_queue);
+    depth_spinner->start();
+
     // for realsense D435i
-    Depthimage_subscriber = nh.subscribe("/camera/aligned_depth_to_color/image_raw", 1, &Vision_main::DepthCallback,this);
-    Imagesource_subscriber = nh.subscribe("/camera/color/image_raw", 1, &Vision_main::GetImagesourceFunction,this);
+    Depthimage_subscriber = depth_nh.subscribe("/camera/aligned_depth_to_color/image_raw", 1, &Vision_main::DepthCallback,this);
+    Imagesource_subscriber = color_nh.subscribe("/camera/color/image_raw", 1, &Vision_main::GetImagesourceFunction,this);
 
     // Imagesource_subscriber = nh.subscribe("/usb_cam/image_raw", 1, &Vision_main::GetImagesourceFunction,this);
     HeadAngle_subscriber = nh.subscribe("/package/HeadMotor", 10, &Vision_main::HeadAngleFunction,this);
@@ -43,6 +53,7 @@ void Vision_main::DepthCallback(const sensor_msgs::ImageConstPtr& depth_img)
     {
       cv_depth_ptr = cv_bridge::toCvCopy(depth_img, sensor_msgs::image_encodings::TYPE_16UC1);
       depth_buffer = cv_depth_ptr->image;
+      resize(depth_buffer, depth_buffer, cv::Size(640, 480));
       //resize(depth_buffer, depth_buffer, cv::Size(320, 240));
       //imshow("depth_buffer",depth_buffer);
     }
@@ -128,8 +139,8 @@ void Vision_main::HeadAngleFunction(const tku_msgs::HeadPackage &msg)
         Vertical_Head.pos = msg.Position;
         Vertical_Head.speed = msg.Speed;
     }
-    ROS_INFO("Vertical_Head_ver = %d",Vertical_Head.pos);
-    ROS_INFO("Horizontal_Head_ver = %d",Horizontal_Head.pos);
+    ROS_INFO("Vertical_Head.pos = %d",Vertical_Head.pos);
+    ROS_INFO("Horizontal_Head.pos = %d",Horizontal_Head.pos);
     calcImageAngle(Horizontal_Head,Vertical_Head);
     ImageLengthData.focus = camera2robot_dis;
     ImageLengthData.top = image_top_length;
@@ -183,7 +194,7 @@ int main(int argc, char** argv)
     ros::spinOnce();
     vision_main.strategy_init();
 
-   while (nh.ok())
+    while (nh.ok())
     {
         ros::spinOnce();
         vision_main.strategy_main();
@@ -203,18 +214,16 @@ void Vision_main::strategy_init()
     if(!cascader2soccer.load(GetPath("cascade2soccer.xml")))
     {
         ROS_INFO("could not load cascader2soccer.xml");
-
     }
     if(!cascader2goal.load(GetPath("cascade2goal.xml")))
     {
         ROS_INFO("could not load cascader2goal.xml");
-
     }
 }
 
 void Vision_main::strategy_main()
 {
-    if(!color_buffer.empty())
+    if(!color_buffer.empty() && !depth_buffer.empty())
     {
         cv::Mat oframe = color_buffer.clone();
         line(oframe, Point(oframe.cols/2,oframe.rows), Point(oframe.cols/2,0), Scalar(0,0,255), 1);
@@ -368,6 +377,7 @@ void Vision_main::strategy_main()
         resize(monitor, monitor, cv::Size(320, 240));
         // namedWindow("monitor",WINDOW_NORMAL);
         // imshow("monitor",monitor);
+        int cnt = soccer_data.size() + goal_data.size();
         if(soccer_data.size() == 0 && goal_data.size() == 0)
         {
             tku_msgs::SoccerData tmp;
@@ -383,7 +393,6 @@ void Vision_main::strategy_main()
         }
         else
         {
-            int cnt = 0;
             if(soccer_data.size() != 0)
             {
                 for(size_t t = 0; t < soccer_data.size(); t++)
@@ -406,8 +415,10 @@ void Vision_main::strategy_main()
                     tmp.distance.x_dis = distance.x_dis;
                     tmp.distance.y_dis = distance.y_dis;
                     tmp.distance.dis = distance.dis;
+                    ROS_INFO("distance.x_dis: %d", distance.x_dis);
+                    ROS_INFO("distance.y_dis: %d", distance.y_dis);
+                    ROS_INFO("distance.dis: %d", distance.dis);
                     Soccer.ObjectList.push_back(tmp);
-                    cnt++;
                     // ROS_INFO("mode = %d",tmp.object_mode);
                     // ROS_INFO("x_soccer = %d",Soccer.ObjectList[t].x);
 		            // ROS_INFO("soccer_dis = %d",tmp.distance);
@@ -437,16 +448,15 @@ void Vision_main::strategy_main()
                     tmp.distance.y_dis = distance.y_dis;
                     tmp.distance.dis = distance.dis;
                     Soccer.ObjectList.push_back(tmp);
-                    cnt++;
                     // ROS_INFO("mode = %d",tmp.object_mode);
                 }
                 goal_data.clear();
             }
-            ROS_INFO("cnt = %d",cnt);
             Soccer.object_cnt = cnt;
             SoccerData_Publisher.publish(Soccer);
             Soccer.ObjectList.clear();
         }
+        ROS_INFO("cnt = %d", cnt);
         Observation_Data.imagestate = whiteline_flag;
         ObservationData_Publisher.publish(Observation_Data);
         //ROS_INFO("13x = %d y = %d dis = %d",FeaturePoint_distance.x_dis[13],FeaturePoint_distance.y_dis[13],FeaturePoint_distance.dis[13]);

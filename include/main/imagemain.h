@@ -2,6 +2,7 @@
 #define IMAGEMAIN_H
 
 #include <ros/ros.h>
+#include <ros/callback_queue.h>
 #include <image_transport/image_transport.h>
 
 #include "sensor_msgs/Image.h"
@@ -69,6 +70,12 @@ class Vision_main : public LineDetected
         tku_msgs::SoccerDataList Soccer;
 
         ros::NodeHandle *nh;
+        ros::NodeHandle color_nh;
+        ros::NodeHandle depth_nh;
+        ros::CallbackQueue color_queue;
+        ros::CallbackQueue depth_queue;
+        ros::AsyncSpinner *color_spinner;
+        ros::AsyncSpinner *depth_spinner;
 
         ros::Subscriber Depthimage_subscriber;
         ros::Subscriber Imagesource_subscriber;

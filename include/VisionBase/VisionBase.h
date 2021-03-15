@@ -22,8 +22,8 @@
 #define L_Thigh         14.0         //膝關節～髖關節長度 (cm) 大腿
 #define L_BodyError     7.134625798  // L_4 = 24.95 (cm), L_5 = 3.123 (cm)
 #define L_Body          25.14469385  //髖關節～垂直頭馬達長度  (cm)
-#define L_FOOT          3.272        //腳底板上面～踝關節長度 (cm)
-#define L_Shoes         0.2          //腳底板厚度 （cm）
+#define L_FOOT          3.472        //腳底板上面～踝關節長度 (cm)
+#define L_Shoes         1.4          //腳底板厚度 （cm）
 #define MOTORDEG        0.087890625  //360/4096 (deg)
 #define VFOV            40.27706125  //Vertical FOV (deg) 41.0408
 #define HFOV            48.3473      //Horizontal FOV (deg) 52.3473  67.3801

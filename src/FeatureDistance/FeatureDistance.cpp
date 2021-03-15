@@ -85,8 +85,13 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y)
             x_ratio = -((camera_height / cos(vertical_angle * DEG2RAD)) * tan(horizontal_angle * DEG2RAD));
         }
 
+        ROS_INFO("x_ratio: %lf", x_ratio);
+        ROS_INFO("y_ratio: %lf", y_ratio);
         ratio_angle = atan2(x_ratio, y_ratio) * 180 / PI;
-        xyz_dis = (depth_buffer.at<uint16_t>(Feature_y, Feature_x))*0.1;//獲取圖像座標Feature_y,Feature_x的深度值,單位是公分
+        if(!depth_buffer.empty())
+        { 
+            xyz_dis = (depth_buffer.at<uint16_t>(Feature_y, Feature_x))*0.1;//獲取圖像座標Feature_y,Feature_x的深度值,單位是公分
+        }
         x_dis = sqrt(pow(xyz_dis,2)-pow(camera_height,2)) * cos(ratio_angle * DEG2RAD);
         y_dis = sqrt(pow(xyz_dis,2)-pow(camera_height,2)) * sin(ratio_angle * DEG2RAD) + camera2robot_dis;
         xy_dis = sqrt(pow(x_dis,2)+pow(y_dis,2));
