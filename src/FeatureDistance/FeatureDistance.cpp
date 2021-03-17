@@ -85,8 +85,8 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y)
             x_ratio = -((camera_height / cos(vertical_angle * DEG2RAD)) * tan(horizontal_angle * DEG2RAD));
         }
 
-        ROS_INFO("x_ratio: %lf", x_ratio);
-        ROS_INFO("y_ratio: %lf", y_ratio);
+        // ROS_INFO("x_ratio: %lf", x_ratio);
+        // ROS_INFO("y_ratio: %lf", y_ratio);
         ratio_angle = atan2(x_ratio, y_ratio) * 180 / PI;
         if(!depth_buffer.empty())
         { 
@@ -187,9 +187,10 @@ void FeatureDistance::calcImageAngle(motordata Horizontal_Head,motordata Vertica
         foot2robot_dis = sqrt(pow(RobotHeight,2)+pow(RobotWidth+6.5,2)); // behind shoe
         foot2robot_angle = atan2(RobotHeight, RobotWidth+6.5) * 180 / PI;
     }
-    camera_height = foot2robot_dis * sin(foot2robot_angle - (Robot_Pitch - Pitch_init) * DEG2RAD) + L_CAMERA * sin((Vertical_Head_Angle - Moving_angle_error) * DEG2RAD);
-    ROS_INFO("foot2robot_dis = %f", foot2robot_dis);
-    ROS_INFO("camera_height = %f", camera_height);
+    camera_height = foot2robot_dis * sin((foot2robot_angle - (Robot_Pitch - Pitch_init)) * DEG2RAD) + L_CAMERA * sin((Vertical_Head_Angle - Moving_angle_error) * DEG2RAD);
+    // ROS_INFO("camera_degree = %f", Vertical_Head_Angle - Moving_angle_error);
+    // ROS_INFO("foot2robot_dis = %f", foot2robot_dis);
+    // ROS_INFO("camera_height = %f", camera_height);
     camera2robot_dis = RobotHeight * sin((Robot_Pitch - Pitch_init) * DEG2RAD) + L_CAMERA * cos((Vertical_Head_Angle - Moving_angle_error) * DEG2RAD);
 
     image_bottom_angle = Vertical_Head_Angle - Moving_angle_error - half_VFOV_angle - AVGERRORANGLE;
@@ -297,7 +298,7 @@ double FeatureDistance::CalcRobotHeight()
         double Robot_Height_2 = L_Thigh * cos((theta2 - theta1) * DEG2RAD);
         double Robot_Height_3 = L_Body * cos((theta3 + L_BodyError - theta2 + theta1) * DEG2RAD);
         double Robot_Width_1 = L_Calf * sin(theta1 * DEG2RAD);
-        double Robot_Width_2 = L_Thigh * sin((theta2 - theta1) * DEG2RAD;
+        double Robot_Width_2 = L_Thigh * sin((theta2 - theta1) * DEG2RAD);
         double Robot_Width_3 = L_Body * sin((theta3 + L_BodyError - theta2 + theta1) * DEG2RAD);
 
         camera_angle_offest = theta1 + theta3 - theta2;

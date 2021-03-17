@@ -162,6 +162,7 @@ void Vision_main::GetIMUDataFunction(const tku_msgs::SensorPackage &msg)
         // Lee
         Robot_Roll = msg.IMUData[0];
         Robot_Pitch = msg.IMUData[1];
+        calcImageAngle(Horizontal_Head,Vertical_Head);
         
         /* LightLight
         if(msg.IMUData[0] == 0.0 && msg.IMUData[1] == 0.0 && msg.IMUData[2] == 0.0)
@@ -206,8 +207,8 @@ int main(int argc, char** argv)
 
 void Vision_main::strategy_init()
 {
-    Roll_init = Robot_Roll;
-    Pitch_init = Robot_Pitch;
+    Roll_init = 0;
+    Pitch_init = 0;
     ROS_INFO("Roll_init: %f", Roll_init);
     ROS_INFO("Pitch_init: %f", Pitch_init);
     CalcRobotHeight();
@@ -456,7 +457,7 @@ void Vision_main::strategy_main()
             SoccerData_Publisher.publish(Soccer);
             Soccer.ObjectList.clear();
         }
-        ROS_INFO("cnt = %d", cnt);
+        // ROS_INFO("cnt = %d", cnt);
         Observation_Data.imagestate = whiteline_flag;
         ObservationData_Publisher.publish(Observation_Data);
         //ROS_INFO("13x = %d y = %d dis = %d",FeaturePoint_distance.x_dis[13],FeaturePoint_distance.y_dis[13],FeaturePoint_distance.dis[13]);
