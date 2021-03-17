@@ -12,6 +12,7 @@ class FeatureDistance : public ObjectDetected
 	    vector<unsigned int> StandPackage;
         double camera_angle_offest;
         double RobotHeight;
+        double RobotWidth;
 	    ToolInstance *tool;
     public:
         float camera_height;    //機器人高度

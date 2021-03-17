@@ -175,10 +175,24 @@ void FeatureDistance::calcImageAngle(motordata Horizontal_Head,motordata Vertica
     // Lee
     float Moving_angle_error = camera_angle_offest + (Robot_Pitch - Pitch_init);
     ROS_INFO("Moving_angle_error = %f", Moving_angle_error);
-    camera_height = RobotHeight * cos((Robot_Pitch - Pitch_init) * DEG2RAD) + L_CAMERA * sin((Vertical_Head_Angle - Moving_angle_error) * DEG2RAD);
+    float foot2robot_dis;
+    float foot2robot_angle;
+    if((Robot_Pitch - Pitch_init) >= 0)
+    {
+        foot2robot_dis = sqrt(pow(RobotHeight,2)+pow(RobotWidth-7.5,2)); // front shoe
+        foot2robot_angle = atan2(RobotHeight, RobotWidth-7.5) * 180 / PI;
+    }
+    else
+    {
+        foot2robot_dis = sqrt(pow(RobotHeight,2)+pow(RobotWidth+6.5,2)); // behind shoe
+        foot2robot_angle = atan2(RobotHeight, RobotWidth+6.5) * 180 / PI;
+    }
+    camera_height = foot2robot_dis * sin(foot2robot_angle - (Robot_Pitch - Pitch_init) * DEG2RAD) + L_CAMERA * sin((Vertical_Head_Angle - Moving_angle_error) * DEG2RAD);
+    ROS_INFO("foot2robot_dis = %f", foot2robot_dis);
+    ROS_INFO("camera_height = %f", camera_height);
     camera2robot_dis = RobotHeight * sin((Robot_Pitch - Pitch_init) * DEG2RAD) + L_CAMERA * cos((Vertical_Head_Angle - Moving_angle_error) * DEG2RAD);
-    image_bottom_angle = Vertical_Head_Angle - Moving_angle_error - half_VFOV_angle - AVGERRORANGLE;
 
+    image_bottom_angle = Vertical_Head_Angle - Moving_angle_error - half_VFOV_angle - AVGERRORANGLE;
     image_top_length = camera2robot_dis + camera_height * tan((VFOV + image_bottom_angle) * DEG2RAD);
     image_bottom_length = camera2robot_dis + camera_height * tan(image_bottom_angle * DEG2RAD);
     image_top_width_length = (camera_height / cos((VFOV + image_bottom_angle) * DEG2RAD)) * tan(half_HFOV_angle * DEG2RAD);
@@ -282,12 +296,16 @@ double FeatureDistance::CalcRobotHeight()
         double Robot_Height_1 = L_Calf * cos(theta1 * DEG2RAD);
         double Robot_Height_2 = L_Thigh * cos((theta2 - theta1) * DEG2RAD);
         double Robot_Height_3 = L_Body * cos((theta3 + L_BodyError - theta2 + theta1) * DEG2RAD);
+        double Robot_Width_1 = L_Calf * sin(theta1 * DEG2RAD);
+        double Robot_Width_2 = L_Thigh * sin((theta2 - theta1) * DEG2RAD;
+        double Robot_Width_3 = L_Body * sin((theta3 + L_BodyError - theta2 + theta1) * DEG2RAD);
 
         camera_angle_offest = theta1 + theta3 - theta2;
 
         ROS_INFO("camera_angle_offest = %f",camera_angle_offest);
 
         RobotHeight = L_Shoes + L_FOOT + Robot_Height_1 + Robot_Height_2 + Robot_Height_3;
+        RobotWidth = Robot_Width_1 - Robot_Width_2 + Robot_Width_3;
         ROS_INFO("RobotHeight = %f",RobotHeight);
         fin.close();
     }
