@@ -180,16 +180,16 @@ void FeatureDistance::calcImageAngle(motordata Horizontal_Head,motordata Vertica
     if((Robot_Pitch - Pitch_init) >= 0)
     {
         foot2robot_dis = sqrt(pow(RobotHeight,2)+pow(RobotWidth-7.5,2)); // front shoe
-        foot2robot_angle = atan2(RobotHeight, RobotWidth-7.5) * 180 / PI;
+        foot2robot_angle = atan2(RobotHeight, RobotWidth-7.5) * 180 / PI - (Robot_Pitch - Pitch_init);
     }
     else
     {
         foot2robot_dis = sqrt(pow(RobotHeight,2)+pow(RobotWidth+6.5,2)); // behind shoe
-        foot2robot_angle = atan2(RobotHeight, RobotWidth+6.5) * 180 / PI;
+        foot2robot_angle = atan2(RobotHeight, RobotWidth+6.5) * 180 / PI - (Robot_Pitch - Pitch_init);
     }
-    camera_height = foot2robot_dis * sin((foot2robot_angle - (Robot_Pitch - Pitch_init)) * DEG2RAD) + L_CAMERA * sin((Vertical_Head_Angle - Moving_angle_error) * DEG2RAD);
-    // ROS_INFO("camera_degree = %f", Vertical_Head_Angle - Moving_angle_error);
-    // ROS_INFO("foot2robot_dis = %f", foot2robot_dis);
+    camera_height = foot2robot_dis * sin(foot2robot_angle * DEG2RAD) + L_CAMERA * sin((Vertical_Head_Angle - Moving_angle_error) * DEG2RAD);
+    // ROS_INFO("foot2robot_dis = %f", foot2robot_dis * sin(foot2robot_angle * DEG2RAD));
+    // ROS_INFO("L_CAMERA = %f", L_CAMERA * sin((Vertical_Head_Angle - Moving_angle_error) * DEG2RAD));
     // ROS_INFO("camera_height = %f", camera_height);
     camera2robot_dis = RobotHeight * sin((Robot_Pitch - Pitch_init) * DEG2RAD) + L_CAMERA * cos((Vertical_Head_Angle - Moving_angle_error) * DEG2RAD);
 
