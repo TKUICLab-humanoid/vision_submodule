@@ -150,8 +150,8 @@ Mat ObjectDetected::White_Line(const cv::Mat iframe)
             Filed_feature_point.push_back(tmp);
         }
     }
-    ROS_INFO("Filed_feature_point.size = %d",Filed_feature_point.size());
-    ROS_INFO("Filed_feature_point.scan_line_angle = %d",Filed_feature_point[Filed_feature_point.size() - 1].scan_line_cnt);
+    // ROS_INFO("Filed_feature_point.size = %d",Filed_feature_point.size());
+    // ROS_INFO("Filed_feature_point.scan_line_angle = %d",Filed_feature_point[Filed_feature_point.size() - 1].scan_line_cnt);
     return oframe;
 }
 

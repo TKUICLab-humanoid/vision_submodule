@@ -89,8 +89,12 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y)
         // ROS_INFO("y_ratio: %lf", y_ratio);
         ratio_angle = atan2(x_ratio, y_ratio) * 180 / PI;
         if(!depth_buffer.empty())
-        { 
+        {
+            ROS_INFO("start depth dis");
+            // ROS_INFO("Feature_x: %d", Feature_x);
+            // ROS_INFO("Feature_y: %d", Feature_y);
             xyz_dis = (depth_buffer.at<uint16_t>(Feature_y, Feature_x))*0.1;//獲取圖像座標Feature_y,Feature_x的深度值,單位是公分
+            ROS_INFO("end depth dis\n");
         }
         x_dis = sqrt(pow(xyz_dis,2)-pow(camera_height,2)) * cos(ratio_angle * DEG2RAD);
         y_dis = sqrt(pow(xyz_dis,2)-pow(camera_height,2)) * sin(ratio_angle * DEG2RAD) + camera2robot_dis;
@@ -107,9 +111,11 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y)
         distance.y_dis = y_dis;
         distance.dis = xy_dis;
     }
+    // ROS_INFO("measure");
+    // ROS_INFO("xyz_dis: %lf", xyz_dis);
     // ROS_INFO("x_dis: %lf", distance.x_dis);
     // ROS_INFO("y_dis: %lf", distance.y_dis);
-    // ROS_INFO("dis: %lf", distance.dis);
+    // ROS_INFO("dis: %lf\n\n", distance.dis);
 
     // float width_cnt = (float)Feature_x;
     // float height_cnt = (float)Feature_y;
@@ -174,7 +180,7 @@ void FeatureDistance::calcImageAngle(motordata Horizontal_Head,motordata Vertica
 
     // Lee
     float Moving_angle_error = camera_angle_offest + (Robot_Pitch - Pitch_init);
-    ROS_INFO("Moving_angle_error = %f", Moving_angle_error);
+    // ROS_INFO("Moving_angle_error = %f", Moving_angle_error);
     float foot2robot_dis;
     float foot2robot_angle;
     if((Robot_Pitch - Pitch_init) >= 0)

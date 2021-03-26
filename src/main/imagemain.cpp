@@ -52,8 +52,16 @@ void Vision_main::DepthCallback(const sensor_msgs::ImageConstPtr& depth_img)
     try
     {
       cv_depth_ptr = cv_bridge::toCvCopy(depth_img, sensor_msgs::image_encodings::TYPE_16UC1);
-      depth_buffer = cv_depth_ptr->image;
-      resize(depth_buffer, depth_buffer, cv::Size(640, 480));
+      if(!cv_depth_ptr->image.empty())
+      {
+        ROS_INFO("Non empty");
+        depth_buffer = cv_depth_ptr->image;
+        resize(depth_buffer, depth_buffer, cv::Size(640, 480));
+      }
+      else
+      {
+        ROS_INFO("Empty");
+      }
       //resize(depth_buffer, depth_buffer, cv::Size(320, 240));
       //imshow("depth_buffer",depth_buffer);
     }
@@ -416,9 +424,9 @@ void Vision_main::strategy_main()
                     tmp.distance.x_dis = distance.x_dis;
                     tmp.distance.y_dis = distance.y_dis;
                     tmp.distance.dis = distance.dis;
-                    ROS_INFO("distance.x_dis: %d", distance.x_dis);
-                    ROS_INFO("distance.y_dis: %d", distance.y_dis);
-                    ROS_INFO("distance.dis: %d", distance.dis);
+                    // ROS_INFO("distance.x_dis: %d", distance.x_dis);
+                    // ROS_INFO("distance.y_dis: %d", distance.y_dis);
+                    // ROS_INFO("distance.dis: %d", distance.dis);
                     Soccer.ObjectList.push_back(tmp);
                     // ROS_INFO("mode = %d",tmp.object_mode);
                     // ROS_INFO("x_soccer = %d",Soccer.ObjectList[t].x);

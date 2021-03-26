@@ -25,8 +25,8 @@
 #define L_FOOT          3.472        //腳底板下面～踝關節長度 (cm)
 #define L_Shoes         1.4          //鞋釘厚度 （cm）
 #define MOTORDEG        0.087890625  //360/4096 (deg)
-#define VFOV            40.27706125  //Vertical FOV (deg) 41.0408
-#define HFOV            48.3473      //Horizontal FOV (deg) 52.3473  67.3801
+#define VFOV            42.0         //Vertical FOV (deg) 40.27706125
+#define HFOV            69.0         //Horizontal FOV (deg) 48.3473
 #define AVGERRORANGLE   0            //Motor angle - the angle of image bottom 5.3
 #define DEG2RAD         M_PI/180
 
