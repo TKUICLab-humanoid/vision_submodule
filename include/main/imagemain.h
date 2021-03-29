@@ -8,6 +8,7 @@
 #include <std_msgs/Int16.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Float32.h>
+#include "realsense2_camera/IMUdata.h"
 //-----------tku_msgs--------------
 #include "tku_msgs/HeadPackage.h"
 #include "tku_msgs/ObservationData.h"
@@ -50,6 +51,7 @@ class Vision_main : public LineDetected
         void strategy_init();
     public:
         void GetImagesourceFunction(const sensor_msgs::ImageConstPtr& msg);
+        void GetIMUData(const realsense2_camera::IMUdata &msg);
         void DepthCallback(const sensor_msgs::ImageConstPtr& depth_img);
         void ModelingFunction(const tku_msgs::ButtonColorForm& msg);
         void ChangeHSVValue(const tku_msgs::HSVValue& msg);
@@ -86,6 +88,8 @@ class Vision_main : public LineDetected
         ros::Subscriber Depthimage_subscriber;
         ros::Subscriber HeadAngle_subscriber;
         ros::Subscriber IMUData_Subscriber;
+        ros::Subscriber GetIMUData_Subscriber;
+
         //--------------HSV---------------
         ros::Subscriber ModelingButton_subscriber;
         ros::Subscriber HSVValue_subscriber;
@@ -133,6 +137,11 @@ class Vision_main : public LineDetected
     private:
         float pitch_pre;
         float roll_pre;
+        float Realsense_Roll;
+        float Realsense_Pitch;
+        float Realsense_Yaw;
+        vector<float> RealsenseIMUData;
+
 };
 
 #endif // IMAGEMAIN_H

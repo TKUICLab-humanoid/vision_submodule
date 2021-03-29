@@ -555,7 +555,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
 
     for(size_t i = 0 ; i < all_lines.size(); i++)
     {
-        ROS_INFO("all_lines %d",i);
+        // ROS_INFO("all_lines %d",i);
         Vec4i X = all_lines[i];
         //ROS_INFO("all_line(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",i,X[0],X[1],X[2],X[3],Slope(X));
         merge_similar_lines = complement(merge_similar_lines,X);
@@ -563,7 +563,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
         int check = 0;
         for(size_t j = 0 ; j < merge_similar_lines.size(); j++)
         {
-            ROS_INFO("merge_similar_lines %d",j);
+            // ROS_INFO("merge_similar_lines %d",j);
             Vec4i Y = merge_similar_lines[j];
             // ROS_INFO("merge_similar_lines(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",j,Y[0],Y[1],Y[2],Y[3],Slope(Y));
             // ROS_INFO("MinDistance = %f",MinDistance(X,Y));

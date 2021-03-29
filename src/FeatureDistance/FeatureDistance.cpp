@@ -115,6 +115,7 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
                     //ROS_INFO("++++++++++++++distances.y_dis = %d",distance.y_dis);
                     //ROS_INFO("++++++++++++++distances.dis = %d",distance.dis);       
                 }
+                // ROS_INFO("stereo: x = %d, y = %d, dis = %d",distance.x_dis,distance.y_dis,distance.dis);
                 break;
             }
  
@@ -172,6 +173,7 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
                     distance.x_dis = distance.x_dis - (distance.dis * sin(Horizontal_Head_Angle * DEG2RAD));
                 }
             }
+            ROS_INFO("Monocular: x = %d, y = %d, dis = %d",distance.x_dis,distance.y_dis,distance.dis);
             //ROS_INFO("distance_d.x_dis = %d",distance.x_dis);
             //ROS_INFO("distance_d.y_dis = %d",distance.y_dis);
             //ROS_INFO("distance_d.dis = %d",distance.dis);

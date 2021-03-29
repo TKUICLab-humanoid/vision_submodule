@@ -8,7 +8,8 @@ Vision_main::Vision_main(ros::NodeHandle &nh)
     // for realsense D435i
     Imagesource_subscriber = nh.subscribe("/camera/color/image_raw", 1, &Vision_main::GetImagesourceFunction,this);
     Depthimage_subscriber = nh.subscribe("/camera/aligned_depth_to_color/image_raw", 1, &Vision_main::DepthCallback,this);
-    
+    GetIMUData_Subscriber = nh.subscribe("/camera/gyro/IMUdata", 10, &Vision_main::GetIMUData,this);
+
     // Imagesource_subscriber = nh.subscribe("/usb_cam/image_raw", 1, &Vision_main::GetImagesourceFunction,this);
     HeadAngle_subscriber = nh.subscribe("/package/HeadMotor", 10, &Vision_main::HeadAngleFunction,this);
     IMUData_Subscriber = nh.subscribe("/package/sensorpackage", 1, &Vision_main::GetIMUDataFunction,this);
@@ -42,12 +43,28 @@ Vision_main::Vision_main(ros::NodeHandle &nh)
     Horizontal_Head.speed = 10;
     Vertical_Head.pos = 1800;
     Vertical_Head.speed = 10;
-
+    RealsenseIMUData = {0.0,0.0,0.0};
 }
 Vision_main::~Vision_main()
 {
     
 }
+
+void Vision_main::GetIMUData(const realsense2_camera::IMUdata& msg)
+{
+    try
+    {
+        RealsenseIMUData[0] = (float)msg.roll;
+        RealsenseIMUData[1] = (float)msg.pitch;
+        RealsenseIMUData[2] = (float)msg.yaw;
+        ROS_INFO("roll: %f, pitch: %f, yaw: %f",RealsenseIMUData[0],RealsenseIMUData[1],RealsenseIMUData[2]);
+    }catch(...)
+    {
+      ROS_INFO("No IMU Data");
+      return;
+    }
+}
+
 void Vision_main::DepthCallback(const sensor_msgs::ImageConstPtr& depth_img) 
 {
     cv_bridge::CvImagePtr cv_depth_ptr;
@@ -56,7 +73,8 @@ void Vision_main::DepthCallback(const sensor_msgs::ImageConstPtr& depth_img)
       cv_depth_ptr = cv_bridge::toCvCopy(depth_img, sensor_msgs::image_encodings::TYPE_16UC1);
       depth_buffer = cv_depth_ptr->image;
       resize(depth_buffer, depth_buffer, cv::Size(640, 480));
-      //imshow("depth_buffer",depth_buffer);
+    //   ROS_INFO("Depth true");
+    //   imshow("depth_buffer",depth_buffer);
     }
     catch (cv_bridge::Exception& e)
     {
