@@ -173,7 +173,7 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
                     distance.x_dis = distance.x_dis - (distance.dis * sin(Horizontal_Head_Angle * DEG2RAD));
                 }
             }
-            ROS_INFO("Monocular: x = %d, y = %d, dis = %d",distance.x_dis,distance.y_dis,distance.dis);
+            // ROS_INFO("Monocular: x = %d, y = %d, dis = %d",distance.x_dis,distance.y_dis,distance.dis);
             //ROS_INFO("distance_d.x_dis = %d",distance.x_dis);
             //ROS_INFO("distance_d.y_dis = %d",distance.y_dis);
             //ROS_INFO("distance_d.dis = %d",distance.dis);
@@ -225,7 +225,8 @@ double FeatureDistance::CalcRobotHeight()
     char path[200];
     int packagecnt;
     int cnt = 3;
-    strcpy(path, STANDPATH);
+    strcpy(path, tool->standPath);
+    // ROS_INFO("tool->standPath = %s",tool->standPath);
     strcat(path, pathend);
     strcat(path, pathend2);
     fstream fin;
