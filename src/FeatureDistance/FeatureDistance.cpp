@@ -136,7 +136,7 @@ double FeatureDistance::CalcRobotHeight()
     char path[200];
     int packagecnt;
     int cnt = 3;
-    strcpy(path, STANDPATH);
+    strcpy(path, tool->standPath);
     strcat(path, pathend);
     strcat(path, pathend2);
     fstream fin;
