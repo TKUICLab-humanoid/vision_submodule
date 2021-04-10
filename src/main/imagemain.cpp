@@ -8,7 +8,7 @@ Vision_main::Vision_main(ros::NodeHandle &nh)
     // for realsense D435i
     Imagesource_subscriber = nh.subscribe("/camera/color/image_raw", 1, &Vision_main::GetImagesourceFunction,this);
     Depthimage_subscriber = nh.subscribe("/camera/aligned_depth_to_color/image_raw", 1, &Vision_main::DepthCallback,this);
-    GetIMUData_Subscriber = nh.subscribe("/camera/gyro/IMUdata", 10, &Vision_main::GetIMUData,this);
+    GetIMUData_Subscriber = nh.subscribe("/imu/rpy/filtered", 10, &Vision_main::GetIMUData,this);
 
     // Imagesource_subscriber = nh.subscribe("/usb_cam/image_raw", 1, &Vision_main::GetImagesourceFunction,this);
     HeadAngle_subscriber = nh.subscribe("/package/HeadMotor", 10, &Vision_main::HeadAngleFunction,this);
@@ -50,14 +50,14 @@ Vision_main::~Vision_main()
     
 }
 
-void Vision_main::GetIMUData(const realsense2_camera::IMUdata& msg)
+void Vision_main::GetIMUData(const geometry_msgs::Vector3Stamped &msg)
 {
     try
     {
-        RealsenseIMUData[0] = (float)msg.roll;
-        RealsenseIMUData[1] = (float)msg.pitch;
-        RealsenseIMUData[2] = (float)msg.yaw;
-        ROS_INFO("roll: %f, pitch: %f, yaw: %f",RealsenseIMUData[0],RealsenseIMUData[1],RealsenseIMUData[2]);
+        RealsenseIMUData[0] = msg.vector.x;
+        RealsenseIMUData[1] = msg.vector.y;
+        RealsenseIMUData[2] = msg.vector.z;
+        // ROS_INFO("r = %f, p = %f, y = %f",RealsenseIMUData[0],RealsenseIMUData[1],RealsenseIMUData[2]);
     }catch(...)
     {
       ROS_INFO("No IMU Data");
@@ -197,6 +197,47 @@ void Vision_main::GetIMUDataFunction(const tku_msgs::SensorPackage &msg)
     }
 }
 
+void Vision_main::savefile()
+{
+    char path[200];
+    // printf("%s",path);
+    std::string PATH = tool->getPackagePath("strategy");
+    strcpy(path, PATH.c_str());
+    strcat(path, "/file.txt");
+    
+    time_t now = time(0);
+    // 把 now 转换为字符串形式
+    char* dt = ctime(&now);
+    try
+    {
+//       ofstream OutFile(sFileName.c_str());
+        ofstream OutFile(path,ios::app);
+        OutFile << dt;
+        OutFile << "\n";
+        OutFile << "RealsenseIMUData";
+        OutFile << "\n";
+        OutFile << "roll = ";
+        OutFile << RealsenseIMUData[0];
+        OutFile << " pitch = ";
+        OutFile << RealsenseIMUData[1];
+        OutFile << " yaw = ";
+        OutFile << RealsenseIMUData[2];
+        OutFile << "\n";
+        OutFile << "Robot Height = ";
+        OutFile << RobotHeight_copy;
+        OutFile << "\n";
+        OutFile << "horizontal_Head_Angle = ";
+        OutFile << Horizontal_Head_Angle;
+        OutFile << "\n";
+        OutFile << "Vertical_Head_Angle = ";
+        OutFile << Vertical_Head_Angle;
+        OutFile << "\n";
+        OutFile << "\n";
+        OutFile.close();
+    }catch( exception e )
+    {
+    }
+}
 
 int main(int argc, char** argv)
 {
@@ -215,6 +256,7 @@ int main(int argc, char** argv)
    while (nh.ok())
     {
         vision_main.strategy_main();
+        vision_main.savefile();
         ros::spinOnce();
         loop_rate.sleep();
     }
@@ -304,6 +346,9 @@ void Vision_main::strategy_main()
                 tmp.x_dis = distance.x_dis;
                 tmp.y_dis = distance.y_dis;
                 tmp.dis = distance.dis;
+                ROS_INFO("tmp.dis = %f ",tmp.dis);
+                ROS_INFO("RealsenseIMUData[0] = %f ",RealsenseIMUData[0]);
+                ROS_INFO("robotheight = %f ",tmp.dis*cos(RealsenseIMUData[0]+180.0));
                 distance_last = distance.dis;
                 scan_line_last = Field_feature_point[i].scan_line_cnt;
                 feature_point_tmp.feature_point.push_back(tmp);

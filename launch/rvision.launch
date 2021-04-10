@@ -1,9 +1,18 @@
 <launch>
+	<arg name="offline"          default="false"/>
+	<include unless="$(arg offline)" 
+		file="$(find realsense2_camera)/launch/rs_camera.launch">
+		<arg name="align_depth" value="true"/>
+		<arg name="linear_accel_cov" value="1.0"/>
+		<arg name="unite_imu_method" value="linear_interpolation"/>
+	</include>
+  <node pkg="realsense2_camera" type="imu_filter_node" name="ImuFilter">
+		<param name="_publish_tf" type="bool" value="false" />		
+    <remap from="/imu/data_raw" to="/camera/imu"/>
+	</node>
+
   <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
-  <include file="$(find realsense2_camera)/launch/rs_camera.launch" />
-  
   <node pkg="web_video_server" name="web_video_server" type="web_video_server"/>
   <node pkg="realsense2_camera" name="realsense_cam" type="realsense_cam"/>
-  <node pkg="realsense2_camera" name="realsense_IMU" type="realsense_IMU"/>
 
 </launch>

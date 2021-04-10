@@ -51,7 +51,7 @@ class Vision_main : public LineDetected
         void strategy_init();
     public:
         void GetImagesourceFunction(const sensor_msgs::ImageConstPtr& msg);
-        void GetIMUData(const realsense2_camera::IMUdata &msg);
+        void GetIMUData(const geometry_msgs::Vector3Stamped &msg);
         void DepthCallback(const sensor_msgs::ImageConstPtr& depth_img);
         void ModelingFunction(const tku_msgs::ButtonColorForm& msg);
         void ChangeHSVValue(const tku_msgs::HSVValue& msg);
@@ -66,6 +66,7 @@ class Vision_main : public LineDetected
         void ChangeHoughValue(const tku_msgs::HoughValue& msg);
         void LoadHoughValue();
         bool LoadHoughInfo(tku_msgs::HoughInfo::Request &req, tku_msgs::HoughInfo::Response &res);
+        void savefile();
 
         float B_,G_,R_;
         float threshold_,minLineLength_,maxLineGap_;

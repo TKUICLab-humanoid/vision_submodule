@@ -108,7 +108,11 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
                     float dist = effective_distance * sin(camera_angle* DEG2RAD);
                     distance.x_dis = int(round(dist * sin(Horizontal_Head_Angle * DEG2RAD)));
                     distance.y_dis = int(round(dist * cos(Horizontal_Head_Angle * DEG2RAD)));
-                    distance.dis = int(round(sqrt(pow(distance.x_dis,2)+pow(distance.y_dis,2))));
+                    // distance.dis = int(round(sqrt(pow(distance.x_dis,2)+pow(distance.y_dis,2))));
+                    
+                    distance.dis = effective_distance;
+                    
+                    
                     //ROS_INFO("effective_distance = %f , dist = %f ,camera_angle = %f, camera_height = %f",effective_distance,dist,camera_angle,camera_height);
                     //ROS_INFO("break");
                     //ROS_INFO("++++++++++++++distances.x_dis = %d",distance.x_dis);
@@ -276,6 +280,7 @@ double FeatureDistance::CalcRobotHeight()
         ROS_INFO("camera_angle_offest = %f",camera_angle_offest);
 
         RobotHeight = Robot_Height_1 + Robot_Height_2 + Robot_Height_3 + FOOT_H - 1.0;
+        RobotHeight_copy = RobotHeight;
         ROS_INFO("RobotHeight = %f",RobotHeight);
     }
     StandPackage.clear();

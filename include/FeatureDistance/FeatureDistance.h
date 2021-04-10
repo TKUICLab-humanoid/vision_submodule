@@ -44,4 +44,5 @@ class FeatureDistance : public ObjectDetected
         void calcMotorAngle(int Horizontal_pos,int Vertical_pos);
         Distance measure(int Feature_x, int Feature_y,CameraType cameratype);
         double CalcRobotHeight();
+        double RobotHeight_copy;
 };
