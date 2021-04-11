@@ -57,7 +57,7 @@ void Vision_main::GetIMUData(const geometry_msgs::Vector3Stamped &msg)
         RealsenseIMUData[0] = msg.vector.x;
         RealsenseIMUData[1] = msg.vector.y;
         RealsenseIMUData[2] = msg.vector.z;
-        // ROS_INFO("r = %f, p = %f, y = %f",RealsenseIMUData[0],RealsenseIMUData[1],RealsenseIMUData[2]);
+        ROS_INFO("r = %f, p = %f, y = %f",RealsenseIMUData[0],RealsenseIMUData[1],RealsenseIMUData[2]);
     }catch(...)
     {
       ROS_INFO("No IMU Data");
@@ -204,7 +204,7 @@ void Vision_main::savefile()
     std::string PATH = tool->getPackagePath("strategy");
     strcpy(path, PATH.c_str());
     strcat(path, "/file.txt");
-    
+    float Robot_H = effective_distance * cos(RealsenseIMUData[0]* DEG2RAD);
     time_t now = time(0);
     // 把 now 转换为字符串形式
     char* dt = ctime(&now);
@@ -216,20 +216,23 @@ void Vision_main::savefile()
         OutFile << "\n";
         OutFile << "RealsenseIMUData";
         OutFile << "\n";
-        OutFile << "roll = ";
+        OutFile << " roll = ";
         OutFile << RealsenseIMUData[0];
         OutFile << " pitch = ";
         OutFile << RealsenseIMUData[1];
         OutFile << " yaw = ";
         OutFile << RealsenseIMUData[2];
         OutFile << "\n";
-        OutFile << "Robot Height = ";
+        OutFile << " Robot Height = ";
         OutFile << RobotHeight_copy;
         OutFile << "\n";
-        OutFile << "horizontal_Head_Angle = ";
+        OutFile << " Robot Height_realsense = ";
+        OutFile << Robot_H;
+        OutFile << "\n";
+        OutFile << " horizontal_Head_Angle = ";
         OutFile << Horizontal_Head_Angle;
         OutFile << "\n";
-        OutFile << "Vertical_Head_Angle = ";
+        OutFile << " Vertical_Head_Angle = ";
         OutFile << Vertical_Head_Angle;
         OutFile << "\n";
         OutFile << "\n";

@@ -138,10 +138,7 @@ class Vision_main : public LineDetected
     private:
         float pitch_pre;
         float roll_pre;
-        float Realsense_Roll;
-        float Realsense_Pitch;
-        float Realsense_Yaw;
-        vector<float> RealsenseIMUData;
+        
 
 };
 

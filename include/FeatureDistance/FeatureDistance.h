@@ -36,6 +36,7 @@ class FeatureDistance : public ObjectDetected
         int image_bottom_width_length;       //畫面最底寬度(一半)
 
         bool whiteline_flag = false;
+        vector<float> RealsenseIMUData;
     public:
         FeatureDistance();
         ~FeatureDistance();
