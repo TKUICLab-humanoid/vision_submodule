@@ -36,7 +36,72 @@ FeatureDistance::~FeatureDistance()
 
 }
 
-Distance FeatureDistance::measure(int Feature_x, int Feature_y)
+Distance FeatureDistance::measureLine(int Feature_x, int Feature_y) //LightLight
+{
+    // ROS_INFO("measure");
+    // ROS_INFO("xyz_dis: %lf", xyz_dis);
+    // ROS_INFO("x_dis: %lf", distance.x_dis);
+    // ROS_INFO("y_dis: %lf", distance.y_dis);
+    // ROS_INFO("dis: %lf\n\n", distance.dis);
+
+    float width_cnt = (float)Feature_x;
+    float height_cnt = (float)Feature_y;
+    float error_y;
+    float error_x;
+    Distance distance;
+    
+    if(width_cnt == -1 && height_cnt == -1)
+    {
+        distance.x_dis = -1;
+        distance.y_dis = -1;
+        distance.dis = -1;
+    }
+    else
+    {
+        if(height_cnt > 240)
+        {
+            error_y = height_cnt - 240.0;
+            vertical_angle = image_bottom_angle + half_VFOV_angle - atan2(error_y , 640) * 180 / PI;
+            distance.y_dis = camera_height * tan(vertical_angle * DEG2RAD) + camera2robot_dis;
+        }
+        else
+        {
+            error_y = 240.0 - height_cnt;
+            vertical_angle = image_bottom_angle + half_VFOV_angle + atan2(error_y , 640) * 180 / PI;
+            distance.y_dis = camera_height * tan(vertical_angle * DEG2RAD) + camera2robot_dis;
+        }
+        if(width_cnt > 320)
+        {
+            error_x = width_cnt - 320.0;
+            horizontal_angle = atan2(error_x, image_center_horizontal_length) * 180 / PI;   //325.534
+            distance.x_dis = (camera_height / cos(vertical_angle * DEG2RAD)) * tan(horizontal_angle * DEG2RAD);
+        }
+        else
+        {
+            error_x = 320.0 - width_cnt;
+            horizontal_angle = atan2(error_x, image_center_horizontal_length) * 180 / PI;   //325.534
+            distance.x_dis = -((camera_height / cos(vertical_angle * DEG2RAD)) * tan(horizontal_angle * DEG2RAD));
+        }
+        distance.dis = sqrt(pow(distance.y_dis,2) + pow(distance.x_dis,2));
+    }
+    if(Horizontal_Head_Angle != 0)
+    {
+        if(Horizontal_Head_Angle < 0)
+        {
+            distance.y_dis = distance.dis * cos(Horizontal_Head_Angle * DEG2RAD);
+            distance.x_dis = distance.x_dis - (distance.dis * sin(Horizontal_Head_Angle * DEG2RAD));
+        }
+        else
+        {
+            distance.y_dis = distance.dis * cos(Horizontal_Head_Angle * DEG2RAD);
+            distance.x_dis = distance.x_dis - (distance.dis * sin(Horizontal_Head_Angle * DEG2RAD));
+        }
+    }
+
+    return distance;
+}
+
+Distance FeatureDistance::measureObject(int Feature_x, int Feature_y)// Lee
 {
     double width_cnt = (double)Feature_x;
     double height_cnt = (double)Feature_y;
@@ -85,91 +150,41 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y)
             x_ratio = -((camera_height / cos(vertical_angle * DEG2RAD)) * tan(horizontal_angle * DEG2RAD));
         }
 
-        // ROS_INFO("x_ratio: %lf", x_ratio);
-        // ROS_INFO("y_ratio: %lf", y_ratio);
+        ROS_INFO("x_ratio: %lf", x_ratio);
+        ROS_INFO("y_ratio: %lf\n", y_ratio);
         ratio_angle = atan2(x_ratio, y_ratio) * 180 / PI;
         if(!depth_buffer.empty())
         {
             ROS_INFO("start depth dis");
-            // ROS_INFO("Feature_x: %d", Feature_x);
-            // ROS_INFO("Feature_y: %d", Feature_y);
-            xyz_dis = (depth_buffer.at<uint16_t>(Feature_y, Feature_x))*0.1;//獲取圖像座標Feature_y,Feature_x的深度值,單位是公分
+            ROS_INFO("Feature_x: %d", Feature_x);
+            ROS_INFO("Feature_y: %d", Feature_y);
+            xyz_dis = (depth_buffer.at<uint16_t>(Feature_y, Feature_x))*0.1 + 1.0 + 6.5 ;//獲取圖像座標Feature_y,Feature_x的深度值,單位是公分
+            ROS_INFO("xyz_dis: %lf", xyz_dis);
             ROS_INFO("end depth dis\n");
         }
-        x_dis = sqrt(pow(xyz_dis,2)-pow(camera_height,2)) * cos(ratio_angle * DEG2RAD);
-        y_dis = sqrt(pow(xyz_dis,2)-pow(camera_height,2)) * sin(ratio_angle * DEG2RAD) + camera2robot_dis;
+        x_dis = sqrt(pow(xyz_dis,2)-pow(camera_height-9.5,2)) * sin(ratio_angle * DEG2RAD);
+        y_dis = sqrt(pow(xyz_dis,2)-pow(camera_height-9.5,2)) * cos(ratio_angle * DEG2RAD) + camera2robot_dis;
         xy_dis = sqrt(pow(x_dis,2)+pow(y_dis,2));
         object_angle = atan2(x_dis, y_dis) * 180 / PI;
 
+        ROS_INFO("camera_height-9.5: %lf", camera_height-9.5);
+        ROS_INFO("x_dis: %lf", x_dis);
+        ROS_INFO("y_dis: %lf", y_dis);
+        ROS_INFO("xy_dis: %lf\n", xy_dis);
+
         if(Horizontal_Head_Angle != 0)
         {
-            y_dis = xy_dis * cos((Horizontal_Head_Angle + object_angle) * DEG2RAD);
-            x_dis = xy_dis * sin((Horizontal_Head_Angle + object_angle) * DEG2RAD);
+            y_dis = xy_dis * cos((-Horizontal_Head_Angle + object_angle) * DEG2RAD);
+            x_dis = xy_dis * sin((-Horizontal_Head_Angle + object_angle) * DEG2RAD);
+            ROS_INFO("Horizontal_Head_Angle: %lf", -Horizontal_Head_Angle);
+            ROS_INFO("object_angle: %lf", object_angle);
+            ROS_INFO("Angle: %lf\n", -Horizontal_Head_Angle + object_angle);
         }
 
         distance.x_dis = x_dis;
         distance.y_dis = y_dis;
         distance.dis = xy_dis;
     }
-    // ROS_INFO("measure");
-    // ROS_INFO("xyz_dis: %lf", xyz_dis);
-    // ROS_INFO("x_dis: %lf", distance.x_dis);
-    // ROS_INFO("y_dis: %lf", distance.y_dis);
-    // ROS_INFO("dis: %lf\n\n", distance.dis);
-
-    // float width_cnt = (float)Feature_x;
-    // float height_cnt = (float)Feature_y;
-    // float error_y;
-    // float error_x;
-    // Distance distance;
-    //
-    // if(width_cnt == -1 && height_cnt == -1)
-    // {
-    //     distance.x_dis = -1;
-    //     distance.y_dis = -1;
-    //     distance.dis = -1;
-    // }
-    // else
-    // {
-    //     if(height_cnt > 240)
-    //     {
-    //         error_y = height_cnt - 240.0;
-    //         vertical_angle = image_bottom_angle + half_VFOV_angle - atan2(error_y , 640) * 180 / PI;
-    //         distance.y_dis = camera_height * tan(vertical_angle * DEG2RAD) + camera2robot_dis;
-    //     }
-    //     else
-    //     {
-    //         error_y = 240.0 - height_cnt;
-    //         vertical_angle = image_bottom_angle + half_VFOV_angle + atan2(error_y , 640) * 180 / PI;
-    //         distance.y_dis = camera_height * tan(vertical_angle * DEG2RAD) + camera2robot_dis;
-    //     }
-    //     if(width_cnt > 320)
-    //     {
-    //         error_x = width_cnt - 320.0;
-    //         horizontal_angle = atan2(error_x, image_center_horizontal_length) * 180 / PI;   //325.534
-    //         distance.x_dis = (camera_height / cos(vertical_angle * DEG2RAD)) * tan(horizontal_angle * DEG2RAD);
-    //     }
-    //     else
-    //     {
-    //         error_x = 320.0 - width_cnt;
-    //         horizontal_angle = atan2(error_x, image_center_horizontal_length) * 180 / PI;   //325.534
-    //         distance.x_dis = -((camera_height / cos(vertical_angle * DEG2RAD)) * tan(horizontal_angle * DEG2RAD));
-    //     }
-    //     distance.dis = sqrt(pow(distance.y_dis,2) + pow(distance.x_dis,2));
-    // }
-    // if(Horizontal_Head_Angle != 0)
-    // {
-    //     if(Horizontal_Head_Angle < 0)
-    //     {
-    //         distance.y_dis = distance.dis * cos(Horizontal_Head_Angle * DEG2RAD);
-    //         distance.x_dis = distance.x_dis - (distance.dis * sin(Horizontal_Head_Angle * DEG2RAD));
-    //     }
-    //     else
-    //     {
-    //         distance.y_dis = distance.dis * cos(Horizontal_Head_Angle * DEG2RAD);
-    //         distance.x_dis = distance.x_dis - (distance.dis * sin(Horizontal_Head_Angle * DEG2RAD));
-    //     }
-    // }
 
     return distance;
 }

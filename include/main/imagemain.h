@@ -30,6 +30,7 @@
 #include "tku_msgs/ColorArray.h"
 #include "tku_msgs/ObjectList.h"
 
+#include "tku_libs/RosCommunication.h"
 #include "LineDetected/LineDetected.h"
 
 #define PI 3.14159265
@@ -57,6 +58,8 @@ class Vision_main : public LineDetected
         void GetIMUDataFunction(const tku_msgs::SensorPackage &msg);
         void HeadAngleFunction(const tku_msgs::HeadPackage &msg);
     private:
+        RosCommunicationInstance *ros_com;
+
         motordata Horizontal_Head;
         motordata Vertical_Head;
 
@@ -99,6 +102,7 @@ class Vision_main : public LineDetected
         image_transport::Publisher Monitor_Frame_Publisher;
         image_transport::Publisher Measure_Frame_Publisher;
     private:
+        bool processVisionFlag;
         float pitch_pre;
         float roll_pre;
 };
