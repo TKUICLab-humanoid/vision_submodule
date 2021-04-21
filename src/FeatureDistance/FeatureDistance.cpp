@@ -110,7 +110,7 @@ Distance FeatureDistance::measureObject(int Feature_x, int Feature_y)// Lee
     double x_ratio;
     double y_ratio;
     double ratio_angle;
-    double xyz_dis;
+    double yz_dis;
     double x_dis;
     double y_dis;
     double xy_dis;
@@ -158,19 +158,14 @@ Distance FeatureDistance::measureObject(int Feature_x, int Feature_y)// Lee
             ROS_INFO("start depth dis");
             ROS_INFO("Feature_x: %d", Feature_x);
             ROS_INFO("Feature_y: %d", Feature_y);
-            xyz_dis = (depth_buffer.at<uint16_t>(Feature_y, Feature_x))*0.1 + 1.0 + 6.5 ;//獲取圖像座標Feature_y,Feature_x的深度值,單位是公分
-            ROS_INFO("xyz_dis: %lf", xyz_dis);
+            yz_dis = (depth_buffer.at<uint16_t>(Feature_y, Feature_x))*0.1 + 1.0 + 6.5 ;//獲取圖像座標Feature_y,Feature_x的深度值,單位是公分
+            ROS_INFO("yz_dis: %lf", yz_dis);
             ROS_INFO("end depth dis\n");
         }
-        x_dis = sqrt(pow(xyz_dis,2)-pow(camera_height-9.5,2)) * sin(ratio_angle * DEG2RAD);
-        y_dis = sqrt(pow(xyz_dis,2)-pow(camera_height-9.5,2)) * cos(ratio_angle * DEG2RAD) + camera2robot_dis;
+        x_dis = sqrt(pow(yz_dis,2)-pow(camera_height-6.5,2)) * tan(ratio_angle * DEG2RAD) - 5.0;
+        y_dis = sqrt(pow(yz_dis,2)-pow(camera_height-9.5,2)) + camera2robot_dis;
         xy_dis = sqrt(pow(x_dis,2)+pow(y_dis,2));
         object_angle = atan2(x_dis, y_dis) * 180 / PI;
-
-        ROS_INFO("camera_height-9.5: %lf", camera_height-9.5);
-        ROS_INFO("x_dis: %lf", x_dis);
-        ROS_INFO("y_dis: %lf", y_dis);
-        ROS_INFO("xy_dis: %lf\n", xy_dis);
 
         if(Horizontal_Head_Angle != 0)
         {
@@ -180,6 +175,12 @@ Distance FeatureDistance::measureObject(int Feature_x, int Feature_y)// Lee
             ROS_INFO("object_angle: %lf", object_angle);
             ROS_INFO("Angle: %lf\n", -Horizontal_Head_Angle + object_angle);
         }
+
+        ROS_INFO("camera_height-9.5: %lf", camera_height-9.5);
+        ROS_INFO("ratio_angle: %lf", ratio_angle);
+        ROS_INFO("x_dis: %lf", x_dis);
+        ROS_INFO("y_dis: %lf", y_dis);
+        ROS_INFO("xy_dis: %lf\n", xy_dis);
 
         distance.x_dis = x_dis;
         distance.y_dis = y_dis;
