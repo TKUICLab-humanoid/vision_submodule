@@ -150,20 +150,18 @@ Distance FeatureDistance::measureObject(int Feature_x, int Feature_y)// Lee
             x_ratio = -((camera_height / cos(vertical_angle * DEG2RAD)) * tan(horizontal_angle * DEG2RAD));
         }
 
-        ROS_INFO("x_ratio: %lf", x_ratio);
-        ROS_INFO("y_ratio: %lf\n", y_ratio);
+        // ROS_INFO("x_ratio: %lf", x_ratio);
+        // ROS_INFO("y_ratio: %lf\n", y_ratio);
         ratio_angle = atan2(x_ratio, y_ratio) * 180 / PI;
         if(!depth_buffer.empty())
         {
-            ROS_INFO("start depth dis");
             ROS_INFO("Feature_x: %d", Feature_x);
             ROS_INFO("Feature_y: %d", Feature_y);
             yz_dis = (depth_buffer.at<uint16_t>(Feature_y, Feature_x))*0.1 + 1.0 + 6.5 ;//獲取圖像座標Feature_y,Feature_x的深度值,單位是公分
-            ROS_INFO("yz_dis: %lf", yz_dis);
-            ROS_INFO("end depth dis\n");
+            ROS_INFO("yz_dis: %lf\n", yz_dis);
         }
-        x_dis = sqrt(pow(yz_dis,2)-pow(camera_height-6.5,2)) * tan(ratio_angle * DEG2RAD) - 5.0;
-        y_dis = sqrt(pow(yz_dis,2)-pow(camera_height-9.5,2)) + camera2robot_dis;
+        x_dis = sqrt(pow(yz_dis,2)-pow(camera_height-7.9,2)) * tan(ratio_angle * DEG2RAD) - 5.0; // 1.4 6.5
+        y_dis = sqrt(pow(yz_dis,2)-pow(camera_height-7.9,2)) + camera2robot_dis;
         xy_dis = sqrt(pow(x_dis,2)+pow(y_dis,2));
         object_angle = atan2(x_dis, y_dis) * 180 / PI;
 
@@ -171,13 +169,14 @@ Distance FeatureDistance::measureObject(int Feature_x, int Feature_y)// Lee
         {
             y_dis = xy_dis * cos((-Horizontal_Head_Angle + object_angle) * DEG2RAD);
             x_dis = xy_dis * sin((-Horizontal_Head_Angle + object_angle) * DEG2RAD);
-            ROS_INFO("Horizontal_Head_Angle: %lf", -Horizontal_Head_Angle);
+            ROS_INFO("-Horizontal_Head_Angle: %lf", -Horizontal_Head_Angle);
             ROS_INFO("object_angle: %lf", object_angle);
             ROS_INFO("Angle: %lf\n", -Horizontal_Head_Angle + object_angle);
         }
 
-        ROS_INFO("camera_height-9.5: %lf", camera_height-9.5);
+        ROS_INFO("camera_height-7.9: %lf", camera_height-7.9);
         ROS_INFO("ratio_angle: %lf", ratio_angle);
+        ROS_INFO("camera2robot_dis: %lf", camera2robot_dis);
         ROS_INFO("x_dis: %lf", x_dis);
         ROS_INFO("y_dis: %lf", y_dis);
         ROS_INFO("xy_dis: %lf\n", xy_dis);

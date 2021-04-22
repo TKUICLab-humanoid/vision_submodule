@@ -239,10 +239,10 @@ void Vision_main::strategy_init()
 
 void Vision_main::strategy_main()
 {
-    ROS_INFO("enter main\n");
+    // ROS_INFO("enter main");
     if(!color_buffer.empty() && !depth_buffer.empty())
     {
-        ROS_INFO("main start\n");
+        ROS_INFO("main start");
         processVisionFlag = true;
 
         cv::Mat oframe = color_buffer.clone();
@@ -255,6 +255,8 @@ void Vision_main::strategy_main()
         //Mat line = Merge_similar_line(imagePreprocessing,color_buffer);
 	    //imshow("line",line);
 
+        // for(int i = 0; i < 100000000; i++);
+        // ROS_INFO("FindObject");
         cv::Mat Object_frame = FindObject(color_buffer);
         //imshow("Object_frame", Object_frame);
 
@@ -269,6 +271,7 @@ void Vision_main::strategy_main()
 
         cv::Mat monitor = White_Line(imagePreprocessing);
 
+        ROS_INFO("calcImageAngle\n");
         calcImageAngle(Horizontal_Head,Vertical_Head);
         ImageLengthData.focus = camera2robot_dis;
         ImageLengthData.top = image_top_length;
@@ -285,6 +288,7 @@ void Vision_main::strategy_main()
         tku_msgs::FeaturePoint feature_point_tmp;
         int distance_last = -1;
         int scan_line_last;
+
         if(Filed_feature_point.size() < 40)     // no feature point = 36
         {
             whiteline_flag = false;
@@ -293,7 +297,7 @@ void Vision_main::strategy_main()
         {
             whiteline_flag = true;
         }
-        ROS_INFO("measure Line\n");
+
         for(int i = 0; i < Filed_feature_point.size(); i++)
         {
             Distance distance;
@@ -361,6 +365,7 @@ void Vision_main::strategy_main()
                     circle(monitor, Point(Filed_feature_point[i].x, Filed_feature_point[i].y), 3, Scalar(0, 255, 255), 3);
                 }
             }
+
             if(i == (Filed_feature_point.size() - 1))
             {
                 if(scan_line_last == Filed_feature_point[i].scan_line_cnt)
@@ -398,7 +403,6 @@ void Vision_main::strategy_main()
         resize(monitor, monitor, cv::Size(320, 240));
         // namedWindow("monitor",WINDOW_NORMAL);
         // imshow("monitor",monitor);
-        int cnt = soccer_data.size() + goal_data.size();
         if(soccer_data.size() == 0 && goal_data.size() == 0)
         {
             tku_msgs::SoccerData tmp;
@@ -416,7 +420,6 @@ void Vision_main::strategy_main()
         {
             if(soccer_data.size() != 0)
             {
-                ROS_INFO("measure Soccer\n");
                 for(size_t t = 0; t < soccer_data.size(); t++)
                 {
                     tku_msgs::SoccerData tmp;
@@ -447,9 +450,9 @@ void Vision_main::strategy_main()
                 }
                 soccer_data.clear();
             }
+
             if(goal_data.size() != 0)
             {
-                ROS_INFO("measure Goal\n");
                 for(size_t t = 0; t < goal_data.size(); t++)
                 {
                     tku_msgs::SoccerData tmp;
@@ -475,14 +478,14 @@ void Vision_main::strategy_main()
                 }
                 goal_data.clear();
             }
-            Soccer.object_cnt = cnt;
+            Soccer.object_cnt = soccer_data.size() + goal_data.size();;
             SoccerData_Publisher.publish(Soccer);
             Soccer.ObjectList.clear();
         }
 
         processVisionFlag = false;
 
-        // ROS_INFO("cnt = %d", cnt);
+        // ROS_INFO("cnt = %d", Soccer.object_cnt);
         Observation_Data.imagestate = whiteline_flag;
         ObservationData_Publisher.publish(Observation_Data);
         //ROS_INFO("13x = %d y = %d dis = %d",FeaturePoint_distance.x_dis[13],FeaturePoint_distance.y_dis[13],FeaturePoint_distance.dis[13]);
