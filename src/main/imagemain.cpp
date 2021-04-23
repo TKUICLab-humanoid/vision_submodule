@@ -57,7 +57,8 @@ void Vision_main::GetIMUData(const geometry_msgs::Vector3Stamped &msg)
         RealsenseIMUData[0] = msg.vector.x;
         RealsenseIMUData[1] = msg.vector.y;
         RealsenseIMUData[2] = msg.vector.z;
-        ROS_INFO("r = %f, p = %f, y = %f",RealsenseIMUData[0],RealsenseIMUData[1],RealsenseIMUData[2]);
+        // ROS_INFO("r = %f, p = %f, y = %f",RealsenseIMUData[0],RealsenseIMUData[1],RealsenseIMUData[2]);
+              
     }catch(...)
     {
       ROS_INFO("No IMU Data");
@@ -70,11 +71,10 @@ void Vision_main::DepthCallback(const sensor_msgs::ImageConstPtr& depth_img)
     cv_bridge::CvImagePtr cv_depth_ptr;
     try
     {
-      cv_depth_ptr = cv_bridge::toCvCopy(depth_img, sensor_msgs::image_encodings::TYPE_16UC1);
-      depth_buffer = cv_depth_ptr->image;
-      resize(depth_buffer, depth_buffer, cv::Size(640, 480));
-    //   ROS_INFO("Depth true");
-    //   imshow("depth_buffer",depth_buffer);
+        cv_depth_ptr = cv_bridge::toCvCopy(depth_img, sensor_msgs::image_encodings::TYPE_16UC1);
+        depth_buffer = cv_depth_ptr->image;
+        resize(depth_buffer, depth_buffer, cv::Size(640, 480));
+        //   imshow("depth_buffer",depth_buffer);
     }
     catch (cv_bridge::Exception& e)
     {
@@ -204,7 +204,6 @@ void Vision_main::savefile()
     std::string PATH = tool->getPackagePath("strategy");
     strcpy(path, PATH.c_str());
     strcat(path, "/file.txt");
-    float Robot_H = effective_distance * cos(RealsenseIMUData[0]* DEG2RAD);
     time_t now = time(0);
     // 把 now 转换为字符串形式
     char* dt = ctime(&now);
@@ -349,9 +348,6 @@ void Vision_main::strategy_main()
                 tmp.x_dis = distance.x_dis;
                 tmp.y_dis = distance.y_dis;
                 tmp.dis = distance.dis;
-                ROS_INFO("tmp.dis = %f ",tmp.dis);
-                ROS_INFO("RealsenseIMUData[0] = %f ",RealsenseIMUData[0]);
-                ROS_INFO("robotheight = %f ",tmp.dis*cos(RealsenseIMUData[0]+180.0));
                 distance_last = distance.dis;
                 scan_line_last = Field_feature_point[i].scan_line_cnt;
                 feature_point_tmp.feature_point.push_back(tmp);
@@ -370,6 +366,9 @@ void Vision_main::strategy_main()
                         tmp.x_dis = distance.x_dis;
                         tmp.y_dis = distance.y_dis;
                         tmp.dis = distance.dis;
+                        ROS_INFO("distance.dis = %f ",distance.dis);
+                        ROS_INFO("RealsenseIMUData[0] = %f ",RealsenseIMUData[0]);
+                        ROS_INFO("robotheight = %f ",distance.dis*cos(RealsenseIMUData[0]*DEG2RAD));
                         distance_last = distance.dis;
                         scan_line_last = Field_feature_point[i].scan_line_cnt;
                         feature_point_tmp.feature_point.push_back(tmp);

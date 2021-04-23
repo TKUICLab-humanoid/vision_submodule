@@ -24,12 +24,12 @@ class FeatureDistance : public ObjectDetected
 
         float vertical_angle;
         float horizontal_angle;
-
+        float Robot_H;
         float Roll_init;
         float Pitch_init;
         float Robot_Roll;
         float Robot_Pitch;
-
+        float avgdistance;
         int image_top_length;         //畫面最遠距離
         int image_bottom_length;      //畫面最底距離
         int image_top_width_length;       //畫面最遠寬度(一半)
@@ -46,4 +46,6 @@ class FeatureDistance : public ObjectDetected
         Distance measure(int Feature_x, int Feature_y,CameraType cameratype);
         double CalcRobotHeight();
         double RobotHeight_copy;
+        float AvgPixelDistance(int Feature_x, int Feature_y);
+
 };
