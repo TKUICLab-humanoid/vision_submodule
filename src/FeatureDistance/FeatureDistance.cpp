@@ -146,10 +146,12 @@ Distance FeatureDistance::measureObject(int Feature_x, int Feature_y)// Lee
         else
         {
             error_x = 320.0 - width_cnt;
-            horizontal_angle = atan2(error_x, image_center_horizontal_length) * 180 / PI;
-            x_ratio = -((camera_height / cos(vertical_angle * DEG2RAD)) * tan(horizontal_angle * DEG2RAD));
+            horizontal_angle = -(atan2(error_x, image_center_horizontal_length) * 180 / PI);
+            x_ratio = (camera_height / cos(vertical_angle * DEG2RAD)) * tan(horizontal_angle * DEG2RAD);
         }
 
+        ROS_INFO("vertical_angle: %lf", vertical_angle);
+        ROS_INFO("horizontal_angle: %lf\n", horizontal_angle);
         // ROS_INFO("x_ratio: %lf", x_ratio);
         // ROS_INFO("y_ratio: %lf\n", y_ratio);
         ratio_angle = atan2(x_ratio, y_ratio) * 180 / PI;
@@ -160,8 +162,9 @@ Distance FeatureDistance::measureObject(int Feature_x, int Feature_y)// Lee
             yz_dis = (depth_buffer.at<uint16_t>(Feature_y, Feature_x))*0.1 + 1.0 + 6.5 ;//獲取圖像座標Feature_y,Feature_x的深度值,單位是公分
             ROS_INFO("yz_dis: %lf\n", yz_dis);
         }
-        x_dis = sqrt(pow(yz_dis,2)-pow(camera_height-7.9,2)) * tan(ratio_angle * DEG2RAD) - 5.0; // 1.4 6.5
-        y_dis = sqrt(pow(yz_dis,2)-pow(camera_height-7.9,2)) + camera2robot_dis;
+        // x_dis = sqrt(pow(yz_dis,2)-pow(camera_height-7.9,2)) * tan(ratio_angle * DEG2RAD) - 5.0;
+        x_dis = yz_dis * tan(horizontal_angle * DEG2RAD) - 5.0;
+        y_dis = sqrt(pow(yz_dis,2)-pow(camera_height-7.9,2)) + camera2robot_dis; // 1.4 6.5
         xy_dis = sqrt(pow(x_dis,2)+pow(y_dis,2));
         object_angle = atan2(x_dis, y_dis) * 180 / PI;
 
@@ -177,6 +180,7 @@ Distance FeatureDistance::measureObject(int Feature_x, int Feature_y)// Lee
         ROS_INFO("camera_height-7.9: %lf", camera_height-7.9);
         ROS_INFO("ratio_angle: %lf", ratio_angle);
         ROS_INFO("camera2robot_dis: %lf", camera2robot_dis);
+        ROS_INFO("pre_x_dis: %lf", sqrt(pow(yz_dis,2)-pow(camera_height-7.9,2)) * tan(ratio_angle * DEG2RAD) - 5.0);
         ROS_INFO("x_dis: %lf", x_dis);
         ROS_INFO("y_dis: %lf", y_dis);
         ROS_INFO("xy_dis: %lf\n", xy_dis);
