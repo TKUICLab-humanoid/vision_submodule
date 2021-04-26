@@ -302,7 +302,7 @@ void Vision_main::strategy_main()
         {
             Distance distance;
             tku_msgs::Distance tmp;
-            distance = measureLine(Filed_feature_point[i].x,Filed_feature_point[i].y);
+            distance = measureLine(Filed_feature_point[i].x, Filed_feature_point[i].y);
             if(i == 0)
             {
                 tmp.x_dis = distance.x_dis;
@@ -436,7 +436,7 @@ void Vision_main::strategy_main()
                     tmp.object_mode = 0;
                     int x = soccer_data[t].x + (soccer_data[t].width / 2);
                     int y = soccer_data[t].y + (soccer_data[t].height / 2);
-                    distance = measureObject(x,y);
+                    distance = measureObject(x, y, soccer_data[t].width, soccer_data[t].height);
                     tmp.distance.x_dis = distance.x_dis;
                     tmp.distance.y_dis = distance.y_dis;
                     tmp.distance.dis = distance.dis;
@@ -467,9 +467,9 @@ void Vision_main::strategy_main()
                     tmp.height = goal_data[t].height;
                     tmp.width = goal_data[t].width;
                     tmp.object_mode = 1;
-                    int x = soccer_data[t].x + (soccer_data[t].width / 2);
-                    int y = soccer_data[t].y + (soccer_data[t].height / 2);
-                    distance = measureObject(x,y);
+                    int x = goal_data[t].x + (goal_data[t].width / 2);
+                    int y = goal_data[t].y + (goal_data[t].height / 2);
+                    distance = measureObject(x, y, goal_data[t].width, goal_data[t].height);
                     tmp.distance.x_dis = distance.x_dis;
                     tmp.distance.y_dis = distance.y_dis;
                     tmp.distance.dis = distance.dis;

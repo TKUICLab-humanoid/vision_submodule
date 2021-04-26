@@ -26,7 +26,7 @@
 #define L_Shoes         1.4          //鞋釘厚度 （cm）
 #define MOTORDEG        0.087890625  //360/4096 (deg)
 #define VFOV            41.0         //Vertical FOV (deg)   41.0 depth camera: 57 my messure: 39.4
-#define HFOV            64.0         //Horizontal FOV (deg) 64.0 depth camera: 86 my messure: 51.3
+#define HFOV            53.0         //Horizontal FOV (deg) 64.0 depth camera: 86 my messure: 51.3
 #define AVGERRORANGLE   0            //Motor angle - the angle of image bottom 5.3
 #define DEG2RAD         M_PI/180
 

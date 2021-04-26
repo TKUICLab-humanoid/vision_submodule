@@ -101,7 +101,7 @@ Distance FeatureDistance::measureLine(int Feature_x, int Feature_y) //LightLight
     return distance;
 }
 
-Distance FeatureDistance::measureObject(int Feature_x, int Feature_y)// Lee
+Distance FeatureDistance::measureObject(int Feature_x, int Feature_y, int Width, int Height)// Lee
 {
     double width_cnt = (double)Feature_x;
     double height_cnt = (double)Feature_y;
@@ -150,8 +150,10 @@ Distance FeatureDistance::measureObject(int Feature_x, int Feature_y)// Lee
             x_ratio = (camera_height / cos(vertical_angle * DEG2RAD)) * tan(horizontal_angle * DEG2RAD);
         }
 
+        ROS_INFO("horizontal_angle: %lf", horizontal_angle);
         ROS_INFO("vertical_angle: %lf", vertical_angle);
-        ROS_INFO("horizontal_angle: %lf\n", horizontal_angle);
+        ROS_INFO("Width: %d", Width);
+        ROS_INFO("Height: %d\n", Height);
         // ROS_INFO("x_ratio: %lf", x_ratio);
         // ROS_INFO("y_ratio: %lf\n", y_ratio);
         ratio_angle = atan2(x_ratio, y_ratio) * 180 / PI;
@@ -163,7 +165,7 @@ Distance FeatureDistance::measureObject(int Feature_x, int Feature_y)// Lee
             ROS_INFO("yz_dis: %lf\n", yz_dis);
         }
         // x_dis = sqrt(pow(yz_dis,2)-pow(camera_height-7.9,2)) * tan(ratio_angle * DEG2RAD) - 5.0;
-        x_dis = yz_dis * tan(horizontal_angle * DEG2RAD) - 5.0;
+        x_dis = yz_dis * tan(horizontal_angle * DEG2RAD);
         y_dis = sqrt(pow(yz_dis,2)-pow(camera_height-7.9,2)) + camera2robot_dis; // 1.4 6.5
         xy_dis = sqrt(pow(x_dis,2)+pow(y_dis,2));
         object_angle = atan2(x_dis, y_dis) * 180 / PI;
