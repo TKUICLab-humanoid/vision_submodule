@@ -79,6 +79,7 @@ class LineDetected : public ModelBase
         double XDistance;
         double YDistance;
         double theta;
+        int thetaZeroX;
         int thetaZeroY;
         Vec4i NewLine;
         Vec4i MaxLine;
@@ -93,7 +94,7 @@ class LineDetected : public ModelBase
         //-------------------------------------
         Mat Merge_similar_line(const Mat iframe,const Mat canny_iframe,const Mat original_frame);
         //-------------------------------------
-        Mat fitLineRANSAC(Mat drawing,vector<vector<Point> > allfieldpoints);
+        Mat fitLineRANSAC(Mat ori,Mat drawing,vector<vector<Point> > allfieldpoints);
         Pixel3Dpoint deproject_pixel2point(Coordinate point,float depth);
         double calculate_3D(Coordinate a, Coordinate b);
         timespec diff(timespec start, timespec end);

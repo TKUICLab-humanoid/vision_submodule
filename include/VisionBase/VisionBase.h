@@ -83,6 +83,15 @@ static bool tocompare(Vec4i &s1, Vec4i &s2){
    return s1[0] > s2[0];
 }
 
+static bool sortPoints(Point &lhs,Point &rhs){
+   return  (lhs.x < rhs.x) || (lhs.x==rhs.x && lhs.y < rhs.y);;
+}
+
+static bool right_turn(Point &P1, Point &P2, Point &P3)
+{
+    return ((P3.x-P1.x)*(P2.y-P1.y) - (P3.y-P1.y)*(P2.x-P1.x)) > 0;
+}
+
 class VisionBase
 {
     protected:
@@ -105,6 +114,7 @@ class VisionBase
         double CalcRobotHeight();
         
         string GetPath(string file_name);
-        Point MinIntersectPoint(Vec4i line, Point A, double mindistance);
+        Point MinIntersectPoint(Vec4i line, Point A, int mindistance);
+        bool LineorNot(Vec4i line);
 
 };

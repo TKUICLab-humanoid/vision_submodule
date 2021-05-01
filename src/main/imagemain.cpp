@@ -342,7 +342,7 @@ void Vision_main::strategy_main()
         {
             Distance distance;
             tku_msgs::Distance tmp;
-            distance = measure(Field_feature_point[i].x,Field_feature_point[i].y,CameraType::stereo);
+            distance = measure(Field_feature_point[i].x,Field_feature_point[i].y,CameraType::Monocular);
             if(i == 0)
             {
                 tmp.x_dis = distance.x_dis;
@@ -366,9 +366,6 @@ void Vision_main::strategy_main()
                         tmp.x_dis = distance.x_dis;
                         tmp.y_dis = distance.y_dis;
                         tmp.dis = distance.dis;
-                        ROS_INFO("distance.dis = %f ",distance.dis);
-                        ROS_INFO("RealsenseIMUData[0] = %f ",RealsenseIMUData[0]);
-                        ROS_INFO("robotheight = %f ",distance.dis*cos(RealsenseIMUData[0]*DEG2RAD));
                         distance_last = distance.dis;
                         scan_line_last = Field_feature_point[i].scan_line_cnt;
                         feature_point_tmp.feature_point.push_back(tmp);
@@ -479,7 +476,7 @@ void Vision_main::strategy_main()
                     tmp.object_mode = 0;
                     int x = soccer_data[t].x + (soccer_data[t].width / 2);
                     int y = soccer_data[t].y + soccer_data[t].height;
-                    distance = measure(x,y,CameraType::stereo);
+                    distance = measure(x,y,CameraType::Monocular);
                     tmp.distance.x_dis = distance.x_dis;
                     tmp.distance.y_dis = distance.y_dis;
                     tmp.distance.dis = distance.dis;
@@ -509,7 +506,7 @@ void Vision_main::strategy_main()
                     tmp.object_mode = 1;
                     int x = soccer_data[t].x + (soccer_data[t].width / 2);
                     int y = soccer_data[t].y + soccer_data[t].height;
-                    distance = measure(x,y,CameraType::stereo);
+                    distance = measure(x,y,CameraType::Monocular);
                     tmp.distance.x_dis = distance.x_dis;
                     tmp.distance.y_dis = distance.y_dis;
                     tmp.distance.dis = distance.dis;
