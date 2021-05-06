@@ -35,10 +35,8 @@ class LineDetected : public ModelBase
         Mat orign;
         Mat imageGamma;
         Mat nobackgroud_image;
-        Mat morph;
         Mat edge;
         Mat Gmask;
-        Mat original_frame;
         Mat hough_frame;
         Mat merge_hough_frame;
         int Bluev;
@@ -97,7 +95,7 @@ class LineDetected : public ModelBase
         Mat fitLineRANSAC(Mat ori,Mat drawing,vector<vector<Point> > allfieldpoints);
         Pixel3Dpoint deproject_pixel2point(Coordinate point,float depth);
         double calculate_3D(Coordinate a, Coordinate b);
-        timespec diff(timespec start, timespec end);
+        // timespec diff(timespec start, timespec end);
 
 
 };

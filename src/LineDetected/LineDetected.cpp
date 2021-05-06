@@ -17,22 +17,21 @@ LineDetected::~LineDetected()
 {
     
 }
+// double timeStart, timeEnd;
+// timespec time1, time2;
 
-double timeStart, timeEnd;
-timespec time1, time2;
-
-timespec LineDetected::diff(timespec start, timespec end) 
-{
-  timespec temp;
-  if ((end.tv_nsec - start.tv_nsec) < 0) {
-    temp.tv_sec = end.tv_sec - start.tv_sec - 1;
-    temp.tv_nsec = 1000000000 + end.tv_nsec - start.tv_nsec;
-  } else {
-    temp.tv_sec = end.tv_sec - start.tv_sec;
-    temp.tv_nsec = end.tv_nsec - start.tv_nsec;
-  }
-  return temp;
-}
+// timespec LineDetected::diff(timespec start, timespec end) 
+// {
+//   timespec temp;
+//   if ((end.tv_nsec - start.tv_nsec) < 0) {
+//     temp.tv_sec = end.tv_sec - start.tv_sec - 1;
+//     temp.tv_nsec = 1000000000 + end.tv_nsec - start.tv_nsec;
+//   } else {
+//     temp.tv_sec = end.tv_sec - start.tv_sec;
+//     temp.tv_nsec = end.tv_nsec - start.tv_nsec;
+//   }
+//   return temp;
+// }
 Mat LineDetected::ImagePreprocessing(const Mat iframe)
 {
     // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
@@ -84,10 +83,8 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
     {
         int score = 0;
         vector<PointScore> PixelScore;
-        // ROS_INFO("111111111111");
         for(int row = 0; row < imageGamma.rows;row++)
         {
-            // ROS_INFO("rows = %d", row);
             int B = imageGamma.at<Vec3b>(row, col)[0];
             int G = imageGamma.at<Vec3b>(row, col)[1];
             int R = imageGamma.at<Vec3b>(row, col)[2];
@@ -108,73 +105,64 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
                 PixelScore.push_back(S); 
             }
         }
-        // ROS_INFO("BoundaryPoint = %d",PixelScore.);
         sort(PixelScore.begin(),PixelScore.end(),Scorecompare);
         BoundaryPoint.push_back(PixelScore[0].pixelpoint);
-        //     // ROS_INFO("BoundaryPoint = %d,%d ",PixelScore[0].pixelpoint.x,PixelScore[0].pixelpoint.y);
     }
 
-    // for(int i = 0; i < BoundaryPoint.size();i++)
-    // {
-    //     Point boundary = BoundaryPoint[i];
-    //     // for(int j = 0 ; j < mask.cols ;j++)
-    //     // {
-    //         for(int k = 0 ; k < mask.rows ;k++)
-    //         {
-    //             if( k > boundary.y)
-    //             {
-    //                 mask.at<Vec3b>(k, boundary.x)[0] = 255;
-    //                 mask.at<Vec3b>(k, boundary.x)[1] = 255;
-    //                 mask.at<Vec3b>(k, boundary.x)[2] = 255;
-    //             }else{
-    //                 mask.at<Vec3b>(k, boundary.x)[0] = 0;
-    //                 mask.at<Vec3b>(k, boundary.x)[1] = 0;
-    //                 mask.at<Vec3b>(k, boundary.x)[2] = 0;
-    //             }
-    //         }
-    //     // }
-    // }
-    // imshow("mask3",mask);
+    for(int i = 0; i < BoundaryPoint.size();i++)
+    {
+        Point boundary = BoundaryPoint[i];
+        for(int k = 0 ; k < mask.rows ;k++)
+        {
+            if( k > boundary.y)
+            {
+                mask.at<Vec3b>(k, boundary.x)[0] = 255;
+                mask.at<Vec3b>(k, boundary.x)[1] = 255;
+                mask.at<Vec3b>(k, boundary.x)[2] = 255;
+            }else{
+                mask.at<Vec3b>(k, boundary.x)[0] = 0;
+                mask.at<Vec3b>(k, boundary.x)[1] = 0;
+                mask.at<Vec3b>(k, boundary.x)[2] = 0;
+            }
+        }
+    }
     
     Mat mask_element = getStructuringElement(MORPH_RECT, Size(8, 8)); 
-    Mat mask_element1 = getStructuringElement(MORPH_RECT, Size(4, 4)); 
-    Mat mask_element2 = getStructuringElement(MORPH_RECT, Size(6, 6)); 
-    erode(mask,mask,mask_element2);
-    // imshow("mask1",mask);
+    // Mat mask_element1 = getStructuringElement(MORPH_RECT, Size(4, 4)); 
+    // Mat mask_element2 = getStructuringElement(MORPH_RECT, Size(6, 6)); 
+    // erode(mask,mask,mask_element2);
+    imshow("mask1",mask);
     dilate(mask,mask,mask_element);
     // imshow("mask2",mask);
     cvtColor(mask,mask,COLOR_BGR2GRAY);
     threshold(mask,mask,200,255,THRESH_BINARY);
     // imshow("mask3",mask);
-    morphologyEx(mask, morph, CV_MOP_OPEN, mask_element); 
-    // imshow("morph",morph);
+    
+    //顯示BoundaryPoint
+    // Mat orign3 = Mat::zeros(orign.rows,orign.cols, CV_8U); 
+    // for( int j = 0; j< BoundaryPoint.size(); j++ )
+    // {
+    //     Point p = BoundaryPoint[j];
+    //     if(p.y < iframe.rows-4)
+    //     {
+    //         circle(orign3,p,2,Scalar(255,255,255),CV_FILLED,-1);
+    //     }
+    // }
+    // imshow("orign3",orign3);
 
-    Mat orign3 = Mat::zeros(orign.rows,orign.cols, CV_8U); 
-    for( int j = 0; j< BoundaryPoint.size(); j++ )
-    {
-        Point p = BoundaryPoint[j];
-        if(p.y < iframe.rows-4)
-        {
-            circle(orign3,p,2,Scalar(255,255,255),CV_FILLED,-1);
-        }
-    }
-    imshow("orign3",orign3);
     vector<vector<Point> > contours;
     vector<Vec4i> hierarchy;
-    findContours( orign3, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
-
-    // findContours( morph, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+    findContours( mask, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
 
     Mat green_mask( orign.size(), CV_8U, Scalar(0));
     Mat green_maskw( orign.size(), CV_8U, Scalar(255));
-    Mat orign1 = iframe.clone();
-    Mat orign2 = iframe.clone();
     Gmask = Mat::zeros(orign.rows,orign.cols, CV_8U); 
+    
     // Find the convex hull object for each contour
     vector<vector<Point> >hull(contours.size());
     vector<vector<Point> >greenhull;
     ROS_INFO("----------------contours = %d",contours.size());
-    // int j = 0;
+    
     if(contours.size() != 0)
     {
         for( int i = 0; i < contours.size(); i++ )
@@ -188,33 +176,30 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
         }
         if(greenhull.size() < 1 && hull.size() >= 1)
         {
-            Gmask = fitLineRANSAC(orign1,green_mask,hull);
+            Gmask = fitLineRANSAC(orign,green_mask,hull);
         }else if(greenhull.size() >= 1 && hull.size() >= 1){
-            Gmask = fitLineRANSAC(orign1,green_mask,greenhull);
+            Gmask = fitLineRANSAC(orign,green_mask,greenhull);
         }else{
             Gmask = green_maskw;
         }
     }else{
         Gmask = green_maskw;
     }
+
+    ROS_INFO("----------------hull = %d",hull.size());  
+    ROS_INFO("----------------greenhull = %d",greenhull.size()); 
     
-    // ROS_INFO("----------------hull = %d",hull.size());  
-    // ROS_INFO("----------------greenhull = %d",greenhull.size()); 
-    // vector<vector<Point> >contours_poly(greenhull.size());
-    //ROS_INFO("x1 = %d, y1 = %d, x2 = %d, y2 = %d",fieldline[0], fieldline[1],fieldline[2], fieldline[3]);
-    // line( green_mask, Point(fieldline[0], fieldline[1]), Point(fieldline[2], fieldline[3]), Scalar(0,0,255), 2, CV_AA);
     // if(hull.size() != 0)
     // {
     //     for( int i = 0; i< hull.size(); i++ )
     //     {
-    //         //approxPolyDP(Mat(greenhull[i]), contours_poly[i], 100, true);//待修改
-    //         // drawContours( orign2, hull, i, Scalar(255), 1);
     //         for( int j = 0; j< hull[i].size(); j++ )
     //         {
     //             circle(orign2,hull[i][j],2,Scalar(0,0,255),CV_FILLED,-1);
     //         }
     //     }
     // }
+    
     // imshow("orign2",orign2);
     orign.copyTo(nobackgroud_image,Gmask);
 
@@ -244,7 +229,12 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
     }
     Mat greenmask_element = getStructuringElement(MORPH_RECT, Size(4, 4)); 
     dilate(nobackgroud_image,nobackgroud_image,greenmask_element);
-    //imshow("nobackgroud_image1",nobackgroud_image);
+    contours.clear();
+    hierarchy.clear();
+    greenhull.clear();
+    hull.clear();
+    
+    // imshow("nobackgroud_image1",nobackgroud_image);
     // resize(nobackgroud_image, nobackgroud_image, cv::Size(320, 240));
     // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time2);
     // cout << "imageprocessing total time (clock_gettime) = " << diff(time1, time2).tv_sec << ":" << diff(time1, time2).tv_nsec << endl;
@@ -607,14 +597,13 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
     float para_a = (float)((float)(y1-y2)/(float)(x1-x2));
     float para_b = (float)((float)((x1*y2)-(x2*y1))/(float)(x1-x2));
     float theta = Slope(line);
-    ROS_INFO("theta = %f",theta);
-    ROS_INFO("para = (%f,%f)",para_a,para_b);
+
     int Vgreen = 0;
     int Vwhite = 0;
     int Vedge = 0;
     int Verror = 0;
 
-    // ROS_INFO("%d %d %d %d",x1,y1,x2,y2);
+    ROS_INFO("line %d %d %d %d, theta = %f,para = (%f,%f) ",x1,y1,x2,y2,theta,para_a,para_b);
     int counter = 0;
     if(abs(x2-x1)>20)
     {
@@ -660,10 +649,10 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
                 int b = image_Enhance.at<Vec3b>((int)y_1, (int)x_1)[0];
                 int g = image_Enhance.at<Vec3b>((int)y_1, (int)x_1)[1];
                 int r = image_Enhance.at<Vec3b>((int)y_1, (int)x_1)[2];
-                int edge = canny.at<uchar>((int)y_1, (int)x_1);
-                // ROS_INFO("edge = %d",edge);
+                int edge_ = canny.at<uchar>((int)y_1, (int)x_1);
+                // ROS_INFO("edge = %d",edge_);
                 double diff = 0;
-                if(edge == 255)
+                if(edge_ == 255)
                 {               
                     Vedge++;
                 }
@@ -713,10 +702,10 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
                 int b = image_Enhance.at<Vec3b>((int)y_1, (int)x_1)[0];
                 int g = image_Enhance.at<Vec3b>((int)y_1, (int)x_1)[1];
                 int r = image_Enhance.at<Vec3b>((int)y_1, (int)x_1)[2];
-                int edge = canny.at<uchar>((int)y_1, (int)x_1);
-                // ROS_INFO("edge = %d",edge);
+                int edge_ = canny.at<uchar>((int)y_1, (int)x_1);
+                // ROS_INFO("edge = %d",edge_);
                 double diff = 0;
-                if(edge == 255)
+                if(edge_ == 255)
                 {               
                     Vedge++;
                 }
@@ -773,7 +762,7 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
                 y_1 = (x_1 * para_a_inv) + para_b_inv;
                 // ROS_INFO("para_inv = (%f,%f)",para_a_inv,para_a_inv);
                 // ROS_INFO("pos = (%f,%f)",x_1,y_1);
-                if(y_1>479.0||y_1<0.0)
+                if(y_1 > 479.0||y_1 < 0.0)
                 {
                     ROS_INFO("else continue y_1 = %f",y_1);
                     continue;
@@ -782,10 +771,10 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
                 int b = image_Enhance.at<Vec3b>((int)y_1, (int)x_1)[0];
                 int g = image_Enhance.at<Vec3b>((int)y_1, (int)x_1)[1];
                 int r = image_Enhance.at<Vec3b>((int)y_1, (int)x_1)[2];
-                int edge = canny.at<uchar>((int)y_1, (int)x_1);
-                // ROS_INFO("edge = %d",edge);
+                int edge_ = canny.at<uchar>((int)y_1, (int)x_1);
+                // ROS_INFO("edge = %d",edge_);
                 double diff = 0;
-                if(edge == 255)
+                if(edge_ == 255)
                 {               
                     Vedge++;
                 }
@@ -841,7 +830,6 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
     reduce_similar_lines.clear();
     merge_similar_lines.clear();
     check_lines.clear();
-    original_frame = iframe.clone();
     hough_frame = ori_frame.clone();
     merge_hough_frame = ori_frame.clone();
     // ROS_INFO("hough_threshold = %d hough_minLineLength = %f hough_maxLineGap = %f",hough_threshold,hough_minLineLength,hough_maxLineGap);
@@ -871,7 +859,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
         if(all_lines.size() == 1)
         {
             int checklineX = checkline(nobackgroud_image,canny_iframe,X);
-            ROS_INFO("checklineX = %d",checklineX);
+            ROS_INFO("all_line(%d) checkline X = %d",i,checklineX);
             if(checklineX == 1)
             {
                 check_lines.push_back(X);
@@ -885,6 +873,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
                 Vec4i Y = merge_similar_lines[j];
                 // ROS_INFO("merge_similar_lines(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",j,Y[0],Y[1],Y[2],Y[3],Slope(Y));
                 int checklineY = checkline(nobackgroud_image,canny_iframe,Y);
+                ROS_INFO("merge_line(%d) checkline Y = %d",j,checklineY);
                 if(checklineY == 0)
                 {
                     merge_similar_lines = complement(merge_similar_lines,Y);
@@ -898,7 +887,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
                         // ROS_INFO("--------Merge--------");
                         Merge(X,Y);
                         int checklinenum = checkline(nobackgroud_image,canny_iframe,NewLine);
-                        // ROS_INFO("checkline = %d \n",checklinenum);
+                        ROS_INFO("NewLine checkline = %d",checklinenum);
                         if(checklinenum == 1)
                         {
                             check = 1; 
@@ -1169,9 +1158,7 @@ Mat LineDetected::fitLineRANSAC(Mat ori,Mat drawing,vector<vector<Point> > allfi
         Allgreenhull.insert(Allgreenhull.end(), allfieldpoints[i].begin(), allfieldpoints[i].end());
     }
   
-    vector<Point> filteredpoints;
     vector<Point> upperCH;
-    
     vector<Point> points = Allgreenhull;
     int n_points = points.size();
 
@@ -1187,21 +1174,50 @@ Mat LineDetected::fitLineRANSAC(Mat ori,Mat drawing,vector<vector<Point> > allfi
             upperCH.pop_back();
         upperCH.push_back(points[n_points-i-1]);
     }
+    // 畫出upper convex hull
     // for ( size_t i = 0; i < upperCH.size(); i++ )
     // {
-    //     circle(drawing,upperCH[i],3,Scalar(255,0,255),CV_FILLED,1);	
+    //     circle(mask,upperCH[i],3,Scalar(255,0,255),CV_FILLED,1);	
     // }
-    
-    // int n = upperCH.size();
-
+    Mat mask1 = Mat::zeros(orign.rows,orign.cols, CV_8UC3); 
     vector<vector<Point> > contours(1);
     convexHull(Mat(upperCH), contours[0], false );
-
     for ( size_t i = 0; i < contours.size(); i++ )
     {
-		drawContours( drawing, contours, i, Scalar(255,0,255), -1);
+		drawContours( mask1, contours, i, Scalar(255,255,255), -1);
 	}
-    // ROS_INFO("2222222222222");
+
+    vector<Point> fieldboundary;
+    for(int i = 0; i < mask1.cols;i++)
+    {
+        Point A;
+        for(int k = 0 ; k < mask1.rows ;k++)
+        {
+            int a = mask1.at<Vec3b>(k, i)[0];
+            int b = mask1.at<Vec3b>(k, i)[1];
+            int c = mask1.at<Vec3b>(k, i)[2];
+            if( a == 255 && b == 255 & c ==255)
+            {
+                A = Point(i,k);
+                break;
+            }
+        }
+        fieldboundary.push_back(A);
+    }
+
+    for(int i = 0; i < fieldboundary.size();i++)
+    {
+        Point B = fieldboundary[i];
+        for(int k = 0 ; k < drawing.rows ;k++)
+        {
+            if( k >= B.y)
+            {
+                drawing.at<uchar>(k, B.x) = 255;
+            }else{
+                drawing.at<uchar>(k, B.x) = 0;
+            }
+        }
+    }
     imshow("drawing",drawing);
 
 
@@ -1265,7 +1281,11 @@ Mat LineDetected::fitLineRANSAC(Mat ori,Mat drawing,vector<vector<Point> > allfi
     // line(ori, ls, le, Scalar(255, 255, 0), 3);
     // imshow("ori",ori);
     // waitKey(0);
-
+    fieldboundary.clear();
+    upperCH.clear();
+    contours.clear();
+    points.clear();
+    Allgreenhull.clear();
     return drawing;
 }
 
