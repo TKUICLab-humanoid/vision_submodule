@@ -35,6 +35,12 @@
 using namespace std;
 using namespace cv;
 
+struct PointScore
+{
+    Point pixelpoint;
+    int Score;
+};
+
 struct Coordinate
 {
     int X;
@@ -78,6 +84,10 @@ struct Intrinsicscolor{
   float Fx;
   float Fy;
 };
+
+static bool Scorecompare(PointScore &s1, PointScore &s2){
+   return s1.Score < s2.Score;
+}
 
 static bool tocompare(Vec4i &s1, Vec4i &s2){
    return s1[0] > s2[0];

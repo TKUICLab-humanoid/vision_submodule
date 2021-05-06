@@ -258,7 +258,7 @@ int main(int argc, char** argv)
    while (nh.ok())
     {
         vision_main.strategy_main();
-        vision_main.savefile();
+        // vision_main.savefile();
         ros::spinOnce();
         loop_rate.sleep();
     }

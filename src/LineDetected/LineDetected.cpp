@@ -44,7 +44,7 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
     
     //濾除非場地部份(laplace)
     Mat mask = Mat::zeros(orign.rows,orign.cols, CV_8UC3); 
-    Mat Kernel = (Mat_<float>(3, 3) << 0, -1, 0, 0, 6, 0, 0, -1, 0);
+    Mat Kernel = (Mat_<float>(3, 3) << 0, -1, 0, 0, 5.5, 0, 0, -1, 0);
     Mat imageEnhance;
     filter2D(orign, imageEnhance, CV_8UC3, Kernel);
     //imshow("imageEnhance",imageEnhance);
@@ -66,74 +66,157 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
     G_value = Model_Base->BGRColorRange->GrValue;
     B_value = Model_Base->BGRColorRange->BuValue;
     
+    
+    vector<Point> BoundaryPoint;
+    int horization_line = 0;
+    if(std::isfinite(RealsenseIMUData[0]) && round(RealsenseIMUData[0]) >= 45.0)
+    {
+        horization_line = 225 - (5 * round(90.0 - RealsenseIMUData[0]));
+        if(horization_line <= 0)
+        {
+            horization_line = 0;
+        }
+    }else{
+        horization_line = 0;
+    }
+
     for(int col = 0; col < imageGamma.cols;col++)
     {
-        for(int row = imageGamma.rows -1 ; row > 0 ;row--)
+        int score = 0;
+        vector<PointScore> PixelScore;
+        // ROS_INFO("111111111111");
+        for(int row = 0; row < imageGamma.rows;row++)
         {
+            // ROS_INFO("rows = %d", row);
             int B = imageGamma.at<Vec3b>(row, col)[0];
             int G = imageGamma.at<Vec3b>(row, col)[1];
             int R = imageGamma.at<Vec3b>(row, col)[2];
-            if( G >= G_value && B >= B_value && R <= R_value)
+            PointScore S;
+            if(row >= horization_line && horization_line >= 0)
             {
-                mask.at<Vec3b>(row, col)[0] = 255;
-                mask.at<Vec3b>(row, col)[1] = 255;
-                mask.at<Vec3b>(row, col)[2] = 255;
+                if( G >= G_value && B >= B_value && R <= R_value)
+                {
+                    score ++;
+                    S.pixelpoint = Point(col,row-1);
+                    S.Score = score;
+                }else
+                {
+                    score --;
+                    S.pixelpoint = Point(col,row-1);
+                    S.Score = score;
+                }
+                PixelScore.push_back(S); 
             }
         }
+        // ROS_INFO("BoundaryPoint = %d",PixelScore.);
+        sort(PixelScore.begin(),PixelScore.end(),Scorecompare);
+        BoundaryPoint.push_back(PixelScore[0].pixelpoint);
+        //     // ROS_INFO("BoundaryPoint = %d,%d ",PixelScore[0].pixelpoint.x,PixelScore[0].pixelpoint.y);
     }
+
+    // for(int i = 0; i < BoundaryPoint.size();i++)
+    // {
+    //     Point boundary = BoundaryPoint[i];
+    //     // for(int j = 0 ; j < mask.cols ;j++)
+    //     // {
+    //         for(int k = 0 ; k < mask.rows ;k++)
+    //         {
+    //             if( k > boundary.y)
+    //             {
+    //                 mask.at<Vec3b>(k, boundary.x)[0] = 255;
+    //                 mask.at<Vec3b>(k, boundary.x)[1] = 255;
+    //                 mask.at<Vec3b>(k, boundary.x)[2] = 255;
+    //             }else{
+    //                 mask.at<Vec3b>(k, boundary.x)[0] = 0;
+    //                 mask.at<Vec3b>(k, boundary.x)[1] = 0;
+    //                 mask.at<Vec3b>(k, boundary.x)[2] = 0;
+    //             }
+    //         }
+    //     // }
+    // }
+    // imshow("mask3",mask);
     
     Mat mask_element = getStructuringElement(MORPH_RECT, Size(8, 8)); 
+    Mat mask_element1 = getStructuringElement(MORPH_RECT, Size(4, 4)); 
+    Mat mask_element2 = getStructuringElement(MORPH_RECT, Size(6, 6)); 
+    erode(mask,mask,mask_element2);
+    // imshow("mask1",mask);
     dilate(mask,mask,mask_element);
-    
+    // imshow("mask2",mask);
     cvtColor(mask,mask,COLOR_BGR2GRAY);
     threshold(mask,mask,200,255,THRESH_BINARY);
-
+    // imshow("mask3",mask);
     morphologyEx(mask, morph, CV_MOP_OPEN, mask_element); 
+    // imshow("morph",morph);
 
+    Mat orign3 = Mat::zeros(orign.rows,orign.cols, CV_8U); 
+    for( int j = 0; j< BoundaryPoint.size(); j++ )
+    {
+        Point p = BoundaryPoint[j];
+        if(p.y < iframe.rows-4)
+        {
+            circle(orign3,p,2,Scalar(255,255,255),CV_FILLED,-1);
+        }
+    }
+    imshow("orign3",orign3);
     vector<vector<Point> > contours;
     vector<Vec4i> hierarchy;
-    findContours( morph, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+    findContours( orign3, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+
+    // findContours( morph, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
 
     Mat green_mask( orign.size(), CV_8U, Scalar(0));
+    Mat green_maskw( orign.size(), CV_8U, Scalar(255));
     Mat orign1 = iframe.clone();
     Mat orign2 = iframe.clone();
     Gmask = Mat::zeros(orign.rows,orign.cols, CV_8U); 
     // Find the convex hull object for each contour
     vector<vector<Point> >hull(contours.size());
     vector<vector<Point> >greenhull;
-    // ROS_INFO("----------------contours = %d",contours.size());
-    int j = 0;
-    for( int i = 0; i < contours.size(); i++ )
-    {     
-        convexHull( Mat(contours[i]), hull[i], false );
-        double contoursArea = contourArea(contours[i]);
-        if(contoursArea > 30000)
-        {
-            greenhull.push_back(contours[i]);
-        }
-    }
-    if(greenhull.size() < 1)
+    ROS_INFO("----------------contours = %d",contours.size());
+    // int j = 0;
+    if(contours.size() != 0)
     {
-        Gmask = fitLineRANSAC(orign1,green_mask,hull);
+        for( int i = 0; i < contours.size(); i++ )
+        {     
+            convexHull( Mat(contours[i]), hull[i], false );
+            double contoursArea = contourArea(contours[i]);
+            // if(contoursArea > 30000)
+            // {
+                greenhull.push_back(contours[i]);
+            // }
+        }
+        if(greenhull.size() < 1 && hull.size() >= 1)
+        {
+            Gmask = fitLineRANSAC(orign1,green_mask,hull);
+        }else if(greenhull.size() >= 1 && hull.size() >= 1){
+            Gmask = fitLineRANSAC(orign1,green_mask,greenhull);
+        }else{
+            Gmask = green_maskw;
+        }
     }else{
-        Gmask = fitLineRANSAC(orign1,green_mask,greenhull);
+        Gmask = green_maskw;
     }
+    
     // ROS_INFO("----------------hull = %d",hull.size());  
     // ROS_INFO("----------------greenhull = %d",greenhull.size()); 
     // vector<vector<Point> >contours_poly(greenhull.size());
     //ROS_INFO("x1 = %d, y1 = %d, x2 = %d, y2 = %d",fieldline[0], fieldline[1],fieldline[2], fieldline[3]);
     // line( green_mask, Point(fieldline[0], fieldline[1]), Point(fieldline[2], fieldline[3]), Scalar(0,0,255), 2, CV_AA);
-    for( int i = 0; i< hull.size(); i++ )
-    {
-        //approxPolyDP(Mat(greenhull[i]), contours_poly[i], 100, true);//待修改
-        drawContours( orign2, hull, i, Scalar(255), -1);
-        for( int j = 0; j< hull[i].size(); j++ )
-        {
-            circle(orign2,hull[i][j],2,Scalar(0,0,255),CV_FILLED,-1);
-        }
-    }
+    // if(hull.size() != 0)
+    // {
+    //     for( int i = 0; i< hull.size(); i++ )
+    //     {
+    //         //approxPolyDP(Mat(greenhull[i]), contours_poly[i], 100, true);//待修改
+    //         // drawContours( orign2, hull, i, Scalar(255), 1);
+    //         for( int j = 0; j< hull[i].size(); j++ )
+    //         {
+    //             circle(orign2,hull[i][j],2,Scalar(0,0,255),CV_FILLED,-1);
+    //         }
+    //     }
+    // }
+    // imshow("orign2",orign2);
     orign.copyTo(nobackgroud_image,Gmask);
-    // imshow("drawing",drawing);
 
     for(int col = 0; col < nobackgroud_image.cols;col++)
     {
@@ -142,7 +225,7 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
             int B = nobackgroud_image.at<Vec3b>(row, col)[0];
             int G = nobackgroud_image.at<Vec3b>(row, col)[1];
             int R = nobackgroud_image.at<Vec3b>(row, col)[2];
-            if( B >= B_value && G >= G_value && R >= R_value)
+            if( B >= 200 && G >= 200 && R >= 200)
             {
                 nobackgroud_image.at<Vec3b>(row, col)[0] = 255;
                 nobackgroud_image.at<Vec3b>(row, col)[1] = 255;
@@ -1097,17 +1180,20 @@ Mat LineDetected::fitLineRANSAC(Mat ori,Mat drawing,vector<vector<Point> > allfi
     //Computing upper convex hull
     upperCH.push_back(points[n_points-1]);
     upperCH.push_back(points[n_points-2]);
-    
+    // ROS_INFO("000000000");
     for(int i=2; i< n_points; i++)
     {
         while(upperCH.size() > 1 and (!right_turn(upperCH[upperCH.size()-2],upperCH[upperCH.size()-1], points[n_points-i-1])))
             upperCH.pop_back();
         upperCH.push_back(points[n_points-i-1]);
     }
-    for ( size_t i = 0; i < upperCH.size(); i++ )
-    {
-        circle(drawing,upperCH[i],3,Scalar(255,0,255),CV_FILLED,-1);	
-    }
+    // for ( size_t i = 0; i < upperCH.size(); i++ )
+    // {
+    //     circle(drawing,upperCH[i],3,Scalar(255,0,255),CV_FILLED,1);	
+    // }
+    
+    // int n = upperCH.size();
+
     vector<vector<Point> > contours(1);
     convexHull(Mat(upperCH), contours[0], false );
 
@@ -1115,63 +1201,68 @@ Mat LineDetected::fitLineRANSAC(Mat ori,Mat drawing,vector<vector<Point> > allfi
     {
 		drawContours( drawing, contours, i, Scalar(255,0,255), -1);
 	}
+    // ROS_INFO("2222222222222");
+    imshow("drawing",drawing);
 
-    Vec4i lineParam = {0,0,0,0};
-    Point ls = Point(0,0);
-    Point le = Point(0,0);    
-    unsigned int n = upperCH.size();
-    if(n<2)
-    {
-        return drawing;
-    }
-    double kmax = 5.;
-    double kmin = -5.;
-    RNG rng;
-    double bestscore = -1.;
-    for(int i=0; i<1000;i++)
-    {
-        int i1 = 0;
-        int i2 = 0;
-        while(i1==i2)
-        {
-            i1 = rng(n);
-            i2 = rng(n);
-        }
-        const Point& p1 = upperCH[i1];
-        const Point& p2 = upperCH[i2];
 
-        Point2f dp = p2 - p1;
+    // Vec4i lineParam = {0,0,0,0};
+    // Point ls = Point(0,0);
+    // Point le = Point(0,0);    
+    // unsigned int n = upperCH.size();
+    // if(n<2)
+    // {
+    //     return drawing;
+    // }
+    // double kmax = 5.;
+    // double kmin = -5.;
+    // RNG rng;
+    // double bestscore = -1.;
+    // for(int i=0; i<1000;i++)
+    // {
+    //     int i1 = 0;
+    //     int i2 = 0;
+    //     while(i1==i2)
+    //     {
+    //         i1 = rng(n);
+    //         i2 = rng(n);
+    //     }
+    //     const Point& p1 = upperCH[i1];
+    //     const Point& p2 = upperCH[i2];
+
+    //     Point2f dp = p2 - p1;
         
-        dp *= 1./norm(dp);
-        double score = 0.0;
-        if((dp.y/dp.x) <= kmax && (dp.y/dp.x) >= kmin)
-        {    
+    //     dp *= 1./norm(dp);
+    //     double score = 0.0;
+    //     if((dp.y/dp.x) <= kmax && (dp.y/dp.x) >= kmin)
+    //     {    
 
-            for(int j=0; j<n; j++)
-            {    
-                Point2f checkpoint = upperCH[j]-p1;
-                double d = (checkpoint.y * dp.x) - (checkpoint.x*dp.y);
-                if(fabs(d)< 10)
-                    score += 1.;
-            }
-        }
-        if(score > bestscore)
-        {
-            lineParam = Vec4i(int(dp.x),int(dp.y),int(p1.x),int(p1.y));
-            bestscore = score;
-        }
-    } 
+    //         for(int j=0; j<n; j++)
+    //         {    
+    //             Point2f checkpoint = upperCH[j]-p1;
+    //             double d = (checkpoint.y * dp.x) - (checkpoint.x*dp.y);
+    //             if(fabs(d)< 10)
+    //                 score += 1.;
+    //         }
+    //     }
+    //     if(score > bestscore)
+    //     {
+    //         lineParam = Vec4i(int(dp.x),int(dp.y),int(p1.x),int(p1.y));
+    //         ls = Point(int(dp.x),int(dp.y));
+    //         le = Point(int(p1.x),int(p1.y));
+    //         bestscore = score;
+    //     }
+    // } 
     // double k = (double)lineParam[1] / (double)lineParam[0];
     // double b = (double)lineParam[3] - k*(double)lineParam[2];
 
-    // cv::Point p1,p2;
-    // p1.y = 480;
-    // p1.x = round(( p1.y - b) / k);
+    // // cv::Point p1,p2;
+    // // p1.y = 480;
+    // // p1.x = round(( p1.y - b) / k);
 
-    // p2.y = 240;
-    // p2.x = round((p2.y-b) / k);
+    // // p2.y = 240;
+    // // p2.x = round((p2.y-b) / k);
     
-    // line(ori, p1, p2, Scalar(255, 255, 0), 3);
+    // line(ori, ls, le, Scalar(255, 255, 0), 3);
     // imshow("ori",ori);
     // waitKey(0);
 
