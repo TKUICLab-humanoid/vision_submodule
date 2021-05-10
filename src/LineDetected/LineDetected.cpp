@@ -17,24 +17,9 @@ LineDetected::~LineDetected()
 {
     
 }
-// double timeStart, timeEnd;
-// timespec time1, time2;
 
-// timespec LineDetected::diff(timespec start, timespec end) 
-// {
-//   timespec temp;
-//   if ((end.tv_nsec - start.tv_nsec) < 0) {
-//     temp.tv_sec = end.tv_sec - start.tv_sec - 1;
-//     temp.tv_nsec = 1000000000 + end.tv_nsec - start.tv_nsec;
-//   } else {
-//     temp.tv_sec = end.tv_sec - start.tv_sec;
-//     temp.tv_nsec = end.tv_nsec - start.tv_nsec;
-//   }
-//   return temp;
-// }
 Mat LineDetected::ImagePreprocessing(const Mat iframe)
 {
-    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
     orign = iframe.clone();
     // bilateralFilter(iframe, orign, 10, 10, 10);
     blur(orign,orign,Size(3,3));
@@ -43,7 +28,7 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
     
     //濾除非場地部份(laplace)
     Mat mask = Mat::zeros(orign.rows,orign.cols, CV_8UC3); 
-    Mat Kernel = (Mat_<float>(3, 3) << 0, -1, 0, 0, 5.5, 0, 0, -1, 0);
+    Mat Kernel = (Mat_<float>(3, 3) << 0, -1, 0, 0, 6, 0, 0, -1, 0);
     Mat imageEnhance;
     filter2D(orign, imageEnhance, CV_8UC3, Kernel);
     //imshow("imageEnhance",imageEnhance);
@@ -82,31 +67,39 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
     for(int col = 0; col < imageGamma.cols;col++)
     {
         int score = 0;
-        vector<PointScore> PixelScore;
+        int Minscore = 0;
+        PointScore S = {Point(0,0),0};        
+        // vector<PointScore> PixelScore;
         for(int row = 0; row < imageGamma.rows;row++)
         {
             int B = imageGamma.at<Vec3b>(row, col)[0];
             int G = imageGamma.at<Vec3b>(row, col)[1];
             int R = imageGamma.at<Vec3b>(row, col)[2];
-            PointScore S;
-            if(row >= horization_line && horization_line >= 0)
+            
+            if(row >= horization_line && horization_line >= 0 && row >= 1)
             {
                 if( G >= G_value && B >= B_value && R <= R_value)
                 {
                     score ++;
-                    S.pixelpoint = Point(col,row-1);
-                    S.Score = score;
+                    // S.pixelpoint = Point(col,row-1);
+                    // S.Score = score;
                 }else
                 {
                     score --;
-                    S.pixelpoint = Point(col,row-1);
-                    S.Score = score;
+                    // S.pixelpoint = Point(col,row-1);
+                    // S.Score = score;
                 }
-                PixelScore.push_back(S); 
+                if(score < Minscore)
+                {
+                    Minscore = score;
+                    S.Score = score;
+                    S.pixelpoint = Point(col,row-1);
+                }
             }
         }
-        sort(PixelScore.begin(),PixelScore.end(),Scorecompare);
-        BoundaryPoint.push_back(PixelScore[0].pixelpoint);
+        // PixelScore.push_back(S); 
+        // sort(PixelScore.begin(),PixelScore.end(),Scorecompare);
+        BoundaryPoint.push_back(S.pixelpoint);
     }
 
     for(int i = 0; i < BoundaryPoint.size();i++)
@@ -128,15 +121,10 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
     }
     
     Mat mask_element = getStructuringElement(MORPH_RECT, Size(8, 8)); 
-    // Mat mask_element1 = getStructuringElement(MORPH_RECT, Size(4, 4)); 
-    // Mat mask_element2 = getStructuringElement(MORPH_RECT, Size(6, 6)); 
-    // erode(mask,mask,mask_element2);
-    imshow("mask1",mask);
+    // imshow("mask1",mask);
     dilate(mask,mask,mask_element);
-    // imshow("mask2",mask);
     cvtColor(mask,mask,COLOR_BGR2GRAY);
     threshold(mask,mask,200,255,THRESH_BINARY);
-    // imshow("mask3",mask);
     
     //顯示BoundaryPoint
     // Mat orign3 = Mat::zeros(orign.rows,orign.cols, CV_8U); 
@@ -161,24 +149,21 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
     // Find the convex hull object for each contour
     vector<vector<Point> >hull(contours.size());
     vector<vector<Point> >greenhull;
-    ROS_INFO("----------------contours = %d",contours.size());
+    // ROS_INFO("----------------contours = %d",contours.size());
     
     if(contours.size() != 0)
     {
         for( int i = 0; i < contours.size(); i++ )
         {     
-            convexHull( Mat(contours[i]), hull[i], false );
-            double contoursArea = contourArea(contours[i]);
-            // if(contoursArea > 30000)
-            // {
-                greenhull.push_back(contours[i]);
-            // }
+            // convexHull( Mat(contours[i]), hull[i], false );
+            greenhull.push_back(contours[i]);
         }
-        if(greenhull.size() < 1 && hull.size() >= 1)
-        {
-            Gmask = fitLineRANSAC(orign,green_mask,hull);
-        }else if(greenhull.size() >= 1 && hull.size() >= 1){
-            Gmask = fitLineRANSAC(orign,green_mask,greenhull);
+        // if(greenhull.size() < 1 && hull.size() >= 1)
+        // {
+        //     Gmask = UpperConvexHull(orign,green_mask,hull);
+        // }else 
+        if(greenhull.size() >= 1 && hull.size() >= 1){
+            Gmask = UpperConvexHull(orign,green_mask,greenhull);
         }else{
             Gmask = green_maskw;
         }
@@ -186,23 +171,11 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
         Gmask = green_maskw;
     }
 
-    ROS_INFO("----------------hull = %d",hull.size());  
-    ROS_INFO("----------------greenhull = %d",greenhull.size()); 
-    
-    // if(hull.size() != 0)
-    // {
-    //     for( int i = 0; i< hull.size(); i++ )
-    //     {
-    //         for( int j = 0; j< hull[i].size(); j++ )
-    //         {
-    //             circle(orign2,hull[i][j],2,Scalar(0,0,255),CV_FILLED,-1);
-    //         }
-    //     }
-    // }
-    
-    // imshow("orign2",orign2);
-    orign.copyTo(nobackgroud_image,Gmask);
+    // ROS_INFO("----------------hull = %d",hull.size());  
+    // ROS_INFO("----------------greenhull = %d",greenhull.size()); 
 
+    orign.copyTo(nobackgroud_image,Gmask);
+    // imshow("nobackgroud_image",nobackgroud_image);
     for(int col = 0; col < nobackgroud_image.cols;col++)
     {
         for(int row = nobackgroud_image.rows -1 ; row > 0 ;row--)
@@ -227,6 +200,7 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
             }
         }
     }
+    
     Mat greenmask_element = getStructuringElement(MORPH_RECT, Size(4, 4)); 
     dilate(nobackgroud_image,nobackgroud_image,greenmask_element);
     contours.clear();
@@ -236,9 +210,6 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
     
     // imshow("nobackgroud_image1",nobackgroud_image);
     // resize(nobackgroud_image, nobackgroud_image, cv::Size(320, 240));
-    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time2);
-    // cout << "imageprocessing total time (clock_gettime) = " << diff(time1, time2).tv_sec << ":" << diff(time1, time2).tv_nsec << endl;
-
     return nobackgroud_image;
 }
 
@@ -255,20 +226,17 @@ Mat LineDetected::ImageCanny(const Mat iframe)
 
 Pixel3Dpoint LineDetected::deproject_pixel2point(Coordinate point,float depth)
 {
-    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
     // ROS_INFO("deproject_pixel2point");
     Pixel3Dpoint pixel3Dpoint = {0,0,0};
     Intrinsicscolor color_Intrinsics={312.2850,249.5522,615.0078,615.1781};
     pixel3Dpoint.x = depth * (point.X - color_Intrinsics.PPX)/color_Intrinsics.Fx;
     pixel3Dpoint.y = depth * (point.Y - color_Intrinsics.PPY)/color_Intrinsics.Fy;
     pixel3Dpoint.z = depth;
-    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time2);
-    // cout << "deproject_pixel2point total time (clock_gettime) = " << diff(time1, time2).tv_sec << ":" << diff(time1, time2).tv_nsec << endl;
+ 
     return pixel3Dpoint;
 }
 double LineDetected::calculate_3D(Coordinate a, Coordinate b)
 {
-    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
     // ROS_INFO("calculate_3D");
     float pointA = 0;
     float pointB = 0;
@@ -293,8 +261,7 @@ double LineDetected::calculate_3D(Coordinate a, Coordinate b)
     // ROS_INFO("A.x = %f,A.y = %f,A.z = %f",A.x,A.y,A.z);
     // ROS_INFO("B.x = %f,B.y = %f,B.z = %f",B.x,B.y,B.z);
     double dist = sqrt(pow((A.x-B.x),2)+pow((A.y-B.y),2)+pow((A.z-B.z),2));
-    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time2);
-    // cout << "calculate_3D total time (clock_gettime) = " << diff(time1, time2).tv_sec << ":" << diff(time1, time2).tv_nsec << endl;
+
     return dist;
 }
 
@@ -323,7 +290,6 @@ int LineDetected::dir(Coordinate A, Coordinate B, Coordinate P)      //點P與�
 double LineDetected::disMin(Coordinate A, Coordinate B, Coordinate P,CameraType cameratype) //點P到線段AB的最短距離
 {
     // ROS_INFO("disMin");
-    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
     double r = ((P.X-A.X)*(B.X-A.X) + (P.Y-A.Y)*(B.Y-A.Y)) / dis2(A, B);
 	double dist = 0;
     double dist1 = 0;
@@ -372,8 +338,6 @@ double LineDetected::disMin(Coordinate A, Coordinate B, Coordinate P,CameraType 
         }
     }
     
-    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time2);
-    // cout << "disMin total time (clock_gettime) = " << diff(time1, time2).tv_sec << ":" << diff(time1, time2).tv_nsec << endl;
     return dist;
 }
 
@@ -440,21 +404,18 @@ double LineDetected::Slope(Vec4i line)
     if((line[2]-line[0]) == 0) return 90.0;
     else {
         double s = atan2((double(Xend.y)-double(Xstart.y)),(double(Xend.x)-double(Xstart.x)))*RAD2DEG;
-        if(s > 180.0) return -360.0 + s;
-        else if( s < -180.0) return 360.0 + s;
-        else if(s < 0.0 && s > -180.0)return 180.0 + s;
-        else return 180.0 - s;
+        ROS_INFO("line %d %d %d %d theta = %f",line[0],line[1],line[2],line[3],s);
+        if(s < 0.0)return 180.0 + s;
+        else return s;
     }
 }
 
 void LineDetected::Merge(Vec4i X,Vec4i Y)
 {
-    ROS_INFO("X = %d %d %d %d",X[0],X[1],X[2],X[3]);
-    ROS_INFO("Y = %d %d %d %d",Y[0],Y[1],Y[2],Y[3]);
+    // ROS_INFO("X = %d %d %d %d",X[0],X[1],X[2],X[3]);
+    // ROS_INFO("Y = %d %d %d %d",Y[0],Y[1],Y[2],Y[3]);
     //ROS_INFO("Merge");
-    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
-    Coordinate Xm = Midpoint(X);
-    Coordinate Ym = Midpoint(Y);
+    
     Coordinate Xstart = {0,0};
     Coordinate Xend = {0,0};
     Coordinate Ystart = {0,0};
@@ -475,15 +436,19 @@ void LineDetected::Merge(Vec4i X,Vec4i Y)
         Ystart = {Y[0],Y[1]};
         Yend = {Y[2],Y[3]};
     }
+    Vec4i XX = {Xstart.X,Xstart.Y,Xend.X,Xend.Y};
+    Vec4i YY = {Ystart.X,Ystart.Y,Yend.X,Yend.Y};
+    Coordinate Xm = Midpoint(XX);
+    Coordinate Ym = Midpoint(YY);
+
+    XDistance = double(sqrt(dis2(Xstart,Xend)));
+    YDistance = double(sqrt(dis2(Ystart,Yend)));
     
-    XDistance = sqrt(dis2(Xstart,Xend));
-    YDistance = sqrt(dis2(Ystart,Yend));
-    ROS_INFO("XDistance = %f ",XDistance);
-    ROS_INFO("YDistance = %f ",YDistance);
     
-    if(XDistance >= YDistance) theta = Slope(X);
-    else theta = Slope(Y);
-    
+    if(XDistance >= YDistance) theta = Slope(XX);
+    else theta = Slope(YY);
+    // ROS_INFO("Slope(X) = %f ",Slope(X));
+    // ROS_INFO("Slope(Y) = %f ",Slope(Y));
     NewLine = {0,0,0,0};
     if(theta == 0.0)
     {
@@ -500,8 +465,8 @@ void LineDetected::Merge(Vec4i X,Vec4i Y)
     else
     {
         double r = XDistance/(XDistance + YDistance);
-        Coordinate P = { round((r * Xm.X)+((1-r)*Ym.X) ), round((r * Xm.Y) + ((1 - r) * Ym.Y))};
-        double Za = tan ( theta * DEG2RAD);
+        Coordinate P = { round((r * Xm.X)+((1.0-r)*Ym.X) ), round((r * Xm.Y) + ((1.0 - r) * Ym.Y))};
+        double Za = tan( theta * DEG2RAD);
         double Zb = double(P.Y) - (Za * double(P.X)); 
 
         double m = -(1.0/Za);
@@ -512,21 +477,21 @@ void LineDetected::Merge(Vec4i X,Vec4i Y)
 
         //printf("Za = %f Zb =%f m = %f SbXstart = %f SbXend = %f SbYstart = %f SbYend = %f\n",Za,Zb,m,SbXstart,SbXend,SbYstart,SbYend);
         int x1 = round(-(Zb-SbXstart)/(Za-m));
-        int y1 = round(((Za+m)*x1+(Zb+SbXstart))/2);
+        int y1 = round((((Za+m)*x1)+(Zb+SbXstart))/2);
         Coordinate projXs={x1,y1};
-        //printf("x1 = %d y1 =%d\n",x1,y1);
+        printf("x1 = %d y1 =%d\n",x1,y1);
         int x2 = round(-(Zb-SbXend)/(Za-m));
-        int y2 = round(((Za+m)*x2+(Zb+SbXend))/2);
+        int y2 = round((((Za+m)*x2)+(Zb+SbXend))/2);
         Coordinate projXe={x2,y2};
-        //printf("x2 = %d y2 =%d\n",x2,y2);
+        printf("x2 = %d y2 =%d\n",x2,y2);
         int x3 = round(-(Zb-SbYstart)/(Za-m));
-        int y3 = round(((Za+m)*x3+(Zb+SbYstart))/2);
+        int y3 = round((((Za+m)*x3)+(Zb+SbYstart))/2);
         Coordinate projYs={x3,y3};
-        //printf("x3 = %d y3 =%d\n",x3,y3);
+        printf("x3 = %d y3 =%d\n",x3,y3);
         int x4 = round(-(Zb-SbYend)/(Za-m));
-        int y4 = round(((Za+m)*x4+(Zb+SbYend))/2);
+        int y4 = round((((Za+m)*x4)+(Zb+SbYend))/2);
         Coordinate projYe={x4,y4};
-        //printf("x4 = %d y4 =%d\n",x4,y4);
+        printf("x4 = %d y4 =%d\n",x4,y4);
 
         double projXsToprojXe = sqrt(dis2(projXs,projXe));
         double projXsToprojYs = sqrt(dis2(projXs,projYs));
@@ -540,33 +505,37 @@ void LineDetected::Merge(Vec4i X,Vec4i Y)
         
         if(distanceset[5] == projXsToprojXe ) 
         {
+            ROS_INFO("1");
             NewLine = {x1,y1,x2,y2};
         }
         if(distanceset[5] == projXsToprojYs )
         {
+            ROS_INFO("2");
             NewLine = {x1,y1,x3,y3};
         }
         if(distanceset[5] == projXsToprojYe )
         {
+            ROS_INFO("3");
             NewLine = {x1,y1,x4,y4};
         }
         if(distanceset[5] == projXeToprojYs )
         {
+            ROS_INFO("4");
             NewLine = {x2,y2,x3,y3};
         }
         if(distanceset[5] == projXeToprojYe )
         {
+            ROS_INFO("5");
             NewLine = {x2,y2,x4,y4};
         }
         if(distanceset[5] == projYsToprojYe )
         {
+            ROS_INFO("6");
             NewLine = {x3,y3,x4,y4};
         }
 
     }
-    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time2);
-    // cout << "Merge total time (clock_gettime) = " << diff(time1, time2).tv_sec << ":" << diff(time1, time2).tv_nsec << endl;
-    ROS_INFO("theta = %f, XDistance = %f, YDistance = %f NewLine = %f",theta,Slope(X),Slope(Y),Slope(NewLine));
+    ROS_INFO("theta = %f,Slope(X) = %f, Slope(Y) = %f NewLine = %f",theta,Slope(X),Slope(Y),Slope(NewLine));
 
     ROS_INFO("NewLine[0]=%d NewLine[1]=%d NewLine[2]=%d NewLine[3]=%d\n",NewLine[0],NewLine[1],NewLine[2],NewLine[3]);
 }
@@ -574,7 +543,6 @@ void LineDetected::Merge(Vec4i X,Vec4i Y)
 int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
 { 
     // ROS_INFO("checkline");
-    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
     Point Xstart = Point(line[0],line[1]);
     Point Xend = Point(line[2],line[3]);
     int x1 = 0;
@@ -603,7 +571,7 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
     int Vedge = 0;
     int Verror = 0;
 
-    ROS_INFO("line %d %d %d %d, theta = %f,para = (%f,%f) ",x1,y1,x2,y2,theta,para_a,para_b);
+    // ROS_INFO("line %d %d %d %d, theta = %f,para = (%f,%f) ",x1,y1,x2,y2,theta,para_a,para_b);
     int counter = 0;
     if(abs(x2-x1)>20)
     {
@@ -614,7 +582,7 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
         counter = 1;
     }
     int countfor = 0;
-    ROS_INFO("counter = %d",counter);
+    // ROS_INFO("counter = %d",counter);
     for(int i = 0; i <= abs(x2-x1); i=i+counter)
     {
         float x = 0.0;
@@ -636,12 +604,12 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
 
                 if(x_1>639||x_1<0)
                 {
-                    ROS_INFO("0 continue");
+                    // ROS_INFO("0 continue");
                     continue;
                 }               
                 if(y_1>479||y_1<0)
                 {
-                    ROS_INFO("0 continue");
+                    // ROS_INFO("0 continue");
                     continue;
                 }
                 // ROS_INFO("para_inv = (%f,%f)",para_a_inv,para_a_inv);
@@ -689,12 +657,12 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
 
                 if(x_1>639||x_1<0)
                 {
-                    ROS_INFO("90 continue");
+                    // ROS_INFO("90 continue");
                     continue;
                 }               
                 if(y_1>479||y_1<0)
                 {
-                    ROS_INFO("90 continue");
+                    // ROS_INFO("90 continue");
                     continue;
                 }
                 // ROS_INFO("para_inv = (%f,%f)",para_a_inv,para_a_inv);
@@ -756,7 +724,7 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
                 if(x_1>639.0||x_1<0.0)
                 {
                     
-                    ROS_INFO("else continue x_1 = %f",x_1);
+                    // ROS_INFO("else continue x_1 = %f",x_1);
                     continue;
                 }
                 y_1 = (x_1 * para_a_inv) + para_b_inv;
@@ -764,7 +732,7 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
                 // ROS_INFO("pos = (%f,%f)",x_1,y_1);
                 if(y_1 > 479.0||y_1 < 0.0)
                 {
-                    ROS_INFO("else continue y_1 = %f",y_1);
+                    // ROS_INFO("else continue y_1 = %f",y_1);
                     continue;
                 }
                 
@@ -798,13 +766,11 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
         }
         countfor ++;
     }
-    ROS_INFO("Vgreen = %d, Vwhite = %d,Vedge = %d",Vgreen,Vwhite,Vedge);
+    // ROS_INFO("Vgreen = %d, Vwhite = %d,Vedge = %d",Vgreen,Vwhite,Vedge);
     float avg_G = (float)Vgreen/(float)(countfor);
     float avg_W = (float)Vwhite/(float)(countfor);
     float avg_E = (float)Vedge/(float)(countfor);
-    ROS_INFO("avg_G = %f, avg_W = %f,avg_E = %f",avg_G,avg_W,avg_E);
-    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time2);
-    // cout << "checkline total time (clock_gettime) = " << diff(time1, time2).tv_sec << ":" << diff(time1, time2).tv_nsec << endl;
+    // ROS_INFO("avg_G = %f, avg_W = %f,avg_E = %f",avg_G,avg_W,avg_E);
     if(avg_G >= 10.0 && avg_W >= 4.0 && avg_E >=0.4) return 1;
     else return 0;
 }
@@ -823,7 +789,6 @@ vector<Vec4i> LineDetected::complement(vector<Vec4i> all_line,Vec4i remove)
 
 Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,const Mat ori_frame)
 {
-    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time1);
     all_lines.clear();
     all_lines1.clear();
     tmp.clear();
@@ -837,7 +802,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
     all_lines1 = all_lines;
 
     int all_lines_Size = all_lines.size();
-    ROS_INFO("all_lines_Size = %d",all_lines_Size);
+    // ROS_INFO("all_lines_Size = %d",all_lines_Size);
     // ROS_INFO("/---------------start-------------/");
     merge_similar_lines = all_lines;
 
@@ -845,12 +810,6 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
     {
         // ROS_INFO("all_lines %d",i);
         Vec4i X = all_lines[i];
-        // if(LineorNot(X) == 0)
-        // {
-        //     merge_similar_lines = complement(merge_similar_lines,X);
-        //     all_lines = complement(all_lines,X);
-        //     continue;
-        // }
         ROS_INFO("all_line(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",i,X[0],X[1],X[2],X[3],Slope(X));
         merge_similar_lines = complement(merge_similar_lines,X);
         int merge_similar_lines_SIZE = merge_similar_lines.size();
@@ -859,7 +818,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
         if(all_lines.size() == 1)
         {
             int checklineX = checkline(nobackgroud_image,canny_iframe,X);
-            ROS_INFO("all_line(%d) checkline X = %d",i,checklineX);
+            // ROS_INFO("all_line(%d) checkline X = %d",i,checklineX);
             if(checklineX == 1)
             {
                 check_lines.push_back(X);
@@ -873,21 +832,21 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
                 Vec4i Y = merge_similar_lines[j];
                 // ROS_INFO("merge_similar_lines(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",j,Y[0],Y[1],Y[2],Y[3],Slope(Y));
                 int checklineY = checkline(nobackgroud_image,canny_iframe,Y);
-                ROS_INFO("merge_line(%d) checkline Y = %d",j,checklineY);
+                // ROS_INFO("merge_line(%d) checkline Y = %d",j,checklineY);
                 if(checklineY == 0)
                 {
                     merge_similar_lines = complement(merge_similar_lines,Y);
                     all_lines = complement(all_lines,Y);
                 }else{
                     // ROS_INFO("merge_similar_lines(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",j,Y[0],Y[1],Y[2],Y[3],Slope(Y));
-                    ROS_INFO("MinDistance = %f",MinDistance(X,Y));
-                    ROS_INFO("AngleDiff = %f",AngleDiff(X,Y));
-                    if(MinDistance(X,Y) < 10 && AngleDiff(X,Y) < 5 && LineorNot(Y) == 1)
+                    // ROS_INFO("MinDistance = %f",MinDistance(X,Y));
+                    // ROS_INFO("AngleDiff = %f",AngleDiff(X,Y));
+                    if(MinDistance(X,Y) < 10 && AngleDiff(X,Y) < 2 && LineorNot(Y) == 1)
                     {
                         // ROS_INFO("--------Merge--------");
                         Merge(X,Y);
                         int checklinenum = checkline(nobackgroud_image,canny_iframe,NewLine);
-                        ROS_INFO("NewLine checkline = %d",checklinenum);
+                        // ROS_INFO("NewLine checkline = %d",checklinenum);
                         if(checklinenum == 1)
                         {
                             check = 1; 
@@ -1013,7 +972,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
         reduce_similar_lines.clear();    
         all_lines_Size ++;
     }
-    ROS_INFO("check_lines.size = %d",check_lines.size());
+    // ROS_INFO("check_lines.size = %d",check_lines.size());
 
     // ROS_INFO("/---------------finish-------------/");
     
@@ -1033,7 +992,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
             continue;
         }
         
-        ROS_INFO("check_lines = (x1= %d ,y1 = %d ,x2 = %d ,y2 = %d)",l[0],l[1],l[2],l[3]);
+        // ROS_INFO("check_lines = (x1= %d ,y1 = %d ,x2 = %d ,y2 = %d)",l[0],l[1],l[2],l[3]);
         Coordinate startp;
         Coordinate endp;
         if(l[3]>l[1])
@@ -1046,12 +1005,9 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
         }
         Coordinate pointP = {320,480};
         Coordinate midpoint = Midpoint(l);
-        // Distance middlepoint = measure(midpoint.X,midpoint.Y,CameraType::stereo);
         Distance start_ = measure(startp.X,startp.Y,CameraType::stereo);
         Distance end_ = measure(endp.X,endp.Y,CameraType::stereo);
         double dis =  sqrt(pow((start_.x_dis - end_.x_dis),2) + pow((start_.y_dis - end_.y_dis),2));
-        // Coordinate FOV_Bottom_POS = {image_bottom_width_length/2,0};
-        // double AdotB = FOV_Bottom_POS.X*middlepoint.x_dis + FOV_Bottom_POS.Y*middlepoint.y_dis;
         
         tku_msgs::LineData line_tmp;
         tku_msgs::Cooridinate mid_point;
@@ -1063,14 +1019,12 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
         tku_msgs::Cooridinate endpoint;
         endpoint.x = endp.X;
         endpoint.y = endp.Y;
-        // tku_msgs::Distance relative_dis;
         double mindis = disMin(startp,endp,pointP,CameraType::Monocular);//點P到線段AB的最短距離
         Point minIntersectPoint = MinIntersectPoint(l,Point(320,479),mindis);
         Distance relativedis = measure(minIntersectPoint.x,minIntersectPoint.y,CameraType::stereo);
         tku_msgs::Cooridinate IntersectPoint;
         IntersectPoint.x = minIntersectPoint.x;
         IntersectPoint.y = minIntersectPoint.y;
-        // relative_dis.dis =  relativedis.dis;
         line_tmp.start_point = startpoint;
         line_tmp.end_point = endpoint;
         line_tmp.center_point = mid_point;
@@ -1079,7 +1033,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
         line_tmp.relative_distance = relativedis.dis;
         line_tmp.Nearest_point = IntersectPoint;
         // line_tmp.Line_theta = acos((AdotB)/((image_bottom_width_length/2)*(middlepoint.dis)))*180/CV_PI;
-        ROS_INFO("Line %d : %d %d %d %d (x,y) = (%d ,%d) , distance =  %d", i,l[0],l[1],l[2],l[3],minIntersectPoint.x,minIntersectPoint.y,relativedis.dis);
+        // ROS_INFO("Line %d : %d %d %d %d (x,y) = (%d ,%d) , distance =  %d", i,l[0],l[1],l[2],l[3],minIntersectPoint.x,minIntersectPoint.y,relativedis.dis);
         JustLine_Data.landmark.push_back(line_tmp);
  
         line( merge_hough_frame, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0,0,255), 2, CV_AA);
@@ -1087,11 +1041,8 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
     }
     // imshow("hough_frame",hough_frame);
     // imshow("merge_hough_frame",merge_hough_frame);
-    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, & time2);
-    // cout << "Merge_similar_line total time (clock_gettime) = " << diff(time1, time2).tv_sec << ":" << diff(time1, time2).tv_nsec << endl;
     return merge_hough_frame;
 }
-
 
 //-----------Hough threshold-------------------
 void LineDetected::LoadHoughFile()
@@ -1107,7 +1058,7 @@ void LineDetected::LoadHoughFile()
     //fin.open(("../../Parameter/Color_Model_Data/ColorModelData.ini"), ios::in);
     try
     {
-        ROS_INFO("path = %s",path);
+        // ROS_INFO("path = %s",path);
         fin.getline(line,sizeof(line),'\n');
         hough_threshold = tool->readvalue(fin, "Hough_threshold", 0);
         hough_minLineLength = tool->readvalue(fin, "Hough_minLineLength", 0);
@@ -1129,7 +1080,6 @@ void LineDetected::SaveHoughFile()
     strcat(path, "/Hough_Value.ini");
     try
     {
-//       ofstream OutFile(sFileName.c_str());
         ofstream OutFile(path);
         OutFile << "[HoughRange]";
         OutFile << "\n";
@@ -1149,7 +1099,7 @@ void LineDetected::SaveHoughFile()
     }
 }
 
-Mat LineDetected::fitLineRANSAC(Mat ori,Mat drawing,vector<vector<Point> > allfieldpoints)
+Mat LineDetected::UpperConvexHull(Mat ori,Mat drawing,vector<vector<Point> > allfieldpoints)
 {
     vector<Point> Allgreenhull;
 
@@ -1174,11 +1124,14 @@ Mat LineDetected::fitLineRANSAC(Mat ori,Mat drawing,vector<vector<Point> > allfi
             upperCH.pop_back();
         upperCH.push_back(points[n_points-i-1]);
     }
+
     // 畫出upper convex hull
-    // for ( size_t i = 0; i < upperCH.size(); i++ )
-    // {
-    //     circle(mask,upperCH[i],3,Scalar(255,0,255),CV_FILLED,1);	
-    // }
+    Mat mask = Mat::zeros(orign.rows,orign.cols, CV_8UC1); 
+    for ( size_t i = 0; i < upperCH.size(); i++ )
+    {
+        circle(mask,upperCH[i],3,Scalar(255,255,255),CV_FILLED,1);	
+    }
+
     Mat mask1 = Mat::zeros(orign.rows,orign.cols, CV_8UC3); 
     vector<vector<Point> > contours(1);
     convexHull(Mat(upperCH), contours[0], false );
@@ -1186,6 +1139,7 @@ Mat LineDetected::fitLineRANSAC(Mat ori,Mat drawing,vector<vector<Point> > allfi
     {
 		drawContours( mask1, contours, i, Scalar(255,255,255), -1);
 	}
+    // imshow("mask1",mask1);
 
     vector<Point> fieldboundary;
     for(int i = 0; i < mask1.cols;i++)
@@ -1196,7 +1150,7 @@ Mat LineDetected::fitLineRANSAC(Mat ori,Mat drawing,vector<vector<Point> > allfi
             int a = mask1.at<Vec3b>(k, i)[0];
             int b = mask1.at<Vec3b>(k, i)[1];
             int c = mask1.at<Vec3b>(k, i)[2];
-            if( a == 255 && b == 255 & c ==255)
+            if( a == 255 && b == 255 && c ==255 && k < mask1.rows -10 )
             {
                 A = Point(i,k);
                 break;
@@ -1204,6 +1158,7 @@ Mat LineDetected::fitLineRANSAC(Mat ori,Mat drawing,vector<vector<Point> > allfi
         }
         fieldboundary.push_back(A);
     }
+
 
     for(int i = 0; i < fieldboundary.size();i++)
     {
@@ -1218,69 +1173,8 @@ Mat LineDetected::fitLineRANSAC(Mat ori,Mat drawing,vector<vector<Point> > allfi
             }
         }
     }
-    imshow("drawing",drawing);
+    // imshow("drawing",drawing);
 
-
-    // Vec4i lineParam = {0,0,0,0};
-    // Point ls = Point(0,0);
-    // Point le = Point(0,0);    
-    // unsigned int n = upperCH.size();
-    // if(n<2)
-    // {
-    //     return drawing;
-    // }
-    // double kmax = 5.;
-    // double kmin = -5.;
-    // RNG rng;
-    // double bestscore = -1.;
-    // for(int i=0; i<1000;i++)
-    // {
-    //     int i1 = 0;
-    //     int i2 = 0;
-    //     while(i1==i2)
-    //     {
-    //         i1 = rng(n);
-    //         i2 = rng(n);
-    //     }
-    //     const Point& p1 = upperCH[i1];
-    //     const Point& p2 = upperCH[i2];
-
-    //     Point2f dp = p2 - p1;
-        
-    //     dp *= 1./norm(dp);
-    //     double score = 0.0;
-    //     if((dp.y/dp.x) <= kmax && (dp.y/dp.x) >= kmin)
-    //     {    
-
-    //         for(int j=0; j<n; j++)
-    //         {    
-    //             Point2f checkpoint = upperCH[j]-p1;
-    //             double d = (checkpoint.y * dp.x) - (checkpoint.x*dp.y);
-    //             if(fabs(d)< 10)
-    //                 score += 1.;
-    //         }
-    //     }
-    //     if(score > bestscore)
-    //     {
-    //         lineParam = Vec4i(int(dp.x),int(dp.y),int(p1.x),int(p1.y));
-    //         ls = Point(int(dp.x),int(dp.y));
-    //         le = Point(int(p1.x),int(p1.y));
-    //         bestscore = score;
-    //     }
-    // } 
-    // double k = (double)lineParam[1] / (double)lineParam[0];
-    // double b = (double)lineParam[3] - k*(double)lineParam[2];
-
-    // // cv::Point p1,p2;
-    // // p1.y = 480;
-    // // p1.x = round(( p1.y - b) / k);
-
-    // // p2.y = 240;
-    // // p2.x = round((p2.y-b) / k);
-    
-    // line(ori, ls, le, Scalar(255, 255, 0), 3);
-    // imshow("ori",ori);
-    // waitKey(0);
     fieldboundary.clear();
     upperCH.clear();
     contours.clear();
@@ -1289,30 +1183,3 @@ Mat LineDetected::fitLineRANSAC(Mat ori,Mat drawing,vector<vector<Point> > allfi
     return drawing;
 }
 
-
-// int LineDetected::getHistograph(const Mat grayImage)
-// {
-//     int channels[]={0};
-// 	const int histSize[]={256};
-// 	float range[]={0,256};
-// 	const float* ranges[]={range};
-// 	calcHist(&grayImage,1,channels,Mat(),hist,1,histSize,ranges,true,false);
-// 	double maxValue=0;
-// 	minMaxLoc(hist,0,&maxValue,0,0);
-// 	int rows=cvRound(maxValue);
-// 	for(int i=0;i<256;i++)
-// 	{
-// 		int temp=(int)(hist.at<float>(i,0));
-//         if (i>=10&&temp_max<=temp)
-//         {
-//             temp_max=temp;
-//             i_min = i;
-//         }
-//         if (temp > 0)
-//         {
-//             temp_min=temp;
-//             i_max = i;
-//         }
-// 	}
-//     return (i_max-i_min)*0.5+i_min;	
-// }

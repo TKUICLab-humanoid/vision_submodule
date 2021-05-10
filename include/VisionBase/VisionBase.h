@@ -97,6 +97,10 @@ static bool sortPoints(Point &lhs,Point &rhs){
    return  (lhs.x < rhs.x) || (lhs.x==rhs.x && lhs.y < rhs.y);;
 }
 
+static bool sortPointsy(Point &lhs,Point &rhs){
+   return  (lhs.y > rhs.y) || (lhs.y==rhs.y && lhs.x < rhs.x);;
+}
+
 static bool right_turn(Point &P1, Point &P2, Point &P3)
 {
     return ((P3.x-P1.x)*(P2.y-P1.y) - (P3.y-P1.y)*(P2.x-P1.x)) > 0;
