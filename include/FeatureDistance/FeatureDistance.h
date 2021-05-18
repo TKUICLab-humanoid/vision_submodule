@@ -15,6 +15,10 @@ class FeatureDistance : public ObjectDetected
         double RobotWidth;
 	    ToolInstance *tool;
     public:
+        double pre_x_dis;
+        double pre_y_dis;
+        double pre_xy_dis;
+        
         float camera_height;    //機器人高度
         float camera2robot_dis;
 

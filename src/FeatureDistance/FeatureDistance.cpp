@@ -61,13 +61,13 @@ Distance FeatureDistance::measureLine(int Feature_x, int Feature_y) //LightLight
         if(height_cnt > 240)
         {
             error_y = height_cnt - 240.0;
-            vertical_angle = image_bottom_angle + half_VFOV_angle - atan2(error_y , 640) * 180 / PI;
+            vertical_angle = image_bottom_angle + half_VFOV_angle - atan2(error_y  * tan(half_VFOV_angle * DEG2RAD), 640) * 180 / PI;
             distance.y_dis = camera_height * tan(vertical_angle * DEG2RAD) + camera2robot_dis;
         }
         else
         {
             error_y = 240.0 - height_cnt;
-            vertical_angle = image_bottom_angle + half_VFOV_angle + atan2(error_y , 640) * 180 / PI;
+            vertical_angle = image_bottom_angle + half_VFOV_angle + atan2(error_y  * tan(half_VFOV_angle * DEG2RAD), 640) * 180 / PI;
             distance.y_dis = camera_height * tan(vertical_angle * DEG2RAD) + camera2robot_dis;
         }
         if(width_cnt > 320)
@@ -101,15 +101,14 @@ Distance FeatureDistance::measureLine(int Feature_x, int Feature_y) //LightLight
     return distance;
 }
 
-Distance FeatureDistance::measureObject(int Feature_x, int Feature_y, int Width, int Height)// Lee
+Distance FeatureDistance::measureObject(int Feature_x, int Feature_y, int Width, int Height) // Lee
 {
     double width_cnt = (double)Feature_x;
-    double height_cnt = (double)Feature_y;
+    // double height_cnt = (double)Feature_y;
     double error_x;
     double error_y;
-    double x_ratio;
-    double y_ratio;
-    double ratio_angle;
+    // double x_ratio;
+    // double y_ratio;
     double yz_dis;
     double x_dis;
     double y_dis;
@@ -119,77 +118,71 @@ Distance FeatureDistance::measureObject(int Feature_x, int Feature_y, int Width,
 
     if(Feature_x == -1 && Feature_y == -1)
     {
+        pre_x_dis = -1;
+        pre_y_dis = -1;
+        pre_xy_dis = -1;
+
         distance.x_dis = -1;
         distance.y_dis = -1;
         distance.dis = -1;
     }
-    else
+    else if(!depth_buffer.empty())
     {
-        if(height_cnt > 240)
-        {
-            error_y = height_cnt - 240.0;
-            vertical_angle = image_bottom_angle + half_VFOV_angle - atan2(error_y , 240) * 180 / PI;
-            y_ratio = camera_height * tan(vertical_angle * DEG2RAD);
-        }
-        else
-        {
-            error_y = 240.0 - height_cnt;
-            vertical_angle = image_bottom_angle + half_VFOV_angle + atan2(error_y , 240) * 180 / PI;
-            y_ratio = camera_height * tan(vertical_angle * DEG2RAD);
-        }
+        // if(height_cnt > 240)
+        // {
+        //     error_y = height_cnt - 240.0;
+        //     vertical_angle = image_bottom_angle + half_VFOV_angle - atan2(error_y * tan(half_VFOV_angle * DEG2RAD), 240) * 180 / PI;
+        //     y_ratio = camera_height * tan(vertical_angle * DEG2RAD);
+        // }
+        // else
+        // {
+        //     error_y = 240.0 - height_cnt;
+        //     vertical_angle = image_bottom_angle + half_VFOV_angle + atan2(error_y * tan(half_VFOV_angle * DEG2RAD), 240) * 180 / PI;
+        //     y_ratio = camera_height * tan(vertical_angle * DEG2RAD);
+        // }
         if(width_cnt > 320)
         {
             error_x = width_cnt - 320.0;
             horizontal_angle = atan2(error_x, image_center_horizontal_length) * 180 / PI;
-            x_ratio = (camera_height / cos(vertical_angle * DEG2RAD)) * tan(horizontal_angle * DEG2RAD);
+            // x_ratio = (camera_height / cos(vertical_angle * DEG2RAD)) * tan(horizontal_angle * DEG2RAD);
         }
         else
         {
             error_x = 320.0 - width_cnt;
             horizontal_angle = -(atan2(error_x, image_center_horizontal_length) * 180 / PI);
-            x_ratio = (camera_height / cos(vertical_angle * DEG2RAD)) * tan(horizontal_angle * DEG2RAD);
+            // x_ratio = (camera_height / cos(vertical_angle * DEG2RAD)) * tan(horizontal_angle * DEG2RAD);
         }
 
-        ROS_INFO("horizontal_angle: %lf", horizontal_angle);
-        ROS_INFO("vertical_angle: %lf", vertical_angle);
-        ROS_INFO("Width: %d", Width);
-        ROS_INFO("Height: %d\n", Height);
-        // ROS_INFO("x_ratio: %lf", x_ratio);
-        // ROS_INFO("y_ratio: %lf\n", y_ratio);
-        ratio_angle = atan2(x_ratio, y_ratio) * 180 / PI;
-        if(!depth_buffer.empty())
-        {
-            ROS_INFO("Feature_x: %d", Feature_x);
-            ROS_INFO("Feature_y: %d", Feature_y);
-            yz_dis = (depth_buffer.at<uint16_t>(Feature_y, Feature_x))*0.1 + 1.0 + 6.5 ;//獲取圖像座標Feature_y,Feature_x的深度值,單位是公分
-            ROS_INFO("yz_dis: %lf\n", yz_dis);
-        }
-        // x_dis = sqrt(pow(yz_dis,2)-pow(camera_height-7.9,2)) * tan(ratio_angle * DEG2RAD) - 5.0;
+        yz_dis = (depth_buffer.at<uint16_t>(Feature_y, Feature_x)) * 0.1 + HW_Camera + R_Ball;//獲取圖像座標Feature_y,Feature_x的深度值,單位是公分
         x_dis = yz_dis * tan(horizontal_angle * DEG2RAD);
-        y_dis = sqrt(pow(yz_dis,2)-pow(camera_height-7.9,2)) + camera2robot_dis; // 1.4 6.5
-        xy_dis = sqrt(pow(x_dis,2)+pow(y_dis,2));
+        y_dis = sqrt(pow(yz_dis, 2)-pow(camera_height - L_Shoes - R_Ball, 2)) + camera2robot_dis; // 1.4 6.5
+        xy_dis = sqrt(pow(x_dis, 2)+pow(y_dis, 2));
         object_angle = atan2(x_dis, y_dis) * 180 / PI;
 
         if(Horizontal_Head_Angle != 0)
         {
             y_dis = xy_dis * cos((-Horizontal_Head_Angle + object_angle) * DEG2RAD);
             x_dis = xy_dis * sin((-Horizontal_Head_Angle + object_angle) * DEG2RAD);
-            ROS_INFO("-Horizontal_Head_Angle: %lf", -Horizontal_Head_Angle);
-            ROS_INFO("object_angle: %lf", object_angle);
-            ROS_INFO("Angle: %lf\n", -Horizontal_Head_Angle + object_angle);
         }
 
-        ROS_INFO("camera_height-7.9: %lf", camera_height-7.9);
-        ROS_INFO("ratio_angle: %lf", ratio_angle);
-        ROS_INFO("camera2robot_dis: %lf", camera2robot_dis);
-        ROS_INFO("pre_x_dis: %lf", sqrt(pow(yz_dis,2)-pow(camera_height-7.9,2)) * tan(ratio_angle * DEG2RAD) - 5.0);
+        ROS_INFO("yz_dis: %lf", yz_dis);
         ROS_INFO("x_dis: %lf", x_dis);
         ROS_INFO("y_dis: %lf", y_dis);
         ROS_INFO("xy_dis: %lf\n", xy_dis);
 
+        pre_x_dis = x_dis;
+        pre_y_dis = y_dis;
+        pre_xy_dis = xy_dis;
+
         distance.x_dis = x_dis;
         distance.y_dis = y_dis;
         distance.dis = xy_dis;
+    }
+    else
+    {
+        distance.x_dis = pre_x_dis;
+        distance.y_dis = pre_y_dis;
+        distance.dis = pre_xy_dis;
     }
 
     return distance;
@@ -206,13 +199,13 @@ void FeatureDistance::calcImageAngle(motordata Horizontal_Head,motordata Vertica
     float foot2robot_angle;
     if((Robot_Pitch - Pitch_init) >= 0)
     {
-        foot2robot_dis = sqrt(pow(RobotHeight,2)+pow(RobotWidth-7.5,2)); // front shoe
-        foot2robot_angle = atan2(RobotHeight, RobotWidth-7.5) * 180 / PI - (Robot_Pitch - Pitch_init);
+        foot2robot_dis = sqrt(pow(RobotHeight, 2)+pow(RobotWidth - W_Front, 2)); // front shoe
+        foot2robot_angle = atan2(RobotHeight, RobotWidth - W_Front) * 180 / PI - (Robot_Pitch - Pitch_init);
     }
     else
     {
-        foot2robot_dis = sqrt(pow(RobotHeight,2)+pow(RobotWidth+6.5,2)); // behind shoe
-        foot2robot_angle = atan2(RobotHeight, RobotWidth+6.5) * 180 / PI - (Robot_Pitch - Pitch_init);
+        foot2robot_dis = sqrt(pow(RobotHeight, 2)+pow(RobotWidth + W_Behind, 2)); // behind shoe
+        foot2robot_angle = atan2(RobotHeight, RobotWidth + W_Behind) * 180 / PI - (Robot_Pitch - Pitch_init);
     }
     camera_height = foot2robot_dis * sin(foot2robot_angle * DEG2RAD) + L_CAMERA * sin((Vertical_Head_Angle - Moving_angle_error) * DEG2RAD);
     // ROS_INFO("foot2robot_dis = %f", foot2robot_dis * sin(foot2robot_angle * DEG2RAD));
