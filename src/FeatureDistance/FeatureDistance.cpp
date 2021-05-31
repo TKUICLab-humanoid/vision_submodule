@@ -101,54 +101,49 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
             {
                 ROS_INFO("start");
                 avgdistance = AvgPixelDistance(Feature_x,Feature_y);
-                float theta_y = atan((((depth_buffer.rows/2)-height_cnt)/(depth_buffer.rows/2))*tan((VFOV/2)*DEG2RAD));
-                float theta_x = atan(((((depth_buffer.cols/2)-width_cnt)/(depth_buffer.cols/2))*tan(half_HFOV_angle * DEG2RAD)) * cos(theta_y));
-                                                 
+                float theta_y = atan((((depth_buffer.rows/2)-height_cnt)/(depth_buffer.rows/2))*tan((VFOV/2)*DEG2RAD));                
+                float theta_x = atan(((((depth_buffer.cols/2)-width_cnt)/(depth_buffer.cols/2))*tan((HFOV/2)*DEG2RAD));
+                // float theta_x = atan(((((depth_buffer.cols/2)-width_cnt)/(depth_buffer.cols/2))*tan(half_HFOV_angle * DEG2RAD)) * cos(theta_y));
+                double OYp = avgdistance * cos(theta_x);
+                Robot_H = OYp * cos((RealsenseIMUData[0]* DEG2RAD) + theta_y);                                
                 if(std::isfinite(RealsenseIMUData[0]))
                 {
                     ROS_INFO("isfinite(RealsenseIMUData[0]");
-                    float center = AvgPixelDistance(depth_buffer.cols/2,depth_buffer.rows/2);
-                    Robot_H = avgdistance * cos(RealsenseIMUData[0]* DEG2RAD);
+                    
                     ROS_INFO("avgdistance(%d,%d) = %f, Robot_H = %f",Feature_x,Feature_y, avgdistance,Robot_H);
                     
                     if(std::isfinite(avgdistance) && avgdistance < 1000)
                     {
                         ROS_INFO("isfinite(avgdistance)");
-                        float dist = avgdistance * sin((RealsenseIMUData[0] * DEG2RAD) + theta_y);
-                        distance.x_dis = int(round(dist * sin(theta_x * DEG2RAD)));
-                        distance.y_dis = int(round(dist * cos(theta_y * DEG2RAD)));
+                        distance.y_dis = int(round(OYp * sin((RealsenseIMUData[0] * DEG2RAD) + theta_y)));
+                        distance.x_dis = int(round(distance.y_dis * cos(theta_x)));
                         distance.dis = int(round(sqrt(pow(distance.x_dis,2)+pow(distance.y_dis,2))));
-                        // distance.x_dis = int(round(dist * sin(RealsenseIMUData[2] * DEG2RAD)));
-                        // distance.y_dis = int(round(dist * cos(RealsenseIMUData[2] * DEG2RAD)));
+                        // float dist = avgdistance * sin((RealsenseIMUData[0] * DEG2RAD) + theta_y);
+                        // distance.x_dis = int(round(dist * sin(theta_x)));
+                        // distance.y_dis = int(round(dist * cos(theta_y)));
                         // distance.dis = int(round(sqrt(pow(distance.x_dis,2)+pow(distance.y_dis,2))));
                     }else{
-                        ROS_INFO(" ! isfinite(avgdistance) !");
+                        ROS_INFO("Wrong depth distance");
                         measure(Feature_x,Feature_y,CameraType::Monocular);
                     }
                 }else{
-                    ROS_INFO("  ! isfinite(RealsenseIMUData[0]  !");
+                    ROS_INFO("No IMU value");
                     if(std::isfinite(avgdistance) && avgdistance > camera_height && avgdistance < 1000)
                     {
                         float camera_angle = acos(camera_height / avgdistance) * RAD2DEG - (round(AVGERRORANGLE) + (Vertical_Head_Angle-28.65)/8.785) ;
-                        float dist = avgdistance * sin((camera_angle* DEG2RAD)+theta_y);
-                        distance.x_dis = int(round(dist * sin(theta_x * DEG2RAD)));
-                        distance.y_dis = int(round(dist * cos(theta_y * DEG2RAD)));
+                        distance.y_dis = int(round(OYp * sin((camera_angle * DEG2RAD) + theta_y)));
+                        distance.x_dis = int(round(distance.y_dis * cos(theta_x)));
                         distance.dis = int(round(sqrt(pow(distance.x_dis,2)+pow(distance.y_dis,2))));
-                        // if(Feature_x == 320 && Feature_y ==240)
-                        // {
-                                // ROS_INFO("AVGERRORANGLE + (Vertical_Head_Angle-28.65)/8.785 = %f, AVGERRORANGLE * (Vertical_Head_Angle/0.08789 - 1300)/100 = %f,Moving_angle_error = %f ,acos(camera_height / avgdistance) * RAD2DEG = %f",AVGERRORANGLE + (Vertical_Head_Angle-28.65)/8.785,AVGERRORANGLE * (Vertical_Head_Angle/0.08789 - 1300)/100,Moving_angle_error,acos(camera_height / avgdistance) * RAD2DEG); 
-                                // ROS_INFO("camera_angle = %f, camera_angle_offest = %f , camera2robot_dis = %f",camera_angle,camera_angle_offest,+ camera2robot_dis); 
-                        // }
+                        // float dist = avgdistance * sin((camera_angle* DEG2RAD)+theta_y);
+                        // distance.x_dis = int(round(dist * sin(theta_x)));
+                        // distance.y_dis = int(round(dist * cos(theta_y)));
+                        // distance.dis = int(round(sqrt(pow(distance.x_dis,2)+pow(distance.y_dis,2))));
+
                     }else{
+                        ROS_INFO("Wrong depth distance");
                         measure(Feature_x,Feature_y,CameraType::Monocular);
                     }
-                }   
-                    
-                //ROS_INFO("avgdistance = %f , dist = %f ,camera_angle = %f, camera_height = %f",avgdistance,dist,camera_angle,camera_height);
-                //ROS_INFO("break");
-                // ROS_INFO("++++++++++++++distances.x_dis = %d",distance.x_dis);
-                // ROS_INFO("++++++++++++++distances.y_dis = %d",distance.y_dis);
-                // ROS_INFO("++++++++++++++distances.dis = %d",distance.dis);       
+                }        
                 ROS_INFO("finish");
                 ROS_INFO("stereo: x = %d, y = %d, dis = %d",distance.x_dis,distance.y_dis,distance.dis);
                 break;
