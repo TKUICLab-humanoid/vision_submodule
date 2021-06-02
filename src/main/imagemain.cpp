@@ -330,6 +330,16 @@ void Vision_main::strategy_main()
         tku_msgs::FeaturePoint feature_point_tmp;
         int distance_last = -1;
         int scan_line_last;
+        
+        for(int i = 0; i < 480 ; i++)
+        {
+            Distance distest;
+            distest = measure(320,i,CameraType::stereo);
+            ROS_INFO("(320,%d) x = %d , y = %d, dis = %d",i,distest.x_dis,distest.y_dis,distest.dis);
+        }
+        waitKey(0);
+        
+        
         if(Field_feature_point.size() < 40)     // no feature point = 36
         {
             whiteline_flag = false;
