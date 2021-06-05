@@ -28,7 +28,7 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
     
     //濾除非場地部份(laplace)
     Mat mask = Mat::zeros(orign.rows,orign.cols, CV_8UC3); 
-    Mat Kernel = (Mat_<float>(3, 3) << 0, -1, 0, 0, 6, 0, 0, -1, 0);
+    Mat Kernel = (Mat_<float>(3, 3) << 0, -1, 0, 0, 7, 0, 0, -1, 0);
     Mat imageEnhance;
     filter2D(orign, imageEnhance, CV_8UC3, Kernel);
     //imshow("imageEnhance",imageEnhance);
@@ -78,21 +78,21 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
             
             if(row >= horization_line && horization_line >= 0 && row >= 1)
             {
-                if( G >= G_value && B >= B_value && R <= R_value)
+                if( G >= G_value && B <= B_value && R <= R_value)
                 {
-                    score ++;
+                    score = score+1;
                     // S.pixelpoint = Point(col,row-1);
                     // S.Score = score;
                 }else
                 {
-                    score --;
+                    score = score-1;
                     // S.pixelpoint = Point(col,row-1);
                     // S.Score = score;
                 }
                 if(score < Minscore)
                 {
                     Minscore = score;
-                    S.Score = score;
+                    S.Score = Minscore;
                     S.pixelpoint = Point(col,row-1);
                 }
             }
@@ -162,18 +162,18 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
         // {
         //     Gmask = UpperConvexHull(orign,green_mask,hull);
         // }else 
-        if(greenhull.size() >= 1 && hull.size() >= 1){
-            Gmask = UpperConvexHull(orign,green_mask,greenhull);
-        }else{
+        // if(greenhull.size() >= 1 && hull.size() >= 1){
+        //     Gmask = UpperConvexHull(orign,green_mask,greenhull);
+        // }else{
             Gmask = green_maskw;
-        }
+        // }
     }else{
         Gmask = green_maskw;
     }
 
     // ROS_INFO("----------------hull = %d",hull.size());  
     // ROS_INFO("----------------greenhull = %d",greenhull.size()); 
-
+    nobackgroud_image = Mat::zeros(orign.rows,orign.cols, CV_8UC3); 
     orign.copyTo(nobackgroud_image,Gmask);
     // imshow("nobackgroud_image",nobackgroud_image);
     for(int col = 0; col < nobackgroud_image.cols;col++)
@@ -201,7 +201,7 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
         }
     }
     
-    Mat greenmask_element = getStructuringElement(MORPH_RECT, Size(4, 4)); 
+    Mat greenmask_element = getStructuringElement(MORPH_RECT, Size(5, 5)); 
     dilate(nobackgroud_image,nobackgroud_image,greenmask_element);
     contours.clear();
     hierarchy.clear();
@@ -770,7 +770,7 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
     float avg_G = (float)Vgreen/(float)(countfor);
     float avg_W = (float)Vwhite/(float)(countfor);
     float avg_E = (float)Vedge/(float)(countfor);
-    // ROS_INFO("avg_G = %f, avg_W = %f,avg_E = %f",avg_G,avg_W,avg_E);
+    ROS_INFO("avg_G = %f, avg_W = %f,avg_E = %f",avg_G,avg_W,avg_E);
     if(avg_G >= 10.0 && avg_W >= 4.0 && avg_E >=0.4) return 1;
     else return 0;
 }
@@ -800,7 +800,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
     // ROS_INFO("hough_threshold = %d hough_minLineLength = %f hough_maxLineGap = %f",hough_threshold,hough_minLineLength,hough_maxLineGap);
     HoughLinesP(canny_iframe,all_lines,1,CV_PI/180,hough_threshold,hough_minLineLength,hough_maxLineGap); 
     all_lines1 = all_lines;
-
+    Mat EnhanceImage = iframe.clone();
     int all_lines_Size = all_lines.size();
     // ROS_INFO("all_lines_Size = %d",all_lines_Size);
     // ROS_INFO("/---------------start-------------/");
@@ -817,7 +817,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
 
         if(all_lines.size() == 1)
         {
-            int checklineX = checkline(nobackgroud_image,canny_iframe,X);
+            int checklineX = checkline(EnhanceImage,canny_iframe,X);
             // ROS_INFO("all_line(%d) checkline X = %d",i,checklineX);
             if(checklineX == 1)
             {
@@ -831,7 +831,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
                 // ROS_INFO("merge_similar_lines %d",j);
                 Vec4i Y = merge_similar_lines[j];
                 // ROS_INFO("merge_similar_lines(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",j,Y[0],Y[1],Y[2],Y[3],Slope(Y));
-                int checklineY = checkline(nobackgroud_image,canny_iframe,Y);
+                int checklineY = checkline(EnhanceImage,canny_iframe,Y);
                 // ROS_INFO("merge_line(%d) checkline Y = %d",j,checklineY);
                 if(checklineY == 0)
                 {
@@ -845,7 +845,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
                     {
                         // ROS_INFO("--------Merge--------");
                         Merge(X,Y);
-                        int checklinenum = checkline(nobackgroud_image,canny_iframe,NewLine);
+                        int checklinenum = checkline(EnhanceImage,canny_iframe,NewLine);
                         // ROS_INFO("NewLine checkline = %d",checklinenum);
                         if(checklinenum == 1)
                         {
@@ -950,7 +950,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
                 // ROS_INFO("reduce_similar_lines = (x1= %d ,y1 = %d ,x2 = %d ,y2 = %d)",reduce_similar_lines[0][0],reduce_similar_lines[0][1],reduce_similar_lines[0][2],reduce_similar_lines[0][3]);
                 check_lines.push_back(reduce_similar_lines[0]);
             }else if(merge_similar_lines.size() == merge_similar_lines_SIZE){
-                int checklinenum = checkline(nobackgroud_image,canny_iframe,X);
+                int checklinenum = checkline(EnhanceImage,canny_iframe,X);
                 if(checklinenum == 1)
                 {
                     check_lines.push_back(X);
