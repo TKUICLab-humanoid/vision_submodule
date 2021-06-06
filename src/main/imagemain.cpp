@@ -234,6 +234,18 @@ void Vision_main::savefile()
         OutFile << " Vertical_Head_Angle = ";
         OutFile << Vertical_Head_Angle;
         OutFile << "\n";
+        OutFile << " Distance = ";
+        OutFile << pixelDistance;
+        OutFile << "\n";
+        OutFile << " PixelX = ";
+        OutFile << PixelX;
+        OutFile << "\n";
+        OutFile << " PixelY = ";
+        OutFile << PixelY;
+        OutFile << "\n";
+        OutFile << " pixelDepth = ";
+        OutFile << pixelDepth;
+        OutFile << "\n";        
         OutFile << "\n";
         OutFile.close();
     }catch( exception e )
@@ -331,12 +343,27 @@ void Vision_main::strategy_main()
         int distance_last = -1;
         int scan_line_last;
         
-        // for(int i = 0; i < 480 ; i++)
-        // {
-        //     Distance distest;
-        //     distest = measure(320,i,CameraType::stereo);
-        //     ROS_INFO("(320,%d) x = %d , y = %d, dis = %d",i,distest.x_dis,distest.y_dis,distest.dis);
-        // }
+
+        
+        
+        for(int i = 479; i >= 0 ; i--)
+        {
+            int B = imageGamma.at<Vec3b>(i, 320)[0];
+            int G = imageGamma.at<Vec3b>(i, 320)[1];
+            int R = imageGamma.at<Vec3b>(i, 320)[2];
+            if(B == 255 && G == 255 && R == 255)
+            {
+                Distance distest;
+                distest = measure(320,i,CameraType::stereo);
+                pixelDistance = distest.dis;
+                PixelX = 320;
+                PixelY = i;
+                pixelDepth = AvgPixelDistance(320,i);
+                savefile();
+                ROS_INFO("(320,%d) x = %d , y = %d, dis = %d",i,distest.x_dis,distest.y_dis,distest.dis);
+            }
+            
+        }
         // waitKey(0);
         
         

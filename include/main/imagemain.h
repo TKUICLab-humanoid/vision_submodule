@@ -49,6 +49,10 @@ class Vision_main : public LineDetected
         ~Vision_main();
         void strategy_main();
         void strategy_init();
+        int pixelDistance;
+        int PixelX;
+        int PixelY;
+        float pixelDepth;
     public:
         void GetImagesourceFunction(const sensor_msgs::ImageConstPtr& msg);
         void GetIMUData(const geometry_msgs::Vector3Stamped &msg);

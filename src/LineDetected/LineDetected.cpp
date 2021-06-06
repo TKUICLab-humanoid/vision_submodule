@@ -22,13 +22,13 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
 {
     orign = iframe.clone();
     // bilateralFilter(iframe, orign, 10, 10, 10);
-    blur(orign,orign,Size(3,3));
+    blur(orign,orign,Size(4,4));
     int frame_rows = iframe.rows;
     int frame_cols = iframe.cols;
     
     //濾除非場地部份(laplace)
     Mat mask = Mat::zeros(orign.rows,orign.cols, CV_8UC3); 
-    Mat Kernel = (Mat_<float>(3, 3) << 0, -1, 0, 0, 7, 0, 0, -1, 0);
+    Mat Kernel = (Mat_<float>(3, 3) << 0, -1, 0, 0, 5, 0, 0, -1, 0);
     Mat imageEnhance;
     filter2D(orign, imageEnhance, CV_8UC3, Kernel);
     //imshow("imageEnhance",imageEnhance);
@@ -63,39 +63,41 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
     }else{
         horization_line = 0;
     }
-
+    ROS_INFO("horization_line = %d",horization_line);
     for(int col = 0; col < imageGamma.cols;col++)
     {
         int score = 0;
         int Minscore = 0;
-        PointScore S = {Point(0,0),0};        
+        PointScore S = {Point(col,horization_line),0};        
         // vector<PointScore> PixelScore;
-        for(int row = 0; row < imageGamma.rows;row++)
+        for(int row = horization_line; row < imageGamma.rows+1;row++)
         {
-            int B = imageGamma.at<Vec3b>(row, col)[0];
-            int G = imageGamma.at<Vec3b>(row, col)[1];
-            int R = imageGamma.at<Vec3b>(row, col)[2];
+            int B = imageGamma.at<Vec3b>(row-1, col)[0];
+            int G = imageGamma.at<Vec3b>(row-1, col)[1];
+            int R = imageGamma.at<Vec3b>(row-1, col)[2];
             
-            if(row >= horization_line && horization_line >= 0 && row >= 1)
+            // if(row >= horization_line && horization_line >= 0)
+            // {
+            // ROS_INFO("B=%d G=%d R=%d",B,G,R);
+            if( G >= G_value && B <= B_value && R >= R_value)
             {
-                if( G >= G_value && B <= B_value && R <= R_value)
-                {
-                    score = score+1;
-                    // S.pixelpoint = Point(col,row-1);
-                    // S.Score = score;
-                }else
-                {
-                    score = score-1;
-                    // S.pixelpoint = Point(col,row-1);
-                    // S.Score = score;
-                }
-                if(score < Minscore)
-                {
-                    Minscore = score;
-                    S.Score = Minscore;
-                    S.pixelpoint = Point(col,row-1);
-                }
+                score = score+1;
+                // S.pixelpoint = Point(col,row-1);
+                // S.Score = score;
+            }else
+            {
+                score = score-1;
+                // S.pixelpoint = Point(col,row-1);
+                // S.Score = score;
             }
+            if(score < Minscore)
+            {
+                Minscore = score;
+                S.Score = Minscore;
+                S.pixelpoint = Point(col,row-1);
+            }
+            // ROS_INFO("score(%d,%d) = %d",col,row-1,score);
+            // }
         }
         // PixelScore.push_back(S); 
         // sort(PixelScore.begin(),PixelScore.end(),Scorecompare);
@@ -126,18 +128,22 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
     cvtColor(mask,mask,COLOR_BGR2GRAY);
     threshold(mask,mask,200,255,THRESH_BINARY);
     
+    nobackgroud_image = Mat::zeros(orign.rows,orign.cols, CV_8UC3); 
+
     //顯示BoundaryPoint
     // Mat orign3 = Mat::zeros(orign.rows,orign.cols, CV_8U); 
+    // ROS_INFO("start");
     // for( int j = 0; j< BoundaryPoint.size(); j++ )
     // {
     //     Point p = BoundaryPoint[j];
-    //     if(p.y < iframe.rows-4)
-    //     {
-    //         circle(orign3,p,2,Scalar(255,255,255),CV_FILLED,-1);
-    //     }
+    //     ROS_INFO("BoundaryPoint(%d,%d)",p.x,p.y);
+    //     // if(p.y < iframe.rows-4)
+    //     // {
+    //     //     circle(nobackgroud_image,p,2,Scalar(255,0,255),CV_FILLED,-1);
+    //     // }
     // }
-    // imshow("orign3",orign3);
-
+    // // imshow("orign3",orign3);
+    // ROS_INFO("finish");
     vector<vector<Point> > contours;
     vector<Vec4i> hierarchy;
     findContours( mask, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
@@ -162,19 +168,18 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
         // {
         //     Gmask = UpperConvexHull(orign,green_mask,hull);
         // }else 
-        // if(greenhull.size() >= 1 && hull.size() >= 1){
-        //     Gmask = UpperConvexHull(orign,green_mask,greenhull);
-        // }else{
+        if(greenhull.size() >= 1 && hull.size() >= 1){
+            Gmask = UpperConvexHull(orign,green_mask,greenhull);
+        }else{
             Gmask = green_maskw;
-        // }
+        }
     }else{
         Gmask = green_maskw;
     }
 
     // ROS_INFO("----------------hull = %d",hull.size());  
     // ROS_INFO("----------------greenhull = %d",greenhull.size()); 
-    nobackgroud_image = Mat::zeros(orign.rows,orign.cols, CV_8UC3); 
-    orign.copyTo(nobackgroud_image,Gmask);
+    imageGamma.copyTo(nobackgroud_image,Gmask);
     // imshow("nobackgroud_image",nobackgroud_image);
     for(int col = 0; col < nobackgroud_image.cols;col++)
     {
@@ -188,7 +193,7 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
                 nobackgroud_image.at<Vec3b>(row, col)[0] = 255;
                 nobackgroud_image.at<Vec3b>(row, col)[1] = 255;
                 nobackgroud_image.at<Vec3b>(row, col)[2] = 255;
-            }else if( B <= 20 && G <= 20 && R <= 20)
+            }else if( B <= 20 && G <= 20 && R <= 50)
             {
                 nobackgroud_image.at<Vec3b>(row, col)[0] = 0;
                 nobackgroud_image.at<Vec3b>(row, col)[1] = 0;
@@ -201,7 +206,7 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
         }
     }
     
-    Mat greenmask_element = getStructuringElement(MORPH_RECT, Size(5, 5)); 
+    Mat greenmask_element = getStructuringElement(MORPH_RECT, Size(4, 4)); 
     dilate(nobackgroud_image,nobackgroud_image,greenmask_element);
     contours.clear();
     hierarchy.clear();
@@ -363,6 +368,18 @@ double LineDetected::AngleDiff(Vec4i X,Vec4i Y)
 {
     Coordinate Xstart = {X[0],X[1]};
     Coordinate Xend = {X[2],X[3]};
+    if(X[0]>X[2])
+    {
+        Xstart.X = X[2];
+        Xstart.Y = X[3];
+        Xend.X = X[0];
+        Xend.Y = X[1];
+    }else{
+        Xstart.X = X[0];
+        Xstart.Y = X[1];
+        Xend.X = X[2];
+        Xend.Y = X[3];
+    }   
     Coordinate Ystart = {Y[0],Y[1]};
     Coordinate Yend = {Y[2],Y[3]};
 
@@ -404,7 +421,7 @@ double LineDetected::Slope(Vec4i line)
     if((line[2]-line[0]) == 0) return 90.0;
     else {
         double s = atan2((double(Xend.y)-double(Xstart.y)),(double(Xend.x)-double(Xstart.x)))*RAD2DEG;
-        ROS_INFO("line %d %d %d %d theta = %f",line[0],line[1],line[2],line[3],s);
+        // ROS_INFO("line %d %d %d %d theta = %f",line[0],line[1],line[2],line[3],s);
         if(s < 0.0)return 180.0 + s;
         else return s;
     }
@@ -479,19 +496,19 @@ void LineDetected::Merge(Vec4i X,Vec4i Y)
         int x1 = round(-(Zb-SbXstart)/(Za-m));
         int y1 = round((((Za+m)*x1)+(Zb+SbXstart))/2);
         Coordinate projXs={x1,y1};
-        printf("x1 = %d y1 =%d\n",x1,y1);
+        // printf("x1 = %d y1 =%d\n",x1,y1);
         int x2 = round(-(Zb-SbXend)/(Za-m));
         int y2 = round((((Za+m)*x2)+(Zb+SbXend))/2);
         Coordinate projXe={x2,y2};
-        printf("x2 = %d y2 =%d\n",x2,y2);
+        // printf("x2 = %d y2 =%d\n",x2,y2);
         int x3 = round(-(Zb-SbYstart)/(Za-m));
         int y3 = round((((Za+m)*x3)+(Zb+SbYstart))/2);
         Coordinate projYs={x3,y3};
-        printf("x3 = %d y3 =%d\n",x3,y3);
+        // printf("x3 = %d y3 =%d\n",x3,y3);
         int x4 = round(-(Zb-SbYend)/(Za-m));
         int y4 = round((((Za+m)*x4)+(Zb+SbYend))/2);
         Coordinate projYe={x4,y4};
-        printf("x4 = %d y4 =%d\n",x4,y4);
+        // printf("x4 = %d y4 =%d\n",x4,y4);
 
         double projXsToprojXe = sqrt(dis2(projXs,projXe));
         double projXsToprojYs = sqrt(dis2(projXs,projYs));
@@ -505,32 +522,32 @@ void LineDetected::Merge(Vec4i X,Vec4i Y)
         
         if(distanceset[5] == projXsToprojXe ) 
         {
-            ROS_INFO("1");
+            // ROS_INFO("1");
             NewLine = {x1,y1,x2,y2};
         }
         if(distanceset[5] == projXsToprojYs )
         {
-            ROS_INFO("2");
+            // ROS_INFO("2");
             NewLine = {x1,y1,x3,y3};
         }
         if(distanceset[5] == projXsToprojYe )
         {
-            ROS_INFO("3");
+            // ROS_INFO("3");
             NewLine = {x1,y1,x4,y4};
         }
         if(distanceset[5] == projXeToprojYs )
         {
-            ROS_INFO("4");
+            // ROS_INFO("4");
             NewLine = {x2,y2,x3,y3};
         }
         if(distanceset[5] == projXeToprojYe )
         {
-            ROS_INFO("5");
+            // ROS_INFO("5");
             NewLine = {x2,y2,x4,y4};
         }
         if(distanceset[5] == projYsToprojYe )
         {
-            ROS_INFO("6");
+            // ROS_INFO("6");
             NewLine = {x3,y3,x4,y4};
         }
 
@@ -770,8 +787,8 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
     float avg_G = (float)Vgreen/(float)(countfor);
     float avg_W = (float)Vwhite/(float)(countfor);
     float avg_E = (float)Vedge/(float)(countfor);
-    ROS_INFO("avg_G = %f, avg_W = %f,avg_E = %f",avg_G,avg_W,avg_E);
-    if(avg_G >= 10.0 && avg_W >= 4.0 && avg_E >=0.4) return 1;
+    ROS_INFO("avg_G = %f, avg_W = %f,avg_E = %f,countfor = %d",avg_G,avg_W,avg_E,countfor);
+    if(avg_G >= 1.0 && avg_W >= 0.4 && avg_E >=0.2) return 1;
     else return 0;
 }
 
@@ -839,9 +856,10 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
                     all_lines = complement(all_lines,Y);
                 }else{
                     // ROS_INFO("merge_similar_lines(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",j,Y[0],Y[1],Y[2],Y[3],Slope(Y));
-                    // ROS_INFO("MinDistance = %f",MinDistance(X,Y));
-                    // ROS_INFO("AngleDiff = %f",AngleDiff(X,Y));
-                    if(MinDistance(X,Y) < 10 && AngleDiff(X,Y) < 2 && LineorNot(Y) == 1)
+                    ROS_INFO("MinDistance = %f",MinDistance(X,Y));
+                    ROS_INFO("AngleDiff = %f",AngleDiff(X,Y));
+                    Vec4i Z = {X[2],X[3],Y[0],Y[1]};
+                    if((MinDistance(X,Y) < 10 && AngleDiff(X,Y) < 2 && LineorNot(Y) == 1)||(MinDistance(X,Y) < 60 &&AngleDiff(X,Y) < 1 && (AngleDiff(Z,Y)< 1||AngleDiff(Z,X)<1)))
                     {
                         // ROS_INFO("--------Merge--------");
                         Merge(X,Y);
@@ -1126,11 +1144,11 @@ Mat LineDetected::UpperConvexHull(Mat ori,Mat drawing,vector<vector<Point> > all
     }
 
     // 畫出upper convex hull
-    Mat mask = Mat::zeros(orign.rows,orign.cols, CV_8UC1); 
-    for ( size_t i = 0; i < upperCH.size(); i++ )
-    {
-        circle(mask,upperCH[i],3,Scalar(255,255,255),CV_FILLED,1);	
-    }
+    // Mat mask = Mat::zeros(orign.rows,orign.cols, CV_8UC1); 
+    // for ( size_t i = 0; i < upperCH.size(); i++ )
+    // {
+    //     circle(mask,upperCH[i],3,Scalar(255,255,255),CV_FILLED,1);	
+    // }
 
     Mat mask1 = Mat::zeros(orign.rows,orign.cols, CV_8UC3); 
     vector<vector<Point> > contours(1);
@@ -1150,7 +1168,7 @@ Mat LineDetected::UpperConvexHull(Mat ori,Mat drawing,vector<vector<Point> > all
             int a = mask1.at<Vec3b>(k, i)[0];
             int b = mask1.at<Vec3b>(k, i)[1];
             int c = mask1.at<Vec3b>(k, i)[2];
-            if( a == 255 && b == 255 && c ==255 && k < mask1.rows -10 )
+            if( a == 255 && b == 255 && c ==255 && k < mask1.rows -5 )
             {
                 A = Point(i,k);
                 break;
