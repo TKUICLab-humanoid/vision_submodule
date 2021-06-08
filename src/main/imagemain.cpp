@@ -141,6 +141,7 @@ void Vision_main::GetImagesourceFunction(const sensor_msgs::ImageConstPtr& msg)
     {
         cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
         color_buffer = cv_ptr->image;
+        ROS_INFO("%d %d",color_buffer.cols,color_buffer.rows);
         resize(color_buffer, color_buffer, cv::Size(640, 480));
     }
     catch (cv_bridge::Exception& e)
@@ -346,24 +347,24 @@ void Vision_main::strategy_main()
 
         
         
-        for(int i = 479; i >= 0 ; i--)
-        {
-            int B = imageGamma.at<Vec3b>(i, 320)[0];
-            int G = imageGamma.at<Vec3b>(i, 320)[1];
-            int R = imageGamma.at<Vec3b>(i, 320)[2];
-            if(B == 255 && G == 255 && R == 255)
-            {
-                Distance distest;
-                distest = measure(320,i,CameraType::stereo);
-                pixelDistance = distest.dis;
-                PixelX = 320;
-                PixelY = i;
-                pixelDepth = AvgPixelDistance(320,i);
-                savefile();
-                ROS_INFO("(320,%d) x = %d , y = %d, dis = %d",i,distest.x_dis,distest.y_dis,distest.dis);
-            }
+        // for(int i = 479; i >= 0 ; i--)
+        // {
+        //     int B = imageGamma.at<Vec3b>(i, 320)[0];
+        //     int G = imageGamma.at<Vec3b>(i, 320)[1];
+        //     int R = imageGamma.at<Vec3b>(i, 320)[2];
+        //     if(B == 255 && G == 255 && R == 255)
+        //     {
+        //         Distance distest;
+        //         distest = measure(320,i,CameraType::stereo);
+        //         pixelDistance = distest.dis;
+        //         PixelX = 320;
+        //         PixelY = i;
+        //         pixelDepth = AvgPixelDistance(320,i);
+        //         savefile();
+        //         ROS_INFO("(320,%d) x = %d , y = %d, dis = %d",i,distest.x_dis,distest.y_dis,distest.dis);
+        //     }
             
-        }
+        // }
         // waitKey(0);
         
         

@@ -55,6 +55,7 @@ class LineDetected : public ModelBase
         int S;
         int V;
         int ROI_point;
+        bool stereo_flag;
         //-------------------------------------
         double dis2(Coordinate a, Coordinate b) ;
         //-------------------------------------
