@@ -83,8 +83,8 @@ class LineDetected : public ModelBase
         Vec4i NewLine;
         Vec4i MaxLine;
         int hough_threshold;
-        double hough_minLineLength;
-        double hough_maxLineGap;
+        int hough_minLineLength;
+        int hough_maxLineGap;
         void LoadHoughFile();
         void SaveHoughFile();
         int checkline(const Mat image_Enhance,const Mat canny,Vec4i line);

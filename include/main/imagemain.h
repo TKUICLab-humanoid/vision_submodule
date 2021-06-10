@@ -72,8 +72,6 @@ class Vision_main : public LineDetected
         bool LoadHoughInfo(tku_msgs::HoughInfo::Request &req, tku_msgs::HoughInfo::Response &res);
         void savefile();
 
-        float B_,G_,R_;
-        float threshold_,minLineLength_,maxLineGap_;
     private:
         motordata Horizontal_Head;
         motordata Vertical_Head;

@@ -39,9 +39,9 @@ struct ColorRange
 
 struct BGRRange
 {
-    float BuValue;
-    float GrValue;
-    float ReValue;
+    int BuValue;
+    int GrValue;
+    int ReValue;
     string ParameterName;
 };
 

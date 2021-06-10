@@ -15,12 +15,12 @@ Vision_main::Vision_main(ros::NodeHandle &nh)
     IMUData_Subscriber = nh.subscribe("/package/sensorpackage", 1, &Vision_main::GetIMUDataFunction,this);
 
     //--------------BGR---------------
-    BGRValue_subscriber = nh.subscribe("BGRValue_Topic", 1000, &Vision_main::ChangeBGRValue,this);
-    BGR_service = nh.advertiseService("LoadBGRInfo", &Vision_main::LoadBGRInfo,this);
+    BGRValue_subscriber = nh.subscribe("/BGRValue_Topic", 1000, &Vision_main::ChangeBGRValue,this);
+    BGR_service = nh.advertiseService("/LoadBGRInfo", &Vision_main::LoadBGRInfo,this);
     
     //--------------Hough-------------
-    HoughValue_subscriber = nh.subscribe("HoughValue_Topic", 1000, &Vision_main::ChangeHoughValue,this);
-    Hough_service = nh.advertiseService("LoadHoughInfo", &Vision_main::LoadHoughInfo,this);
+    HoughValue_subscriber = nh.subscribe("/HoughValue_Topic", 1000, &Vision_main::ChangeHoughValue,this);
+    Hough_service = nh.advertiseService("/LoadHoughInfo", &Vision_main::LoadHoughInfo,this);
     
     //--------------------------------
     ObservationData_Publisher = nh.advertise<tku_msgs::ObservationData>("/vision/observation_data", 10);
@@ -85,9 +85,9 @@ void Vision_main::DepthCallback(const sensor_msgs::ImageConstPtr& depth_img)
 }
 void Vision_main::ChangeBGRValue(const tku_msgs::BGRValue& msg)
 {
-    Model_Base->BGRColorRange->BuValue = (float)msg.BValue;
-    Model_Base->BGRColorRange->GrValue = (float)msg.GValue;
-    Model_Base->BGRColorRange->ReValue = (float)msg.RValue;
+    Model_Base->BGRColorRange->BuValue = (int)msg.BValue;
+    Model_Base->BGRColorRange->GrValue = (int)msg.GValue;
+    Model_Base->BGRColorRange->ReValue = (int)msg.RValue;
     Model_Base->SaveBGRFile();
 }
 
@@ -98,39 +98,39 @@ void Vision_main::LoadBGRValue()
     B_ = Model_Base->BGRColorRange->BuValue;
     G_ = Model_Base->BGRColorRange->GrValue;
     R_ = Model_Base->BGRColorRange->ReValue;
-    ROS_INFO("B = %f G = %f R = %f",B_,G_,R_);
+    ROS_INFO("B = %d G = %d R = %d",B_,G_,R_);
 }
 
 bool Vision_main::LoadBGRInfo(tku_msgs::BGRInfo::Request &req, tku_msgs::BGRInfo::Response &res)
 {
-    res.BValue = B_;
-    res.GValue = G_;
-    res.RValue = R_;
+    res.BValue = Model_Base->BGRColorRange->BuValue;
+    res.GValue = Model_Base->BGRColorRange->GrValue;
+    res.RValue = Model_Base->BGRColorRange->ReValue;
     return true;
     
 }
 
 void Vision_main::ChangeHoughValue(const tku_msgs::HoughValue& msg)
 {
-    hough_threshold = (float)msg.Hough_threshold;
-    hough_minLineLength = (float)msg.Hough_minLineLength;
-    hough_maxLineGap = (float)msg.Hough_maxLineGap;
+    hough_threshold = (int)msg.Hough_threshold;
+    hough_minLineLength = (int)msg.Hough_minLineLength;
+    hough_maxLineGap = (int)msg.Hough_maxLineGap;
     SaveHoughFile();
 }
 
 void Vision_main::LoadHoughValue()
 {
     LoadHoughFile();
-    threshold_ = hough_threshold;
-    minLineLength_ = hough_minLineLength;
-    maxLineGap_ = hough_maxLineGap;
-    ROS_INFO("threshold_ = %d minLineLength_ = %d maxLineGap_ = %d",threshold_,minLineLength_,maxLineGap_);
+    _threshold = hough_threshold;
+    _minLineLength = hough_minLineLength;
+    _maxLineGap = hough_maxLineGap;
+    ROS_INFO("_threshold = %d _minLineLength = %d _maxLineGap = %d",_threshold,_minLineLength,_maxLineGap);
 }
 bool Vision_main::LoadHoughInfo(tku_msgs::HoughInfo::Request &req, tku_msgs::HoughInfo::Response &res)
 {
-    res.Hough_threshold = threshold_;
-    res.Hough_minLineLength = minLineLength_;
-    res.Hough_maxLineGap = maxLineGap_;
+    res.Hough_threshold = hough_threshold;
+    res.Hough_minLineLength = hough_minLineLength;
+    res.Hough_maxLineGap = hough_maxLineGap;
     return true;
 }
 
@@ -141,7 +141,6 @@ void Vision_main::GetImagesourceFunction(const sensor_msgs::ImageConstPtr& msg)
     {
         cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
         color_buffer = cv_ptr->image;
-        ROS_INFO("%d %d",color_buffer.cols,color_buffer.rows);
         resize(color_buffer, color_buffer, cv::Size(640, 480));
     }
     catch (cv_bridge::Exception& e)
@@ -344,27 +343,29 @@ void Vision_main::strategy_main()
         int distance_last = -1;
         int scan_line_last;
         
-
-        
-        
-        // for(int i = 479; i >= 0 ; i--)
-        // {
-        //     int B = imageGamma.at<Vec3b>(i, 320)[0];
-        //     int G = imageGamma.at<Vec3b>(i, 320)[1];
-        //     int R = imageGamma.at<Vec3b>(i, 320)[2];
-        //     if(B == 255 && G == 255 && R == 255)
-        //     {
-        //         Distance distest;
-        //         distest = measure(320,i,CameraType::stereo);
-        //         pixelDistance = distest.dis;
-        //         PixelX = 320;
-        //         PixelY = i;
-        //         pixelDepth = AvgPixelDistance(320,i);
-        //         savefile();
-        //         ROS_INFO("(320,%d) x = %d , y = %d, dis = %d",i,distest.x_dis,distest.y_dis,distest.dis);
-        //     }
-            
-        // }
+        int count = 0;
+        for(int i = 479; i >= 0 ; i--)
+        {
+            int B = imageGamma.at<Vec3b>(i, 320)[0];
+            int G = imageGamma.at<Vec3b>(i, 320)[1];
+            int R = imageGamma.at<Vec3b>(i, 320)[2];
+            if(B == 255 && G == 255 && R == 255)
+            {
+                Distance distest;
+                distest = measure(320,i,CameraType::stereo);
+                pixelDistance = distest.dis;
+                PixelX = 320;
+                PixelY = i;
+                // pixelDepth = AvgPixelDistance(320,i);
+                // savefile();
+                ROS_INFO("(320,%d) x = %d , y = %d, dis = %d",i,distest.x_dis,distest.y_dis,distest.dis);
+                count++;
+            }
+            if(count>15)
+            {
+                break;
+            }
+        }
         // waitKey(0);
         
         

@@ -5,12 +5,12 @@ LineDetected::LineDetected()
     mX = 0;
     mY = 0;
 
-    Model_Base->BGRColorRange->ReValue = 150;
-    Model_Base->BGRColorRange->GrValue = 220;
-    Model_Base->BGRColorRange->BuValue = 220;
-    hough_threshold = 100;
-    hough_minLineLength = 60.0;
-    hough_maxLineGap = 40.0;
+    R_ = 150;
+    G_ = 220;
+    B_ = 220;
+    _threshold = 100;
+    _minLineLength = 60.0;
+    _maxLineGap = 40.0;
 
 }
 LineDetected::~LineDetected()
@@ -46,9 +46,9 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
     convertScaleAbs(imageGamma, imageGamma);
     
     // imshow("imageGamma",imageGamma);
-    R_value = Model_Base->BGRColorRange->ReValue;
-    G_value = Model_Base->BGRColorRange->GrValue;
-    B_value = Model_Base->BGRColorRange->BuValue;
+    R_value = R_;
+    G_value = G_;
+    B_value = B_;
     
     
     vector<Point> BoundaryPoint;
@@ -244,7 +244,8 @@ Pixel3Dpoint LineDetected::deproject_pixel2point(Coordinate point,float depth)
 {
     // ROS_INFO("deproject_pixel2point");
     Pixel3Dpoint pixel3Dpoint = {0,0,0};
-    Intrinsicscolor color_Intrinsics={312.2850,249.5522,615.0078,615.1781};
+    // Intrinsicscolor color_Intrinsics={312.2850,249.5522,615.0078,615.1781};
+    Intrinsicscolor color_Intrinsics={329.0786,242.4088,606.2370,606.1384};//
     pixel3Dpoint.x = depth * (point.X - color_Intrinsics.PPX)/color_Intrinsics.Fx;
     pixel3Dpoint.y = depth * (point.Y - color_Intrinsics.PPY)/color_Intrinsics.Fy;
     pixel3Dpoint.z = depth;
@@ -835,8 +836,8 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
     check_lines.clear();
     hough_frame = ori_frame.clone();
     merge_hough_frame = ori_frame.clone();
-    // ROS_INFO("hough_threshold = %d hough_minLineLength = %f hough_maxLineGap = %f",hough_threshold,hough_minLineLength,hough_maxLineGap);
-    HoughLinesP(canny_iframe,all_lines,1,CV_PI/180,hough_threshold,hough_minLineLength,hough_maxLineGap); 
+    // ROS_INFO("hough_threshold = %d hough_minLineLength = %f hough_maxLineGap = %f",_threshold,_minLineLength,_maxLineGap);
+    HoughLinesP(canny_iframe,all_lines,1,CV_PI/180,_threshold,_minLineLength,_maxLineGap); 
     all_lines1 = all_lines;
     Mat EnhanceImage = iframe.clone();
     int all_lines_Size = all_lines.size();

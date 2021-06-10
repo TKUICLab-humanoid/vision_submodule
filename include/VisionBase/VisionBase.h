@@ -130,5 +130,6 @@ class VisionBase
         string GetPath(string file_name);
         Point MinIntersectPoint(Vec4i line, Point A, int mindistance);
         bool LineorNot(Vec4i line);
-
+        int B_,G_,R_;
+        int _threshold,_minLineLength,_maxLineGap;
 };

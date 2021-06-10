@@ -91,7 +91,7 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
     float height_cnt = (float)Feature_y;
     float error_y;
     float error_x;
-    avgdistance = 0;
+    avgdistance = 0.;
     Distance distance;
     
     switch(cameratype)
@@ -101,11 +101,21 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
             {
                 // ROS_INFO("start");
                 avgdistance = AvgPixelDistance(Feature_x,Feature_y);
-                float theta_y = atan((((depth_buffer.rows/2)-height_cnt)/(depth_buffer.rows/2))*tan((VFOV/2)*DEG2RAD));                
+                float theta_y = atan((((depth_buffer.rows/2)-height_cnt)/(depth_buffer.rows/2))*tan((VFOV/2)*DEG2RAD));               
                 float theta_x = atan((((depth_buffer.cols/2)-width_cnt)/(depth_buffer.cols/2))*tan((HFOV/2)*DEG2RAD));
+                
+                if(!std::isfinite(theta_x))
+                {
+                    theta_x = 0.;
+                }
+                if(!std::isfinite(theta_y))
+                {
+                    theta_y = 0.;
+                }
                 // float theta_x = atan(((((depth_buffer.cols/2)-width_cnt)/(depth_buffer.cols/2))*tan(half_HFOV_angle * DEG2RAD)) * cos(theta_y));
                 double OYp = avgdistance * cos(theta_x);
-                // ROS_INFO("theta_x = %f theta_y = %f",theta_x,theta_y);
+                // ROS_INFO("theta_x = %f theta_y = %f avgdistance = %f",theta_x,theta_y,avgdistance);
+                // ROS_INFO("OYp = %f RealsenseIMUData[0] = %f",OYp,RealsenseIMUData[0]);
                 if(std::isfinite(RealsenseIMUData[0]))
                 {
                     // ROS_INFO("isfinite(RealsenseIMUData[0]");
@@ -119,7 +129,7 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
                         distance.y_dis = int(round(OYp * sin((RealsenseIMUData[0] * DEG2RAD) + theta_y)));
                         distance.x_dis = int(round(OYp * tan(theta_x)));
                         distance.dis = int(round(sqrt(pow(distance.x_dis,2)+pow(distance.y_dis,2))));
-                        // ROS_INFO("OYp = %f RealsenseIMUData[0] = %f",OYp,RealsenseIMUData[0]);
+                        
 
                         // float dist = avgdistance * sin((RealsenseIMUData[0] * DEG2RAD) + theta_y);
                         // distance.x_dis = int(round(dist * sin(theta_x)));
