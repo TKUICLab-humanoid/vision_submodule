@@ -27,7 +27,7 @@
 #define FOOT_H          2.556        //腳底板～踝關節長度  (cm)
 #define MOTORDEG        0.08789     //360/4096 (deg)
 #define VFOV            40.27706125    //Vertical FOV (deg) 41.0408
-#define HFOV            48.3473     //Horizontal FOV (deg) 52.3473  67.3801
+#define HFOV            55.0     //Horizontal FOV (deg) 52.3473  67.3801
 #define AVGERRORANGLE   5.3      //Motor angle - the angle of image bottom
 #define DEG2RAD         M_PI/180
 #define RAD2DEG        180/M_PI
@@ -66,6 +66,14 @@ struct Distance
     int y_dis;
     int dis;
 };
+
+struct Distancefloat
+{
+    float x_dis;
+    float y_dis;
+    float dis;
+};
+
 enum class CameraType
 {
     Monocular = 1,
@@ -121,7 +129,13 @@ class VisionBase
     public:
         VisionBase();
         ~VisionBase();
-
+        float camera_angle;
+        float pixelDistance;
+        int PixelX;
+        int PixelY;
+        float pixelDepth;
+        float Pixelx;
+        float Pixely;
         int Angle_Adjustment(int angle);
         void AngleLUT();
         int Frame_Area(int coordinate, int range);

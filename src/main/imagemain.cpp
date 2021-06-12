@@ -95,10 +95,10 @@ void Vision_main::LoadBGRValue()
 {
     ROS_INFO("LoadBGRValue");
     Model_Base->LoadBGRFile();
-    B_ = Model_Base->BGRColorRange->BuValue;
-    G_ = Model_Base->BGRColorRange->GrValue;
-    R_ = Model_Base->BGRColorRange->ReValue;
-    ROS_INFO("B = %d G = %d R = %d",B_,G_,R_);
+    // B_ = Model_Base->BGRColorRange->BuValue;
+    // G_ = Model_Base->BGRColorRange->GrValue;
+    // R_ = Model_Base->BGRColorRange->ReValue;
+    // ROS_INFO("B = %d G = %d R = %d",B_,G_,R_);
 }
 
 bool Vision_main::LoadBGRInfo(tku_msgs::BGRInfo::Request &req, tku_msgs::BGRInfo::Response &res)
@@ -121,10 +121,10 @@ void Vision_main::ChangeHoughValue(const tku_msgs::HoughValue& msg)
 void Vision_main::LoadHoughValue()
 {
     LoadHoughFile();
-    _threshold = hough_threshold;
-    _minLineLength = hough_minLineLength;
-    _maxLineGap = hough_maxLineGap;
-    ROS_INFO("_threshold = %d _minLineLength = %d _maxLineGap = %d",_threshold,_minLineLength,_maxLineGap);
+    // _threshold = hough_threshold;
+    // _minLineLength = hough_minLineLength;
+    // _maxLineGap = hough_maxLineGap;
+    // ROS_INFO("_threshold = %d _minLineLength = %d _maxLineGap = %d",_threshold,_minLineLength,_maxLineGap);
 }
 bool Vision_main::LoadHoughInfo(tku_msgs::HoughInfo::Request &req, tku_msgs::HoughInfo::Response &res)
 {
@@ -222,6 +222,9 @@ void Vision_main::savefile()
         OutFile << " yaw = ";
         OutFile << RealsenseIMUData[2];
         OutFile << "\n";
+        OutFile << " camera_angle = ";
+        OutFile << camera_angle;
+        OutFile << "\n";
         OutFile << " Robot Height = ";
         OutFile << RobotHeight_copy;
         OutFile << "\n";
@@ -233,6 +236,12 @@ void Vision_main::savefile()
         OutFile << "\n";
         OutFile << " Vertical_Head_Angle = ";
         OutFile << Vertical_Head_Angle;
+        OutFile << "\n";
+        OutFile << " Pixelx = ";
+        OutFile << Pixelx;
+        OutFile << "\n";
+        OutFile << " Pixely = ";
+        OutFile << Pixely;
         OutFile << "\n";
         OutFile << " Distance = ";
         OutFile << pixelDistance;
@@ -339,33 +348,45 @@ void Vision_main::strategy_main()
         ROS_INFO("ImageLengthData.bottom = %d",ImageLengthData.bottom);
         ROS_INFO("ImageLengthData.top_width = %d",ImageLengthData.top_width);
         ROS_INFO("ImageLengthData.bottom_width = %d",ImageLengthData.bottom_width);*/
+        // Mat AA = color_buffer.clone();
         tku_msgs::FeaturePoint feature_point_tmp;
         int distance_last = -1;
         int scan_line_last;
         
-        int count = 0;
-        for(int i = 479; i >= 0 ; i--)
-        {
-            int B = imageGamma.at<Vec3b>(i, 320)[0];
-            int G = imageGamma.at<Vec3b>(i, 320)[1];
-            int R = imageGamma.at<Vec3b>(i, 320)[2];
-            if(B == 255 && G == 255 && R == 255)
-            {
-                Distance distest;
-                distest = measure(320,i,CameraType::stereo);
-                pixelDistance = distest.dis;
-                PixelX = 320;
-                PixelY = i;
-                // pixelDepth = AvgPixelDistance(320,i);
-                // savefile();
-                ROS_INFO("(320,%d) x = %d , y = %d, dis = %d",i,distest.x_dis,distest.y_dis,distest.dis);
-                count++;
-            }
-            if(count>15)
-            {
-                break;
-            }
-        }
+        // int count = 0;
+        // for(int i = 319; i >= 0 ; i--)
+        // {
+            
+        //     ROS_INFO("(%d,240)",i);
+        //     int B = imageGamma.at<Vec3b>(239, i)[0];
+        //     int G = imageGamma.at<Vec3b>(239, i)[1];
+        //     int R = imageGamma.at<Vec3b>(239, i)[2];
+        //     if(B == 255 && G == 255 && R == 255)
+        //     {
+        //         Distance distest;
+        //         distest = measure(i,239,CameraType::stereo);
+        //         pixelDistance = sqrt(pow(distest.x_dis,2)+pow(distest.y_dis,2));
+        //         PixelX = i;
+        //         PixelY = 239;
+        //         pixelDepth = AvgPixelDistance(i,239);
+        //         ROS_INFO("(%d,240) x = %d , y = %d, pixelDepth = %f",i,distest.x_dis,distest.y_dis,pixelDepth);
+        //         // savefile();
+        //         ROS_INFO("(%d,240) x = %d , y = %d, dis = %f",i,distest.x_dis,distest.y_dis,pixelDistance);
+                
+        //         if(round(Pixelx) == 40.0 && std::isfinite(pixelDepth))
+        //         {
+        //             savefile();
+        //             circle(AA, Point(i, 239), 3, Scalar(0, 255, 255), 3);
+        //         }
+        //         count++;
+        //     }
+        //     // if(count>10)
+        //     // {
+        //     //     break;
+        //     // }
+        // }
+        // ROS_INFO("-------------------finish---------------------");
+        // imshow("AA",AA);
         // waitKey(0);
         
         
