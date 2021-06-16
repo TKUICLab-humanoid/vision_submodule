@@ -622,14 +622,12 @@ void Vision_main::strategy_main()
         msg_imageGamma = cv_bridge::CvImage(std_msgs::Header(), "bgr8", MyCombine1).toImageMsg();
         msg_hough = cv_bridge::CvImage(std_msgs::Header(), "bgr8", MyCombine2).toImageMsg();
 
-    
         Object_Frame_Publisher.publish(msg_object);
         Monitor_Frame_Publisher.publish(msg_monitor);
         Measure_Frame_Publisher.publish(msg_measure);
         Gamma_Frame_Publisher.publish(msg_imageGamma);
         mask_Frame_Publisher.publish(msg_mask);
         MerHough_Publisher.publish(msg_hough);
-
 
         waitKey(1);
     }

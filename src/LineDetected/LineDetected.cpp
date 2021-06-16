@@ -2,12 +2,12 @@
 
 LineDetected::LineDetected()
 {
-    mX = 0;
-    mY = 0;
+    mX = 0.0;
+    mY = 0.0;
 
-    R_ = 150;
-    G_ = 220;
-    B_ = 220;
+    R_value = 150;
+    G_value = 220;
+    B_value = 220;
     hough_threshold = 100;
     hough_minLineLength = 60.0;
     hough_maxLineGap = 40.0;
@@ -953,39 +953,6 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
                     MaxLine = {NewLinestart.X,NewLinestart.Y,NewLineend.X,NewLineend.Y};
                     Merge(MaxLine,doublecheck2);
                     MaxLine = NewLine;
-
-                    // if(th == 90.0)
-                    // {
-                    //     if (Xstart.Y < NewLinestart.Y ){
-                    //         NewLinestart = {Xstart.X,Xstart.Y};
-                    //     }else if(Xstart.Y > NewLineend.Y )
-                    //     {
-                    //         NewLineend = {Xend.X,Xend.Y};
-                    //     }else if(Xend.Y < NewLinestart.Y )
-                    //     {
-                    //         NewLinestart = {Xend.X,Xend.Y};
-                    //     }
-                    //     else if (Xend.Y > NewLineend.Y ){
-                    //         NewLineend = {Xend.X,Xend.Y};
-                    //     }  
-                    // }else{
-                    //     if (Xstart.X < NewLinestart.X ){
-                    //         NewLinestart = {Xstart.X,Xstart.Y};
-                    //     }else if(Xstart.X > NewLineend.X )
-                    //     {
-                    //         NewLineend = {Xend.X,Xend.Y};
-                    //     }else if(Xend.X < NewLinestart.X )
-                    //     {
-                    //         NewLinestart = {Xend.X,Xend.Y};
-                    //     }
-                    //     else if (Xend.X > NewLineend.X ){
-                    //         NewLineend = {Xend.X,Xend.Y};
-                    //     }  
-                    // }
-                    
-                    // MaxLine = {NewLinestart.X,NewLinestart.Y,NewLineend.X,NewLineend.Y};
-                    // ROS_INFO("Slope = %f",Slope(MaxLine));
-                    
                 }
                 // ROS_INFO("MaxLine = (x1= %d ,y1 = %d ,x2 = %d ,y2 = %d),Slope = %f",MaxLine[0],MaxLine[1],MaxLine[2],MaxLine[3],Slope(MaxLine));
                 int checkMaxLine = checkline(EnhanceImage,canny_iframe,NewLine);
@@ -1008,7 +975,6 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
                 }else{
                     //ROS_INFO("not line");
                 }
-                
                 // ROS_INFO("X = (x1= %d ,y1 = %d ,x2 = %d ,y2 = %d)",X[0],X[1],X[2],X[3]);
             }
             reduce_similar_lines.clear();

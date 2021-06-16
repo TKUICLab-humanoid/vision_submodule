@@ -20,17 +20,24 @@
 #include <geometry_msgs/Vector3Stamped.h>
 
 #define PI              M_PI
-#define CAMERA_HEIGHT   3.925        //The height of camera to Vertical motor  (cm)
-#define SLEG_L          14        //踝關節～膝關節長度  (cm)
-#define BLEG_L          14        //膝關節～髖關節長度  (cm)
-#define BODY_L          22.892        //髖關節～垂直頭馬達長度  (cm)
-#define FOOT_H          2.556        //腳底板～踝關節長度  (cm)
+#define DEG2RAD         M_PI/180
+#define RAD2DEG         180/M_PI
 #define MOTORDEG        0.08789     //360/4096 (deg)
 #define VFOV            40.27706125    //Vertical FOV (deg) 41.0408
 #define HFOV            55.0     //Horizontal FOV (deg) 52.3473  67.3801
-#define AVGERRORANGLE   5.3      //Motor angle - the angle of image bottom
-#define DEG2RAD         M_PI/180
-#define RAD2DEG        180/M_PI
+#define AVGERRORANGLE   0.0      //Motor angle - the angle of image bottom
+#define L_CAMERA        4.45         //The length of camera to Vertical motor (cm)
+#define L_Calf          14.0         //踝關節～膝關節長度 (cm) 小腿
+#define L_Thigh         14.0         //膝關節～髖關節長度 (cm) 大腿
+#define L_BodyError     7.134625798  // L_4 = 24.95 (cm), L_5 = 3.123 (cm)
+#define L_Body          25.14469385  //髖關節～垂直頭馬達長度 (cm)
+#define L_FOOT          3.472        //腳底板下面～踝關節長度 (cm)
+#define L_Shoes         1.4          //鞋釘厚度 (cm)
+#define W_Front         7.5          //Front Width of Shoes (cm)
+#define W_Behind        6.5          //Behind Width of Shoes (cm)
+#define HW_Camera       1.0          //Half Width of Camera (cm)
+
+
 
 using namespace std;
 using namespace cv;
