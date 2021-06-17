@@ -63,7 +63,7 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
     }else{
         horization_line = 0;
     }
-    ROS_INFO("horization_line = %d",horization_line);
+    // ROS_INFO("horization_line = %d",horization_line);
     for(int col = 0; col < imageGamma.cols;col++)
     {
         int score = 0;
