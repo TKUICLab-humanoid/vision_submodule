@@ -100,7 +100,7 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
     float height_cnt = (float)Feature_y;
     float error_y;
     float error_x;
-    float avgdistance = 0.;
+    float avgdistance = 0.0;
     Distance distance;
     distance.x_dis = 0;
     distance.y_dis = 0;
@@ -111,9 +111,11 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
         case CameraType::stereo:
 
             avgdistance = AvgPixelDistance(Feature_x,Feature_y);
-            if(!depth_buffer.empty() || avgdistance != 0.0)
+            ROS_INFO("avgdistance = %f",avgdistance);
+
+            if(!depth_buffer.empty() && avgdistance != 0.000000)
             {
-                // ROS_INFO("start");
+                ROS_INFO("start");
                 
                 float theta_y = 0.0;               
                 float theta_x = 0.0;
@@ -194,7 +196,7 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
  
         case CameraType::Monocular:
 
-            //ROS_INFO("Monocular");
+            // ROS_INFO("Monocular");
             if(width_cnt == -1 && height_cnt == -1)
             {
                 distance.x_dis = -1;

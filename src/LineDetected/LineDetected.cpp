@@ -649,9 +649,9 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
                 }
                 // ROS_INFO("para_inv = (%f,%f)",para_a_inv,para_a_inv);
                 // ROS_INFO("pos = (%f,%f)",x_1,y_1);
-                int b = image_Enhance.at<Vec3b>((int)y_1, (int)x_1)[0];
-                int g = image_Enhance.at<Vec3b>((int)y_1, (int)x_1)[1];
-                int r = image_Enhance.at<Vec3b>((int)y_1, (int)x_1)[2];
+                int b = nobackgroud_image.at<Vec3b>((int)y_1, (int)x_1)[0];
+                int g = nobackgroud_image.at<Vec3b>((int)y_1, (int)x_1)[1];
+                int r = nobackgroud_image.at<Vec3b>((int)y_1, (int)x_1)[2];
                 int edge_ = canny.at<uchar>((int)y_1, (int)x_1);
                 // ROS_INFO("edge = %d",edge_);
                 double diff = 0;
@@ -703,9 +703,9 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
                 }
                 // ROS_INFO("para_inv = (%f,%f)",para_a_inv,para_a_inv);
                 // ROS_INFO("pos = (%f,%f)",x_1,y_1);
-                int b = image_Enhance.at<Vec3b>((int)y_1, (int)x_1)[0];
-                int g = image_Enhance.at<Vec3b>((int)y_1, (int)x_1)[1];
-                int r = image_Enhance.at<Vec3b>((int)y_1, (int)x_1)[2];
+                int b = nobackgroud_image.at<Vec3b>((int)y_1, (int)x_1)[0];
+                int g = nobackgroud_image.at<Vec3b>((int)y_1, (int)x_1)[1];
+                int r = nobackgroud_image.at<Vec3b>((int)y_1, (int)x_1)[2];
                 int edge_ = canny.at<uchar>((int)y_1, (int)x_1);
                 // ROS_INFO("edge = %d",edge_);
                 double diff = 0.;
@@ -774,9 +774,9 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
                     continue;
                 }
                 
-                int b = image_Enhance.at<Vec3b>((int)y_1, (int)x_1)[0];
-                int g = image_Enhance.at<Vec3b>((int)y_1, (int)x_1)[1];
-                int r = image_Enhance.at<Vec3b>((int)y_1, (int)x_1)[2];
+                int b = nobackgroud_image.at<Vec3b>((int)y_1, (int)x_1)[0];
+                int g = nobackgroud_image.at<Vec3b>((int)y_1, (int)x_1)[1];
+                int r = nobackgroud_image.at<Vec3b>((int)y_1, (int)x_1)[2];
                 int edge_ = canny.at<uchar>((int)y_1, (int)x_1);
                 // ROS_INFO("edge = %d",edge_);
                 double diff = 0.0;
@@ -811,8 +811,8 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
     float avg_G = (float)Vgreen/(float)(countfor);
     float avg_W = (float)Vwhite/(float)(countfor);
     float avg_E = (float)Vedge/(float)(countfor);
-    // ROS_INFO("avg_G = %f, avg_W = %f,avg_E = %f,countfor = %d",avg_G,avg_W,avg_E,countfor);
-    if(avg_G >= 0.8 && avg_W >= 0.5 && avg_E >=0.4 || avg_E >=1.0) return 1;
+    ROS_INFO("avg_G = %f, avg_W = %f,avg_E = %f,countfor = %d",avg_G,avg_W,avg_E,countfor);
+    if(avg_G >= 0.8 && avg_W >= 0.3 && avg_E >=0.2 || avg_E >=1.0) return 1;
     else return 0;
 }
 
@@ -883,7 +883,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
                     // ROS_INFO("MinDistance = %f",MinDistance(X,Y));
                     // ROS_INFO("AngleDiff = %f",AngleDiff(X,Y));
                     Vec4i Z = {X[2],X[3],Y[0],Y[1]};
-                    if((MinDistance(X,Y) < 15.0 && AngleDiff(X,Y) < 1.0 && stereo_flag != false && LineorNot(Y) == 1))
+                    if((MinDistance(X,Y) < 25.0 && AngleDiff(X,Y) < 1.0 && stereo_flag != false && LineorNot(Y) == 1))
                     {
                         // ROS_INFO("--------Merge--------");
                         Merge(X,Y);
