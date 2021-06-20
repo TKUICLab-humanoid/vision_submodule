@@ -30,7 +30,7 @@ class FeatureDistance : public ObjectDetected
         float Pitch_init;
         float Robot_Roll;
         float Robot_Pitch;
-        float avgdistance;
+        // float avgdistance;
         int image_top_length;         //畫面最遠距離
         int image_bottom_length;      //畫面最底距離
         int image_top_width_length;       //畫面最遠寬度(一半)

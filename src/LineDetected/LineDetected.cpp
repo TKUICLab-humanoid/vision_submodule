@@ -1001,6 +1001,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
 
     }
     sort(check_lines.begin(), check_lines.end(), tocompare);
+    JustLine_Data.landmark.clear();
     for( size_t i = 0; i < check_lines.size(); i++ )
 	{
         Vec4i l = check_lines[i];

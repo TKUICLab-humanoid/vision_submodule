@@ -78,7 +78,7 @@ float FeatureDistance::AvgPixelDistance(int Feature_x, int Feature_y)
             }
         }
         effective_distance = (distance_sum/float(effective_pixel));
-        if(!std::isfinite(distance_sum)||!std::isfinite(effective_pixel))
+        if(!std::isfinite(distance_sum)||!std::isfinite(effective_pixel) || distance_sum == 0.0 || effective_pixel == 0)
         {
             effective_distance = 0.0;
         }        
@@ -100,7 +100,7 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
     float height_cnt = (float)Feature_y;
     float error_y;
     float error_x;
-    avgdistance = 0.;
+    float avgdistance = 0.;
     Distance distance;
     distance.x_dis = 0;
     distance.y_dis = 0;
@@ -109,10 +109,12 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
     switch(cameratype)
     {
         case CameraType::stereo:
-            if(!depth_buffer.empty())
+
+            avgdistance = AvgPixelDistance(Feature_x,Feature_y);
+            if(!depth_buffer.empty() || avgdistance != 0.0)
             {
                 // ROS_INFO("start");
-                avgdistance = AvgPixelDistance(Feature_x,Feature_y);
+                
                 float theta_y = 0.0;               
                 float theta_x = 0.0;
                 if(height_cnt > 240)
@@ -188,8 +190,6 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
                 // ROS_INFO("finish");
                 ROS_INFO("stereo: x = %d, y = %d, dis = %d",distance.x_dis,distance.y_dis,distance.dis);
                 break;
-            }else{
-                measure(Feature_x,Feature_y,CameraType::Monocular);
             }
  
         case CameraType::Monocular:
