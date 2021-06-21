@@ -111,11 +111,11 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
         case CameraType::stereo:
 
             avgdistance = AvgPixelDistance(Feature_x,Feature_y);
-            ROS_INFO("avgdistance = %f",avgdistance);
+            // ROS_INFO("avgdistance = %f",avgdistance);
 
             if(!depth_buffer.empty() && avgdistance != 0.000000)
             {
-                ROS_INFO("start");
+                // ROS_INFO("start");
                 
                 float theta_y = 0.0;               
                 float theta_x = 0.0;

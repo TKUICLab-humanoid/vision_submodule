@@ -147,6 +147,7 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
     // }
     // imshow("orign3",orign3);
     // ROS_INFO("finish");
+
     vector<vector<Point> > contours;
     vector<Vec4i> hierarchy;
     findContours( mask, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
@@ -172,7 +173,7 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
         //     Gmask = UpperConvexHull(orign,green_mask,hull);
         // }else 
         if(greenhull.size() >= 1 && hull.size() >= 1){
-            Gmask = UpperConvexHull(orign,green_mask,greenhull);
+            Gmask = UpperConvexHull(orign,green_mask,greenhull,horization_line);
         }else{
             Gmask = green_maskw;
         }
@@ -440,8 +441,10 @@ double LineDetected::Slope(Vec4i line)
     else {
         double s = atan2((double(Xend.y)-double(Xstart.y)),(double(Xend.x)-double(Xstart.x)))*RAD2DEG;
         // ROS_INFO("line %d %d %d %d theta = %f",line[0],line[1],line[2],line[3],s);
-        if(s < 0.0)return 180.0 + s;
-        else return s;
+        s = Angle_Adjustment(s);
+        return s;
+        // if(s < 0.0)return 180.0 + s;
+        // else return s;
     }
 }
 
@@ -1120,7 +1123,7 @@ void LineDetected::SaveHoughFile()
     }
 }
 
-Mat LineDetected::UpperConvexHull(Mat ori,Mat drawing,vector<vector<Point> > allfieldpoints)
+Mat LineDetected::UpperConvexHull(const Mat ori,Mat drawing,vector<vector<Point> > allfieldpoints,int horization_line)
 {
     vector<Point> Allgreenhull;
 
@@ -1156,47 +1159,64 @@ Mat LineDetected::UpperConvexHull(Mat ori,Mat drawing,vector<vector<Point> > all
     Mat mask1 = Mat::zeros(orign.rows,orign.cols, CV_8UC3); 
     vector<vector<Point> > contours(1);
     convexHull(Mat(upperCH), contours[0], false );
-    for ( size_t i = 0; i < contours.size(); i++ )
-    {
-		drawContours( mask1, contours, i, Scalar(255,255,255), -1);
-	}
-    // imshow("mask1",mask1);
+    double area = contourArea(contours[0]);
 
-    vector<Point> fieldboundary;
-    for(int i = 0; i < mask1.cols;i++)
+    if(area < 155000.0)
     {
-        Point A;
-        for(int k = 0 ; k < mask1.rows ;k++)
+        for(int i = 0 ; i < orign.cols; i ++)
         {
-            int a = mask1.at<Vec3b>(k, i)[0];
-            int b = mask1.at<Vec3b>(k, i)[1];
-            int c = mask1.at<Vec3b>(k, i)[2];
-            if( a == 255 && b == 255 && c ==255 && k < mask1.rows -5 )
+            for(int j = 0; j < orign.rows; j++)
             {
-                A = Point(i,k);
-                break;
+                if(j >= horization_line)
+                {
+                    drawing.at<uchar>(j, i) = 255;
+                }
             }
         }
-        fieldboundary.push_back(A);
-    }
-
-
-    for(int i = 0; i < fieldboundary.size();i++)
-    {
-        Point B = fieldboundary[i];
-        for(int k = 0 ; k < drawing.rows ;k++)
+    }else{
+        for ( size_t i = 0; i < contours.size(); i++ )
         {
-            if( k >= B.y)
+            drawContours( mask1, contours, i, Scalar(255,255,255), -1);
+        }
+        // imshow("mask1",mask1);
+
+        vector<Point> fieldboundary;
+        for(int i = 0; i < mask1.cols;i++)
+        {
+            Point A;
+            for(int k = 0 ; k < mask1.rows ;k++)
             {
-                drawing.at<uchar>(k, B.x) = 255;
-            }else{
-                drawing.at<uchar>(k, B.x) = 0;
+                int a = mask1.at<Vec3b>(k, i)[0];
+                int b = mask1.at<Vec3b>(k, i)[1];
+                int c = mask1.at<Vec3b>(k, i)[2];
+                if( a == 255 && b == 255 && c ==255 && k < mask1.rows -5 )
+                {
+                    A = Point(i,k);
+                    break;
+                }
+            }
+            fieldboundary.push_back(A);
+        }
+
+
+        for(int i = 0; i < fieldboundary.size();i++)
+        {
+            Point B = fieldboundary[i];
+            for(int k = 0 ; k < drawing.rows ;k++)
+            {
+                if( k >= B.y)
+                {
+                    drawing.at<uchar>(k, B.x) = 255;
+                }else{
+                    drawing.at<uchar>(k, B.x) = 0;
+                }
             }
         }
+        fieldboundary.clear();
     }
+
+   
     // imshow("drawing",drawing);
-
-    fieldboundary.clear();
     upperCH.clear();
     contours.clear();
     points.clear();

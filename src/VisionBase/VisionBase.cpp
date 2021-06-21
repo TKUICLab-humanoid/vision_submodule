@@ -97,6 +97,6 @@ Point VisionBase::MinIntersectPoint(Vec4i line, Point A, int mindistance)
             minIntersectPoint = Point(x,y);
         }
     }
-    ROS_INFO("MinIntersectPoint = (%d,%d)",minIntersectPoint.x,minIntersectPoint.y);
+    // ROS_INFO("MinIntersectPoint = (%d,%d)",minIntersectPoint.x,minIntersectPoint.y);
     return minIntersectPoint;
 }

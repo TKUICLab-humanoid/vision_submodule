@@ -93,7 +93,7 @@ class LineDetected : public ModelBase
         //-------------------------------------
         Mat Merge_similar_line(const Mat iframe,const Mat canny_iframe,const Mat original_frame);
         //-------------------------------------
-        Mat UpperConvexHull(Mat ori,Mat drawing,vector<vector<Point> > allfieldpoints);
+        Mat UpperConvexHull(const Mat ori,Mat drawing,vector<vector<Point> > allfieldpoints,int horization_line);
         Pixel3Dpoint deproject_pixel2point(Coordinate point,float depth);
         double calculate_3D(Coordinate a, Coordinate b);
 
