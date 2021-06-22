@@ -374,7 +374,7 @@ double LineDetected::MinDistance(Vec4i X,Vec4i Y)
     if (dir(Xstart, Xend, Ystart) * dir(Xstart, Xend, Yend) <= 0 && 
         dir(Ystart, Yend, Xstart) * dir(Ystart, Yend, Xend) <= 0)  //兩線段相交, 距離為0
 	{
-        return 0;
+        return 0.0;
     }else{                                                   //如不相交, 則最短距離為每個端點到另一條線段距離的最小值
         // ROS_INFO("s");
         double XYMinDistance = min(min(min(disMin(Xstart, Xend, Ystart,CameraType::stereo), disMin(Xstart, Xend, Yend,CameraType::stereo)), disMin(Ystart, Yend, Xstart,CameraType::stereo)),disMin(Ystart,Yend,Xend,CameraType::stereo));
@@ -402,14 +402,24 @@ double LineDetected::AngleDiff(Vec4i X,Vec4i Y)
     Coordinate Ystart = {Y[0],Y[1]};
     Coordinate Yend = {Y[2],Y[3]};
 
-    if((Xend.X-Xstart.X) == 0 ) mX = 90;
+    if((Xend.X-Xstart.X) == 0 ) mX = 90.0;
     else mX = Slope(X);
-    if((Yend.X-Ystart.X) == 0)  mY = 90;
+    if((Yend.X-Ystart.X) == 0)  mY = 90.0;
     else mY = Slope(Y);;
     
-    if( mX >= 0 && mY >= 0 || mX <= 0 && mY <= 0 ) return abs( mX - mY );
-    else if( mX > 0 && mY < 0 ) return mX + abs(mY);
-    else if( mX < 0 && mY > 0 ) return abs(mX) + mY;
+    double angle = 0.0;
+    if((mX - mY) > 175.0)
+    {
+        angle = 180.0 - (mX - mY);
+    }
+    else{
+        angle = mX - mY;
+    }
+    
+    return angle;
+    // if( mX >= 0 && mY >= 0 || mX <= 0 && mY <= 0 ) return abs( mX - mY );
+    // else if( mX > 0 && mY < 0 ) return mX + abs(mY);
+    // else if( mX < 0 && mY > 0 ) return abs(mX) + mY;
 }
     
 Coordinate LineDetected::Midpoint(Vec4i line)
@@ -439,12 +449,10 @@ double LineDetected::Slope(Vec4i line)
 
     if((line[2]-line[0]) == 0) return 90.0;
     else {
-        double s = atan2((double(Xend.y)-double(Xstart.y)),(double(Xend.x)-double(Xstart.x)))*RAD2DEG;
+        double s = normalize_angle(atan2((double(Xend.y)-double(Xstart.y)),(double(Xend.x)-double(Xstart.x))) * RAD2DEG );
         // ROS_INFO("line %d %d %d %d theta = %f",line[0],line[1],line[2],line[3],s);
-        s = Angle_Adjustment(s);
-        return s;
-        // if(s < 0.0)return 180.0 + s;
-        // else return s;
+        if(s < 0.0) return 180.0 + s;
+        else return s;
     }
 }
 
@@ -588,7 +596,7 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
     int x2 = 0;
     int y2 = 0;
     
-    if( Xstart.x > Xend.y )
+    if( Xstart.x > Xend.x )
     {
         x1 = Xend.x;
         y1 = Xend.y;
@@ -815,7 +823,7 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
     float avg_W = (float)Vwhite/(float)(countfor);
     float avg_E = (float)Vedge/(float)(countfor);
     ROS_INFO("avg_G = %f, avg_W = %f,avg_E = %f,countfor = %d",avg_G,avg_W,avg_E,countfor);
-    if(avg_G >= 0.8 && avg_W >= 0.3 && avg_E >=0.2 || avg_E >=1.0) return 1;
+    if(avg_G >= 0.8 && avg_W >= 0.8 && avg_E >=0.5 || avg_G >= 0.5 && avg_E >=1.0 ) return 1;
     else return 0;
 }
 
@@ -854,7 +862,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
     {
         // ROS_INFO("all_lines %d",i);
         Vec4i X = all_lines[i];
-        // ROS_INFO("all_line(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",i,X[0],X[1],X[2],X[3],Slope(X));
+        ROS_INFO("all_line(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",i,X[0],X[1],X[2],X[3],Slope(X));
         merge_similar_lines = complement(merge_similar_lines,X);
         int merge_similar_lines_SIZE = merge_similar_lines.size();
         int check = 0;
@@ -882,9 +890,9 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
                     merge_similar_lines = complement(merge_similar_lines,Y);
                     all_lines = complement(all_lines,Y);
                 }else{
-                    // ROS_INFO("merge_similar_lines(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",j,Y[0],Y[1],Y[2],Y[3],Slope(Y));
-                    // ROS_INFO("MinDistance = %f",MinDistance(X,Y));
-                    // ROS_INFO("AngleDiff = %f",AngleDiff(X,Y));
+                    ROS_INFO("merge_similar_lines(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",j,Y[0],Y[1],Y[2],Y[3],Slope(Y));
+                    ROS_INFO("MinDistance = %f",MinDistance(X,Y));
+                    ROS_INFO("AngleDiff = %f",AngleDiff(X,Y));
                     Vec4i Z = {X[2],X[3],Y[0],Y[1]};
                     if((MinDistance(X,Y) < 25.0 && AngleDiff(X,Y) < 1.0 && stereo_flag != false && LineorNot(Y) == 1))
                     {
@@ -1031,7 +1039,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
         Coordinate midpoint = Midpoint(l);
         Distance start_ = measure(startp.X,startp.Y,CameraType::stereo);
         Distance end_ = measure(endp.X,endp.Y,CameraType::stereo);
-        double dis =  sqrt(pow((start_.x_dis - end_.x_dis),2) + pow((start_.y_dis - end_.y_dis),2));
+        int dis =  int(round(sqrt(pow((start_.x_dis - end_.x_dis),2) + pow((start_.y_dis - end_.y_dis),2))));
         
         tku_msgs::LineData line_tmp;
         tku_msgs::Cooridinate mid_point;
@@ -1053,8 +1061,8 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
         line_tmp.end_point = endpoint;
         line_tmp.center_point = mid_point;
         line_tmp.Line_length = dis;
-        line_tmp.Line_theta = Slope(l);
-        line_tmp.relative_distance = relativedis.dis;
+        line_tmp.Line_theta = normalize_angle_RAD(Slope(l));
+        line_tmp.relative_distance = float(relativedis.dis)/100.0;
         line_tmp.Nearest_point = IntersectPoint;
         // line_tmp.Line_theta = acos((AdotB)/((image_bottom_width_length/2)*(middlepoint.dis)))*180/CV_PI;
         // ROS_INFO("Line %d : %d %d %d %d (x,y) = (%d ,%d) , distance =  %d", i,l[0],l[1],l[2],l[3],minIntersectPoint.x,minIntersectPoint.y,relativedis.dis);

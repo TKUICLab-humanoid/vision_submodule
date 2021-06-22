@@ -150,6 +150,8 @@ class VisionBase
         
         string GetPath(string file_name);
         Point MinIntersectPoint(Vec4i line, Point A, int mindistance);
+        double normalize_angle(double phi) ;
+        double normalize_angle_RAD(double phi) ;
         bool LineorNot(Vec4i line);
         int B_,G_,R_;
         int _threshold,_minLineLength,_maxLineGap;

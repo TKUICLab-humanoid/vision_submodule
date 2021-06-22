@@ -11,12 +11,33 @@ VisionBase::~VisionBase()
 
 int VisionBase::Angle_Adjustment(int angle)
 {
-    if (angle < 0)
+    if (angle < -360)
         return angle + 360;
     else if (angle >= 360)
         return angle - 360;
     else
         return angle;
+}
+
+double VisionBase::normalize_angle(double phi) 
+{
+    //Normalize phi to be between -pi and pi
+    while(phi > 180.0) {
+        phi = phi - 2.0 * 180.0;
+    }
+
+    while(phi < -180.0) {
+        phi = phi + 2.0 * 180.0;
+    }
+    return phi;
+}
+
+double VisionBase::normalize_angle_RAD(double phi) 
+{
+    //Normalize phi to be between 0 and pi
+    phi = (90.0 - phi) * DEG2RAD;
+
+    return phi;
 }
 
 void VisionBase::AngleLUT()
