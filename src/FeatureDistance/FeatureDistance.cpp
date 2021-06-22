@@ -157,9 +157,9 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
 
                     // ROS_INFO("avgdistance(%d,%d) = %f, Robot_H = %f",Feature_x,Feature_y, avgdistance,Robot_H);
                     
-                    if(std::isfinite(avgdistance) && avgdistance < 1000)
+                    if(std::isfinite(avgdistance) && avgdistance < 1000.0)
                     {
-                        ROS_INFO("isfinite(avgdistance)");
+                        // ROS_INFO("isfinite(avgdistance)");
                         distance.y_dis = int(round(OYp * sin((RealsenseIMUData[0] * DEG2RAD) + theta_y)));
                         distance.x_dis = int(round(OYp * tan(theta_x)));
                         distance.dis = int(round(sqrt(pow(distance.x_dis,2)+pow(distance.y_dis,2))));
@@ -168,12 +168,12 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
                         Pixelx = OYp * tan(theta_x);
                         pixelDistance = sqrt(pow(Pixelx,2)+pow(Pixely,2));
                     }else{
-                        ROS_INFO("Wrong depth distance");
+                        // ROS_INFO("Wrong depth distance");
                         measure(Feature_x,Feature_y,CameraType::Monocular);
                     }
                 }else{
-                    ROS_INFO("No IMU value");
-                    if(std::isfinite(avgdistance) && avgdistance > camera_height && avgdistance < 1000)
+                    // ROS_INFO("No IMU value");
+                    if(std::isfinite(avgdistance) && avgdistance > camera_height && avgdistance < 1000.0)
                     {
                         camera_angle = acos(camera_height / avgdistance) * RAD2DEG - (round(AVGERRORANGLE) + (Vertical_Head_Angle-28.65)/8.785) ;
                         Robot_H = OYp * cos((camera_angle* DEG2RAD) + theta_y);                                
@@ -185,7 +185,7 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
                         pixelDistance = sqrt(pow(Pixelx,2)+pow(Pixely,2));
 
                     }else{
-                        ROS_INFO("Wrong depth distance");
+                        // ROS_INFO("Wrong depth distance");
                         measure(Feature_x,Feature_y,CameraType::Monocular);
                     }
                 }        

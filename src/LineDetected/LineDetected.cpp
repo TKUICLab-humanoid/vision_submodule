@@ -410,10 +410,10 @@ double LineDetected::AngleDiff(Vec4i X,Vec4i Y)
     double angle = 0.0;
     if((mX - mY) > 175.0)
     {
-        angle = 180.0 - (mX - mY);
+        angle = 180.0 - abs(mX - mY);
     }
     else{
-        angle = mX - mY;
+        angle = abs(mX - mY);
     }
     
     return angle;
@@ -581,9 +581,9 @@ void LineDetected::Merge(Vec4i X,Vec4i Y)
         }
 
     }
-    ROS_INFO("theta = %f,Slope(X) = %f, Slope(Y) = %f NewLine = %f",theta,Slope(X),Slope(Y),Slope(NewLine));
+    // ROS_INFO("theta = %f,Slope(X) = %f, Slope(Y) = %f NewLine = %f",theta,Slope(X),Slope(Y),Slope(NewLine));
 
-    ROS_INFO("NewLine[0]=%d NewLine[1]=%d NewLine[2]=%d NewLine[3]=%d\n",NewLine[0],NewLine[1],NewLine[2],NewLine[3]);
+    // ROS_INFO("NewLine[0]=%d NewLine[1]=%d NewLine[2]=%d NewLine[3]=%d\n",NewLine[0],NewLine[1],NewLine[2],NewLine[3]);
 }
 
 int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
@@ -822,8 +822,8 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
     float avg_G = (float)Vgreen/(float)(countfor);
     float avg_W = (float)Vwhite/(float)(countfor);
     float avg_E = (float)Vedge/(float)(countfor);
-    ROS_INFO("avg_G = %f, avg_W = %f,avg_E = %f,countfor = %d",avg_G,avg_W,avg_E,countfor);
-    if(avg_G >= 0.8 && avg_W >= 0.8 && avg_E >=0.5 || avg_G >= 0.5 && avg_E >=1.0 ) return 1;
+    // ROS_INFO("avg_G = %f, avg_W = %f,avg_E = %f,countfor = %d",avg_G,avg_W,avg_E,countfor);
+    if(avg_G >= 0.8 && avg_W >= 0.8 && avg_E >=0.2 || avg_G >= 2.0 && avg_E >=0.3 ) return 1;
     else return 0;
 }
 
@@ -862,21 +862,19 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
     {
         // ROS_INFO("all_lines %d",i);
         Vec4i X = all_lines[i];
-        ROS_INFO("all_line(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",i,X[0],X[1],X[2],X[3],Slope(X));
+        // ROS_INFO("all_line(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",i,X[0],X[1],X[2],X[3],Slope(X));
         merge_similar_lines = complement(merge_similar_lines,X);
         int merge_similar_lines_SIZE = merge_similar_lines.size();
         int check = 0;
-
+        int checklineX = checkline(EnhanceImage,canny_iframe,X);
         if(all_lines.size() == 1)
         {
-            int checklineX = checkline(EnhanceImage,canny_iframe,X);
             // ROS_INFO("all_line(%d) checkline X = %d",i,checklineX);
             if(checklineX == 1)
             {
                 check_lines.push_back(X);
             }
             break;
-
         }else{
             for(size_t j = 0 ; j < merge_similar_lines.size(); j++)
             {
@@ -889,21 +887,23 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
                 {
                     merge_similar_lines = complement(merge_similar_lines,Y);
                     all_lines = complement(all_lines,Y);
+                    all_lines_Size -= 2;
+                    j--;
                 }else{
-                    ROS_INFO("merge_similar_lines(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",j,Y[0],Y[1],Y[2],Y[3],Slope(Y));
-                    ROS_INFO("MinDistance = %f",MinDistance(X,Y));
-                    ROS_INFO("AngleDiff = %f",AngleDiff(X,Y));
-                    Vec4i Z = {X[2],X[3],Y[0],Y[1]};
-                    if((MinDistance(X,Y) < 25.0 && AngleDiff(X,Y) < 1.0 && stereo_flag != false && LineorNot(Y) == 1))
+                    // ROS_INFO("merge_similar_lines(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",j,Y[0],Y[1],Y[2],Y[3],Slope(Y));
+                    // ROS_INFO("MinDistance = %f",MinDistance(X,Y));
+                    // ROS_INFO("AngleDiff = %f",AngleDiff(X,Y));
+                    if((MinDistance(X,Y) < 35.0 && AngleDiff(X,Y) < 1.5 && stereo_flag != false && LineorNot(Y) == 1) || (MinDistance(X,Y) < 50.0 && AngleDiff(X,Y) < 1.5 && stereo_flag == false && LineorNot(Y) == 1))
                     {
                         // ROS_INFO("--------Merge--------");
+                        // ROS_INFO("stereo_flag = %d",stereo_flag);
                         Merge(X,Y);
                         int checklinenum = checkline(EnhanceImage,canny_iframe,NewLine);
                         // ROS_INFO("NewLine checkline = %d",checklinenum);
                         if(checklinenum == 1)
                         {
                             check = 1; 
-                            if(AngleDiff(X,NewLine) < 1 || AngleDiff(Y,NewLine) < 1)
+                            if(AngleDiff(X,NewLine) < 1.0 || AngleDiff(Y,NewLine) < 1.0)
                             {
                                 reduce_similar_lines.push_back(NewLine);
                                 merge_similar_lines = complement(merge_similar_lines,Y);
@@ -912,7 +912,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
                                 //ROS_INFO("all_lines_Size (After Merge ) '%d' = %d",j,all_lines_Size);
                                 j--;
                             }else{
-                                break;
+                                continue;
                                 //ROS_INFO("Merge ERROR");
                             }
                         }else{
@@ -920,85 +920,81 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
                             // ROS_INFO("Not same Line");
                         } 
                                         
-                    }else{                
+                    }else{   
+                        // ROS_INFO("all_line(%d) checkline X = %d",i,checklineX);
                         //ROS_INFO("all_lines_Size (NO Merge ) '%d' = %d",j,all_lines_Size);
                     }
                 }
 
             }   
-        }
+            //ROS_INFO("reduce_similar_lines = %d",reduce_similar_lines.size());
             
-        //ROS_INFO("reduce_similar_lines = %d",reduce_similar_lines.size());
-        
-        if(merge_similar_lines.size()>0)
-        {
-            if(reduce_similar_lines.size()>1)
+            if(merge_similar_lines.size()>0)
             {
-                // ROS_INFO("--------------------------");
-                double th = Slope(reduce_similar_lines[0]);
-                              
-                for(size_t k=0 ; k < reduce_similar_lines.size() ; k++)
+                if(reduce_similar_lines.size()>1)
                 {
-                    Vec4i doublecheck1 = reduce_similar_lines[k];
-                    
-                    Coordinate NewLinestart;
-                    Coordinate NewLineend;
-                    Coordinate Xstart;
-                    Coordinate Xend;
-                    if(doublecheck1[0]>doublecheck1[2])
+                    // ROS_INFO("--------------------------");
+                    double th = Slope(reduce_similar_lines[0]);
+                                
+                    for(size_t k=0 ; k < reduce_similar_lines.size() ; k++)
                     {
-                        Xstart = {doublecheck1[2],doublecheck1[3]};
-                        Xend = {doublecheck1[0],doublecheck1[1]};
-                    }else{
-                        Xstart = {doublecheck1[0],doublecheck1[1]};
-                        Xend = {doublecheck1[2],doublecheck1[3]};
-                    } 
-                    if(k == 0)
-                    {
-                        NewLinestart = Xstart;
-                        NewLineend = Xend;
-                        continue;
-                    }
-                    Vec4i doublecheck2 = {Xstart.X,Xstart.Y,Xend.X,Xend.Y};
+                        Vec4i doublecheck1 = reduce_similar_lines[k];
+                        
+                        Coordinate NewLinestart;
+                        Coordinate NewLineend;
+                        Coordinate Xstart;
+                        Coordinate Xend;
+                        if(doublecheck1[0]>doublecheck1[2])
+                        {
+                            Xstart = {doublecheck1[2],doublecheck1[3]};
+                            Xend = {doublecheck1[0],doublecheck1[1]};
+                        }else{
+                            Xstart = {doublecheck1[0],doublecheck1[1]};
+                            Xend = {doublecheck1[2],doublecheck1[3]};
+                        } 
+                        if(k == 0)
+                        {
+                            NewLinestart = Xstart;
+                            NewLineend = Xend;
+                            continue;
+                        }
+                        Vec4i doublecheck2 = {Xstart.X,Xstart.Y,Xend.X,Xend.Y};
 
-                    MaxLine = {NewLinestart.X,NewLinestart.Y,NewLineend.X,NewLineend.Y};
-                    Merge(MaxLine,doublecheck2);
-                    MaxLine = NewLine;
+                        MaxLine = {NewLinestart.X,NewLinestart.Y,NewLineend.X,NewLineend.Y};
+                        Merge(MaxLine,doublecheck2);
+                        MaxLine = NewLine;
+                    }
+                    // ROS_INFO("MaxLine = (x1= %d ,y1 = %d ,x2 = %d ,y2 = %d),Slope = %f",MaxLine[0],MaxLine[1],MaxLine[2],MaxLine[3],Slope(MaxLine));
+                    int checkMaxLine = checkline(EnhanceImage,canny_iframe,NewLine);
+                    if(checkMaxLine == 1)
+                    {
+                        check_lines.push_back(MaxLine);
+                    } 
                 }
-                // ROS_INFO("MaxLine = (x1= %d ,y1 = %d ,x2 = %d ,y2 = %d),Slope = %f",MaxLine[0],MaxLine[1],MaxLine[2],MaxLine[3],Slope(MaxLine));
-                int checkMaxLine = checkline(EnhanceImage,canny_iframe,NewLine);
-                if(checkMaxLine == 1)
+                else if(reduce_similar_lines.size() == 1)
                 {
-                    check_lines.push_back(MaxLine);
+                    //ROS_INFO("push_back(reduce_similar_lines[0])");
+                    // ROS_INFO("reduce_similar_lines = (x1= %d ,y1 = %d ,x2 = %d ,y2 = %d)",reduce_similar_lines[0][0],reduce_similar_lines[0][1],reduce_similar_lines[0][2],reduce_similar_lines[0][3]);
+                    check_lines.push_back(reduce_similar_lines[0]);
+                }else if(merge_similar_lines.size() == merge_similar_lines_SIZE){
+                    if(checklineX == 1)
+                    {
+                        check_lines.push_back(X);
+                    }
+                    // ROS_INFO("X = (x1= %d ,y1 = %d ,x2 = %d ,y2 = %d)",X[0],X[1],X[2],X[3]);
                 }
-                
-            }
-            else if(reduce_similar_lines.size() == 1)
+                reduce_similar_lines.clear();
+            }else if(merge_similar_lines.size() == 0 && reduce_similar_lines.size() == 1)
             {
-                //ROS_INFO("push_back(reduce_similar_lines[0])");
                 // ROS_INFO("reduce_similar_lines = (x1= %d ,y1 = %d ,x2 = %d ,y2 = %d)",reduce_similar_lines[0][0],reduce_similar_lines[0][1],reduce_similar_lines[0][2],reduce_similar_lines[0][3]);
                 check_lines.push_back(reduce_similar_lines[0]);
-            }else if(merge_similar_lines.size() == merge_similar_lines_SIZE){
-                int checklinenum = checkline(EnhanceImage,canny_iframe,X);
-                if(checklinenum == 1)
-                {
-                    check_lines.push_back(X);
-                }else{
-                    //ROS_INFO("not line");
-                }
+            }else if(merge_similar_lines.size() == merge_similar_lines_SIZE && checklineX != 0 && all_lines.size() != 1){
                 // ROS_INFO("X = (x1= %d ,y1 = %d ,x2 = %d ,y2 = %d)",X[0],X[1],X[2],X[3]);
+                check_lines.push_back(X);
             }
-            reduce_similar_lines.clear();
-        }else if(reduce_similar_lines.size() == 1)
-        {
-            // ROS_INFO("reduce_similar_lines = (x1= %d ,y1 = %d ,x2 = %d ,y2 = %d)",reduce_similar_lines[0][0],reduce_similar_lines[0][1],reduce_similar_lines[0][2],reduce_similar_lines[0][3]);
-            check_lines.push_back(reduce_similar_lines[0]);
-        }else if(check != 0){
-            // ROS_INFO("X = (x1= %d ,y1 = %d ,x2 = %d ,y2 = %d)",X[0],X[1],X[2],X[3]);
-            check_lines.push_back(X);
+            reduce_similar_lines.clear();    
+            // all_lines_Size ++;
         }
-        reduce_similar_lines.clear();    
-        all_lines_Size ++;
     }
     // ROS_INFO("check_lines.size = %d",check_lines.size());
 
@@ -1009,9 +1005,8 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
         Vec4i X = all_lines1[i];
         line( hough_frame, Point(X[0], X[1]), Point(X[2], X[3]), Scalar(255,0,0), 2, CV_AA);
         // ROS_INFO("---------all_line(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",i,X[0],X[1],X[2],X[3],Slope(X));
-
     }
-    sort(check_lines.begin(), check_lines.end(), tocompare);
+    // sort(check_lines.begin(), check_lines.end(), tocompare);
     JustLine_Data.landmark.clear();
     for( size_t i = 0; i < check_lines.size(); i++ )
 	{
@@ -1143,6 +1138,7 @@ Mat LineDetected::UpperConvexHull(const Mat ori,Mat drawing,vector<vector<Point>
     vector<Point> upperCH;
     vector<Point> points = Allgreenhull;
     int n_points = points.size();
+    vector<vector<Point> > contours(1);
 
     sort(points.begin(), points.end(), sortPoints);
  
@@ -1165,7 +1161,7 @@ Mat LineDetected::UpperConvexHull(const Mat ori,Mat drawing,vector<vector<Point>
     }
 
     Mat mask1 = Mat::zeros(orign.rows,orign.cols, CV_8UC3); 
-    vector<vector<Point> > contours(1);
+    
     convexHull(Mat(upperCH), contours[0], false );
     double area = contourArea(contours[0]);
 
@@ -1223,12 +1219,12 @@ Mat LineDetected::UpperConvexHull(const Mat ori,Mat drawing,vector<vector<Point>
         fieldboundary.clear();
     }
 
-   
-    // imshow("drawing",drawing);
     upperCH.clear();
     contours.clear();
     points.clear();
     Allgreenhull.clear();
+    // imshow("drawing",drawing);
+    
     return drawing;
 }
 
