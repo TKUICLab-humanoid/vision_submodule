@@ -12,6 +12,8 @@ class ObjectDetected : public VisionBase
         vector<feature_point> Filed_feature_point;
         vector<Rect> soccer_data;
         vector<Rect> goal_data;
+        vector<Rect> partner_data;
+        vector<Rect> enemy_data;
 
         CascadeClassifier cascader2soccer;
         CascadeClassifier cascader2goal;

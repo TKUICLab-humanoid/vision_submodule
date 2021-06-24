@@ -6,6 +6,7 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
   genmsg
   roscpp
+  rospy
   sensor_msgs
   std_msgs
   roslib
@@ -55,3 +56,7 @@ install(FILES
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
 )
 
+catkin_install_python(PROGRAMS
+  scripts/SSD/demo.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)

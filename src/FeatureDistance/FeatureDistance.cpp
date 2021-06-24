@@ -101,14 +101,11 @@ Distance FeatureDistance::measureLine(int Feature_x, int Feature_y) //LightLight
     return distance;
 }
 
-Distance FeatureDistance::measureObject(int Feature_x, int Feature_y, int Width, int Height) // Lee
+Distance FeatureDistance::measureObject(int Feature_x, int Feature_y, int Width, int Height, ObjectMode Mode) // Lee By RealSense Camera Depth Distance
 {
     double width_cnt = (double)Feature_x;
-    // double height_cnt = (double)Feature_y;
     double error_x;
     double error_y;
-    // double x_ratio;
-    // double y_ratio;
     double yz_dis;
     double x_dis;
     double y_dis;
@@ -116,46 +113,37 @@ Distance FeatureDistance::measureObject(int Feature_x, int Feature_y, int Width,
     double object_angle;
     Distance distance;
 
-    if(Feature_x == -1 && Feature_y == -1)
+    if(!depth_buffer.empty())
     {
-        pre_x_dis = -1;
-        pre_y_dis = -1;
-        pre_xy_dis = -1;
-
-        distance.x_dis = -1;
-        distance.y_dis = -1;
-        distance.dis = -1;
-    }
-    else if(!depth_buffer.empty())
-    {
-        // if(height_cnt > 240)
-        // {
-        //     error_y = height_cnt - 240.0;
-        //     vertical_angle = image_bottom_angle + half_VFOV_angle - atan2(error_y * tan(half_VFOV_angle * DEG2RAD), 240) * 180 / PI;
-        //     y_ratio = camera_height * tan(vertical_angle * DEG2RAD);
-        // }
-        // else
-        // {
-        //     error_y = 240.0 - height_cnt;
-        //     vertical_angle = image_bottom_angle + half_VFOV_angle + atan2(error_y * tan(half_VFOV_angle * DEG2RAD), 240) * 180 / PI;
-        //     y_ratio = camera_height * tan(vertical_angle * DEG2RAD);
-        // }
         if(width_cnt > 320)
         {
             error_x = width_cnt - 320.0;
             horizontal_angle = atan2(error_x, image_center_horizontal_length) * 180 / PI;
-            // x_ratio = (camera_height / cos(vertical_angle * DEG2RAD)) * tan(horizontal_angle * DEG2RAD);
         }
         else
         {
             error_x = 320.0 - width_cnt;
             horizontal_angle = -(atan2(error_x, image_center_horizontal_length) * 180 / PI);
-            // x_ratio = (camera_height / cos(vertical_angle * DEG2RAD)) * tan(horizontal_angle * DEG2RAD);
         }
 
-        yz_dis = (depth_buffer.at<uint16_t>(Feature_y, Feature_x)) * 0.1 + HW_Camera + R_Ball;//獲取圖像座標Feature_y,Feature_x的深度值,單位是公分
+        switch(Mode)
+        {
+            case ObjectMode::SOCCER:
+            case ObjectMode::GOAL: //goal must change
+                yz_dis = (depth_buffer.at<uint16_t>(Feature_y, Feature_x)) * 0.1 + HW_Camera + R_Ball;//獲取圖像座標Feature_y,Feature_x的深度值,單位是公分
+                y_dis = sqrt(pow(yz_dis, 2)-pow(camera_height - L_Shoes - R_Ball, 2)) + camera2robot_dis;
+                break;
+            case ObjectMode::PARTNER:
+            case ObjectMode::ENEMY:
+                yz_dis = (depth_buffer.at<uint16_t>(Feature_y, Feature_x)) * 0.1 + HW_Camera + R_Robot;
+                y_dis = sqrt(pow(yz_dis, 2)-pow(camera_height / 2 - L_Shoes, 2)) + camera2robot_dis;
+                break;
+            default:
+                ROS_ERROR("measureObject No this mode!!");
+                break;
+        }
+
         x_dis = yz_dis * tan(horizontal_angle * DEG2RAD);
-        y_dis = sqrt(pow(yz_dis, 2)-pow(camera_height - L_Shoes - R_Ball, 2)) + camera2robot_dis; // 1.4 6.5
         xy_dis = sqrt(pow(x_dis, 2)+pow(y_dis, 2));
         object_angle = atan2(x_dis, y_dis) * 180 / PI;
 
@@ -165,14 +153,40 @@ Distance FeatureDistance::measureObject(int Feature_x, int Feature_y, int Width,
             x_dis = xy_dis * sin((-Horizontal_Head_Angle + object_angle) * DEG2RAD);
         }
 
-        ROS_INFO("yz_dis: %lf", yz_dis);
-        ROS_INFO("x_dis: %lf", x_dis);
-        ROS_INFO("y_dis: %lf", y_dis);
-        ROS_INFO("xy_dis: %lf\n", xy_dis);
+        // ROS_INFO("yz_dis: %lf", yz_dis);
+        // ROS_INFO("x_dis: %lf", x_dis);
+        // ROS_INFO("y_dis: %lf", y_dis);
+        // ROS_INFO("xy_dis: %lf\n", xy_dis);
 
-        pre_x_dis = x_dis;
-        pre_y_dis = y_dis;
-        pre_xy_dis = xy_dis;
+        switch(Mode)
+        {
+            case ObjectMode::SOCCER:
+                preSoccer.x_dis = x_dis;
+                preSoccer.y_dis = y_dis;
+                preSoccer.dis = xy_dis;
+                break;
+            case ObjectMode::GOAL:
+                preGoal.x_dis = x_dis;
+                preGoal.y_dis = y_dis;
+                preGoal.dis = xy_dis;
+                break;
+            case ObjectMode::PARTNER:
+                prePartner.x_dis = x_dis;
+                prePartner.y_dis = y_dis;
+                prePartner.dis = xy_dis;
+                break;
+            case ObjectMode::ENEMY:
+                preEnemy.x_dis = x_dis;
+                preEnemy.y_dis = y_dis;
+                preEnemy.dis = xy_dis;
+                break;
+            default:
+                ROS_ERROR("measureObject No this mode!!");
+                x_dis = -1;
+                y_dis = -1;
+                xy_dis = -1;
+                break;
+        }
 
         distance.x_dis = x_dis;
         distance.y_dis = y_dis;
@@ -180,9 +194,35 @@ Distance FeatureDistance::measureObject(int Feature_x, int Feature_y, int Width,
     }
     else
     {
-        distance.x_dis = pre_x_dis;
-        distance.y_dis = pre_y_dis;
-        distance.dis = pre_xy_dis;
+        switch(Mode)
+        {
+            case ObjectMode::SOCCER:
+                distance.x_dis = preSoccer.x_dis;
+                distance.y_dis = preSoccer.y_dis;
+                distance.dis = preSoccer.dis;
+                break;
+            case ObjectMode::GOAL:
+                distance.x_dis = preGoal.x_dis;
+                distance.y_dis = preGoal.y_dis;
+                distance.dis = preGoal.dis;
+                break;
+            case ObjectMode::PARTNER:
+                distance.x_dis = prePartner.x_dis;
+                distance.y_dis = prePartner.y_dis;
+                distance.dis = prePartner.dis;
+                break;
+            case ObjectMode::ENEMY:
+                distance.x_dis = preEnemy.x_dis;
+                distance.y_dis = preEnemy.y_dis;
+                distance.dis = preEnemy.dis;
+                break;
+            default:
+                ROS_ERROR("measureObject No this mode!!");
+                distance.x_dis = -1;
+                distance.y_dis = -1;
+                distance.dis = -1;
+                break;
+        }
     }
 
     return distance;

@@ -12,6 +12,8 @@
 #include <std_msgs/Float32.h>
 //-----------tku_msgs--------------
 #include "tku_msgs/HeadPackage.h"
+#include "tku_msgs/DemoData.h"
+#include "tku_msgs/ObjectData.h"
 #include "tku_msgs/ObservationData.h"
 #include "tku_msgs/FeaturePoint.h"
 #include "tku_msgs/Distance.h"
@@ -50,13 +52,14 @@ class Vision_main : public LineDetected
     public:
         void DepthCallback(const sensor_msgs::ImageConstPtr& depth_img);
         void GetImagesourceFunction(const sensor_msgs::ImageConstPtr& msg);
+        void GetDemoDataFunction(const tku_msgs::DemoData& msg);
+        void HeadAngleFunction(const tku_msgs::HeadPackage &msg);
+        void GetIMUDataFunction(const tku_msgs::SensorPackage &msg);
         void ModelingFunction(const tku_msgs::ButtonColorForm& msg);
         void ChangeHSVValue(const tku_msgs::HSVValue& msg);
         bool LoadHSVInfo(tku_msgs::HSVInfo::Request &HSVreq, tku_msgs::HSVInfo::Response &HSVres);
         bool CallBuildFunction(tku_msgs::BuildModel::Request &req, tku_msgs::BuildModel::Response &res);
         bool CallSaveHSVFunction(tku_msgs::SaveHSV::Request &req, tku_msgs::SaveHSV::Response &res);
-        void GetIMUDataFunction(const tku_msgs::SensorPackage &msg);
-        void HeadAngleFunction(const tku_msgs::HeadPackage &msg);
     private:
         RosCommunicationInstance *ros_com;
 
@@ -80,16 +83,20 @@ class Vision_main : public LineDetected
         ros::AsyncSpinner *color_spinner;
         ros::AsyncSpinner *depth_spinner;
 
-        ros::Subscriber Depthimage_subscriber;
-        ros::Subscriber Imagesource_subscriber;
-        ros::Subscriber HeadAngle_subscriber;
+        // for realsense D435i
+        ros::Subscriber Depthimage_Subscriber;
+        ros::Subscriber Imagesource_Subscriber;
+        // for SSD about robot recognition
+        ros::Subscriber DemoData_Subscriber;
+
+        ros::Subscriber HeadAngle_Subscriber;
         ros::Subscriber IMUData_Subscriber;
         //--------------HSV---------------
-        ros::Subscriber ModelingButton_subscriber;
-        ros::Subscriber HSVValue_subscriber;
-        ros::ServiceServer HSV_service;
-        ros::ServiceServer Build_service;
-        ros::ServiceServer Save_service;
+        ros::Subscriber ModelingButton_Subscriber;
+        ros::Subscriber HSVValue_Subscriber;
+        ros::ServiceServer HSV_Service;
+        ros::ServiceServer Build_Service;
+        ros::ServiceServer Save_Service;
         //--------------------------------
         ros::Publisher Distance_Publisher;
 

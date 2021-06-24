@@ -18,19 +18,22 @@ Vision_main::Vision_main(ros::NodeHandle &nh)
     depth_spinner->start();
 
     // for realsense D435i
-    Depthimage_subscriber = depth_nh.subscribe("/camera/aligned_depth_to_color/image_raw", 1, &Vision_main::DepthCallback,this);
-    Imagesource_subscriber = color_nh.subscribe("/camera/color/image_raw", 1, &Vision_main::GetImagesourceFunction,this);
+    Depthimage_Subscriber = depth_nh.subscribe("/camera/aligned_depth_to_color/image_raw", 1, &Vision_main::DepthCallback, this);
+    Imagesource_Subscriber = color_nh.subscribe("/camera/color/image_raw", 1, &Vision_main::GetImagesourceFunction, this);
+    // Imagesource_Subscriber = nh.subscribe("/usb_cam/image_raw", 1, &Vision_main::GetImagesourceFunction,this);
 
-    // Imagesource_subscriber = nh.subscribe("/usb_cam/image_raw", 1, &Vision_main::GetImagesourceFunction,this);
-    HeadAngle_subscriber = nh.subscribe("/package/HeadMotor", 10, &Vision_main::HeadAngleFunction,this);
-    IMUData_Subscriber = nh.subscribe("/package/sensorpackage", 1, &Vision_main::GetIMUDataFunction,this);
+    // for SSD about robot recognition
+    DemoData_Subscriber = nh.subscribe("/vision/demodata", 1, &Vision_main::GetDemoDataFunction, this);
+
+    HeadAngle_Subscriber = nh.subscribe("/package/HeadMotor", 10, &Vision_main::HeadAngleFunction, this);
+    IMUData_Subscriber = nh.subscribe("/package/sensorpackage", 1, &Vision_main::GetIMUDataFunction, this);
     
     //--------------HSV---------------
-    ModelingButton_subscriber = nh.subscribe("ColorModelForm_Topic", 1000, &Vision_main::ModelingFunction,this);
-    HSVValue_subscriber = nh.subscribe("HSVValue_Topic", 1000, &Vision_main::ChangeHSVValue,this);
-    HSV_service = nh.advertiseService("LoadHSVInfo", &Vision_main::LoadHSVInfo,this);
-    Build_service = nh.advertiseService("BuildModel", &Vision_main::CallBuildFunction,this);
-    Save_service = nh.advertiseService("SaveHSV", &Vision_main::CallSaveHSVFunction,this);
+    ModelingButton_Subscriber = nh.subscribe("ColorModelForm_Topic", 1000, &Vision_main::ModelingFunction, this);
+    HSVValue_Subscriber = nh.subscribe("HSVValue_Topic", 1000, &Vision_main::ChangeHSVValue, this);
+    HSV_Service = nh.advertiseService("LoadHSVInfo", &Vision_main::LoadHSVInfo, this);
+    Build_Service = nh.advertiseService("BuildModel", &Vision_main::CallBuildFunction, this);
+    Save_Service = nh.advertiseService("SaveHSV", &Vision_main::CallSaveHSVFunction, this);
     //--------------------------------
     ObservationData_Publisher = nh.advertise<tku_msgs::ObservationData>("/vision/observation_data", 10);
     ImageLengthData_Publisher = nh.advertise<tku_msgs::ImageLengthData>("/vision/imagelength_data", 10);
@@ -72,56 +75,6 @@ void Vision_main::DepthCallback(const sensor_msgs::ImageConstPtr& depth_img)
       return;
     }
 }
-
-void Vision_main::ModelingFunction(const tku_msgs::ButtonColorForm& msg)
-{
-    if(msg.BuildingModel)
-    {
-        Model_Base->isBuildModel = true;
-    }
-    else
-    {
-        Model_Base->isBuildModel = false;
-    }
-}
-
-void Vision_main::ChangeHSVValue(const tku_msgs::HSVValue& msg)
-{
-    Model_Base->hsvColorRange->HueMax = (float)msg.HMax/HueScrollBarMax;
-    Model_Base->hsvColorRange->HueMin = (float)msg.HMin/HueScrollBarMax;
-    Model_Base->hsvColorRange->SaturationMax = (float)msg.SMax/SaturationScrollBarMax;
-    Model_Base->hsvColorRange->SaturationMin = (float)msg.SMin/SaturationScrollBarMax;
-    Model_Base->hsvColorRange->BrightnessMax = (float)msg.VMax/BrightnessScrollBarMax;
-    Model_Base->hsvColorRange->BrightnessMin = (float)msg.VMin/BrightnessScrollBarMax;
-}
-bool Vision_main::LoadHSVInfo(tku_msgs::HSVInfo::Request &HSVreq, tku_msgs::HSVInfo::Response &HSVres)
-{
-    Model_Base->hsvColorRange = Model_Base->HSVColorRange[HSVreq.ColorLabel];
-    Model_Base->ColorSelected = HSVreq.ColorLabel;
-    HSVres.Hmax = Model_Base->HSVColorRange[HSVreq.ColorLabel]->HueMax * HueScrollBarMax;
-    HSVres.Hmin = Model_Base->HSVColorRange[HSVreq.ColorLabel]->HueMin * HueScrollBarMax;
-    HSVres.Smax = Model_Base->HSVColorRange[HSVreq.ColorLabel]->SaturationMax * SaturationScrollBarMax;
-    HSVres.Smin = Model_Base->HSVColorRange[HSVreq.ColorLabel]->SaturationMin * SaturationScrollBarMax;
-    HSVres.Vmax = Model_Base->HSVColorRange[HSVreq.ColorLabel]->BrightnessMax * BrightnessScrollBarMax;
-    HSVres.Vmin = Model_Base->HSVColorRange[HSVreq.ColorLabel]->BrightnessMin * BrightnessScrollBarMax;
-    return true;
-}
-bool Vision_main::CallBuildFunction(tku_msgs::BuildModel::Request &req, tku_msgs::BuildModel::Response &res)
-{
-    if(req.Build)
-    {
-        Model_Base->HSV_BuildingColorModel();
-        res.Already = true;
-    }
-}
-bool Vision_main::CallSaveHSVFunction(tku_msgs::SaveHSV::Request &req, tku_msgs::SaveHSV::Response &res)
-{
-    if(req.Save)
-    {
-        Model_Base->SaveColorRangeFile();
-        res.Already = true;
-    }
-}
 void Vision_main::GetImagesourceFunction(const sensor_msgs::ImageConstPtr& msg)
 {
     cv_bridge::CvImagePtr cv_ptr;
@@ -136,6 +89,32 @@ void Vision_main::GetImagesourceFunction(const sensor_msgs::ImageConstPtr& msg)
       return;
     }
 }
+
+void Vision_main::GetDemoDataFunction(const tku_msgs::DemoData& msg)
+{
+    Rect data;
+    for(int i = 0; i < msg.object.size(); i++)
+    {
+        data.x = msg.object[i].x;
+        data.y = msg.object[i].y;
+        data.height = msg.object[i].height;
+        data.width = msg.object[i].width;
+
+        if(msg.object[i].mode == "partner")
+        {
+            partner_data.push_back(data);
+        }
+        else if(msg.object[i].mode == "enemy")
+        {
+            enemy_data.push_back(data);
+        }
+        else
+        {
+            ROS_ERROR("GetDemoDataFunction No object mode: %s!!", msg.object[i].mode.c_str());
+        }
+    }
+}
+
 void Vision_main::HeadAngleFunction(const tku_msgs::HeadPackage &msg)
 {
     if(msg.ID == 1)
@@ -191,6 +170,54 @@ void Vision_main::GetIMUDataFunction(const tku_msgs::SensorPackage &msg)
     }
 }
 
+void Vision_main::ModelingFunction(const tku_msgs::ButtonColorForm& msg)
+{
+    if(msg.BuildingModel)
+    {
+        Model_Base->isBuildModel = true;
+    }
+    else
+    {
+        Model_Base->isBuildModel = false;
+    }
+}
+void Vision_main::ChangeHSVValue(const tku_msgs::HSVValue& msg)
+{
+    Model_Base->hsvColorRange->HueMax = (float)msg.HMax/HueScrollBarMax;
+    Model_Base->hsvColorRange->HueMin = (float)msg.HMin/HueScrollBarMax;
+    Model_Base->hsvColorRange->SaturationMax = (float)msg.SMax/SaturationScrollBarMax;
+    Model_Base->hsvColorRange->SaturationMin = (float)msg.SMin/SaturationScrollBarMax;
+    Model_Base->hsvColorRange->BrightnessMax = (float)msg.VMax/BrightnessScrollBarMax;
+    Model_Base->hsvColorRange->BrightnessMin = (float)msg.VMin/BrightnessScrollBarMax;
+}
+bool Vision_main::LoadHSVInfo(tku_msgs::HSVInfo::Request &HSVreq, tku_msgs::HSVInfo::Response &HSVres)
+{
+    Model_Base->hsvColorRange = Model_Base->HSVColorRange[HSVreq.ColorLabel];
+    Model_Base->ColorSelected = HSVreq.ColorLabel;
+    HSVres.Hmax = Model_Base->HSVColorRange[HSVreq.ColorLabel]->HueMax * HueScrollBarMax;
+    HSVres.Hmin = Model_Base->HSVColorRange[HSVreq.ColorLabel]->HueMin * HueScrollBarMax;
+    HSVres.Smax = Model_Base->HSVColorRange[HSVreq.ColorLabel]->SaturationMax * SaturationScrollBarMax;
+    HSVres.Smin = Model_Base->HSVColorRange[HSVreq.ColorLabel]->SaturationMin * SaturationScrollBarMax;
+    HSVres.Vmax = Model_Base->HSVColorRange[HSVreq.ColorLabel]->BrightnessMax * BrightnessScrollBarMax;
+    HSVres.Vmin = Model_Base->HSVColorRange[HSVreq.ColorLabel]->BrightnessMin * BrightnessScrollBarMax;
+    return true;
+}
+bool Vision_main::CallBuildFunction(tku_msgs::BuildModel::Request &req, tku_msgs::BuildModel::Response &res)
+{
+    if(req.Build)
+    {
+        Model_Base->HSV_BuildingColorModel();
+        res.Already = true;
+    }
+}
+bool Vision_main::CallSaveHSVFunction(tku_msgs::SaveHSV::Request &req, tku_msgs::SaveHSV::Response &res)
+{
+    if(req.Save)
+    {
+        Model_Base->SaveColorRangeFile();
+        res.Already = true;
+    }
+}
 
 int main(int argc, char** argv)
 {
@@ -221,6 +248,7 @@ void Vision_main::strategy_init()
     tool->Delay(50);
     ros_com->sendHeadMotor(HeadMotorID::VerticalID, 2048, 200);
     tool->Delay(50);
+    ros_com->sendSensorReset();//IMU值重製
 
     Roll_init = 0;
     Pitch_init = 0;
@@ -255,8 +283,6 @@ void Vision_main::strategy_main()
         //Mat line = Merge_similar_line(imagePreprocessing,color_buffer);
 	    //imshow("line",line);
 
-        // for(int i = 0; i < 100000000; i++);
-        // ROS_INFO("FindObject");
         cv::Mat Object_frame = FindObject(color_buffer);
         //imshow("Object_frame", Object_frame);
 
@@ -280,8 +306,8 @@ void Vision_main::strategy_main()
         ImageLengthData.bottom_width = image_bottom_width_length;
         ImageLengthData.horizontal_head_angle = Horizontal_Head_Angle;
         ImageLengthData_Publisher.publish(ImageLengthData);
-        //ROS_INFO("ImageLengthData.focus = %d",ImageLengthData.focus);
-        /*ROS_INFO("ImageLengthData.top = %d",ImageLengthData.top);
+        /*ROS_INFO("ImageLengthData.focus = %d",ImageLengthData.focus);
+        ROS_INFO("ImageLengthData.top = %d",ImageLengthData.top);
         ROS_INFO("ImageLengthData.bottom = %d",ImageLengthData.bottom);
         ROS_INFO("ImageLengthData.top_width = %d",ImageLengthData.top_width);
         ROS_INFO("ImageLengthData.bottom_width = %d",ImageLengthData.bottom_width);*/
@@ -403,14 +429,14 @@ void Vision_main::strategy_main()
         resize(monitor, monitor, cv::Size(320, 240));
         // namedWindow("monitor",WINDOW_NORMAL);
         // imshow("monitor",monitor);
-        if(soccer_data.size() == 0 && goal_data.size() == 0)
+        if(soccer_data.size() == 0 && goal_data.size() == 0 && partner_data.size() == 0 && enemy_data.size() == 0) 
         {
             tku_msgs::SoccerData tmp;
             tmp.x = 0;
             tmp.y = 0;
             tmp.height = 0;
             tmp.width = 0;
-            tmp.object_mode = 2;
+            tmp.object_mode = (int)ObjectMode::NOTHING;
             Soccer.object_cnt = 1;
             Soccer.ObjectList.push_back(tmp);
             SoccerData_Publisher.publish(Soccer);
@@ -424,19 +450,19 @@ void Vision_main::strategy_main()
                 {
                     tku_msgs::SoccerData tmp;
                     Distance distance;
-                    // ROS_INFO("Soccer_X = %d",soccer_data[t].x);
-                    // ROS_INFO("Soccer_Y = %d",soccer_data[t].y);
-                    // ROS_INFO("Soccer_Height = %d",soccer_data[t].height);
-                    // ROS_INFO("Soccer_Width = %d\n",soccer_data[t].width);
+                    // ROS_INFO("Soccer_X = %d", soccer_data[t].x);
+                    // ROS_INFO("Soccer_Y = %d", soccer_data[t].y);
+                    // ROS_INFO("Soccer_Height = %d", soccer_data[t].height);
+                    // ROS_INFO("Soccer_Width = %d\n", soccer_data[t].width);
 
                     tmp.x = soccer_data[t].x;
                     tmp.y = soccer_data[t].y;
                     tmp.height = soccer_data[t].height;
                     tmp.width = soccer_data[t].width;
-                    tmp.object_mode = 0;
+                    tmp.object_mode = (int)ObjectMode::SOCCER;
                     int x = soccer_data[t].x + (soccer_data[t].width / 2);
                     int y = soccer_data[t].y + (soccer_data[t].height / 2);
-                    distance = measureObject(x, y, soccer_data[t].width, soccer_data[t].height);
+                    distance = measureObject(x, y, soccer_data[t].width, soccer_data[t].height, ObjectMode::SOCCER);
                     tmp.distance.x_dis = distance.x_dis;
                     tmp.distance.y_dis = distance.y_dis;
                     tmp.distance.dis = distance.dis;
@@ -444,9 +470,9 @@ void Vision_main::strategy_main()
                     // ROS_INFO("distance.y_dis: %d", distance.y_dis);
                     // ROS_INFO("distance.dis: %d", distance.dis);
                     Soccer.ObjectList.push_back(tmp);
-                    // ROS_INFO("mode = %d",tmp.object_mode);
-                    // ROS_INFO("x_soccer = %d",Soccer.ObjectList[t].x);
-		            // ROS_INFO("soccer_dis = %d",tmp.distance);
+                    // ROS_INFO("mode = %d", tmp.object_mode);
+                    // ROS_INFO("x_soccer = %d", Soccer.ObjectList[t].x);
+		            // ROS_INFO("soccer_dis = %d", tmp.distance);
                 }
                 soccer_data.clear();
             }
@@ -457,28 +483,85 @@ void Vision_main::strategy_main()
                 {
                     tku_msgs::SoccerData tmp;
                     Distance distance;
-                    // ROS_INFO("goal_data_X = %d",goal_data[t].x);
-                    // ROS_INFO("goal_data_Y = %d",goal_data[t].y);
-                    // ROS_INFO("goal_data_Height = %d",goal_data[t].height);
-                    // ROS_INFO("goal_data_Width = %d\n",goal_data[t].width);
+                    // ROS_INFO("goal_data_X = %d", goal_data[t].x);
+                    // ROS_INFO("goal_data_Y = %d", goal_data[t].y);
+                    // ROS_INFO("goal_data_Height = %d", goal_data[t].height);
+                    // ROS_INFO("goal_data_Width = %d\n", goal_data[t].width);
 
                     tmp.x = goal_data[t].x;
                     tmp.y = goal_data[t].y;
                     tmp.height = goal_data[t].height;
                     tmp.width = goal_data[t].width;
-                    tmp.object_mode = 1;
+                    tmp.object_mode = (int)ObjectMode::GOAL;
                     int x = goal_data[t].x + (goal_data[t].width / 2);
                     int y = goal_data[t].y + (goal_data[t].height / 2);
-                    distance = measureObject(x, y, goal_data[t].width, goal_data[t].height);
+                    distance = measureObject(x, y, goal_data[t].width, goal_data[t].height, ObjectMode::GOAL);
                     tmp.distance.x_dis = distance.x_dis;
                     tmp.distance.y_dis = distance.y_dis;
                     tmp.distance.dis = distance.dis;
                     Soccer.ObjectList.push_back(tmp);
-                    // ROS_INFO("mode = %d",tmp.object_mode);
+                    // ROS_INFO("mode = %d", tmp.object_mode);
                 }
                 goal_data.clear();
             }
-            Soccer.object_cnt = soccer_data.size() + goal_data.size();;
+
+            if(partner_data.size() != 0)
+            {
+                for(size_t t = 0; t < partner_data.size(); t++)
+                {
+                    tku_msgs::SoccerData tmp;
+                    Distance distance;
+                    // ROS_INFO("partner_data_X = %d", partner_data[t].x);
+                    // ROS_INFO("partner_data_Y = %d", partner_data[t].y);
+                    // ROS_INFO("partner_data_Height = %d", partner_data[t].height);
+                    // ROS_INFO("gpartner_data_Width = %d\n", partner_data[t].width);
+
+                    tmp.x = partner_data[t].x;
+                    tmp.y = partner_data[t].y;
+                    tmp.height = partner_data[t].height;
+                    tmp.width = partner_data[t].width;
+                    tmp.object_mode = (int)ObjectMode::PARTNER;
+                    int x = partner_data[t].x + (partner_data[t].width / 2);
+                    int y = partner_data[t].y + (partner_data[t].height / 2);
+                    distance = measureObject(x, y, partner_data[t].width, partner_data[t].height, ObjectMode::PARTNER);
+                    tmp.distance.x_dis = distance.x_dis;
+                    tmp.distance.y_dis = distance.y_dis;
+                    tmp.distance.dis = distance.dis;
+                    Soccer.ObjectList.push_back(tmp);
+                    // ROS_INFO("mode = %d", tmp.object_mode);
+                }
+                partner_data.clear();
+            }
+
+            if(enemy_data.size() != 0)
+            {
+                for(size_t t = 0; t < enemy_data.size(); t++)
+                {
+                    tku_msgs::SoccerData tmp;
+                    Distance distance;
+                    // ROS_INFO("partner_data_X = %d", enemy_data[t].x);
+                    // ROS_INFO("partner_data_Y = %d", enemy_data[t].y);
+                    // ROS_INFO("partner_data_Height = %d", enemy_data[t].height);
+                    // ROS_INFO("gpartner_data_Width = %d\n", enemy_data[t].width);
+
+                    tmp.x = enemy_data[t].x;
+                    tmp.y = enemy_data[t].y;
+                    tmp.height = enemy_data[t].height;
+                    tmp.width = enemy_data[t].width;
+                    tmp.object_mode = (int)ObjectMode::ENEMY;
+                    int x = enemy_data[t].x + (enemy_data[t].width / 2);
+                    int y = enemy_data[t].y + (enemy_data[t].height / 2);
+                    distance = measureObject(x, y, enemy_data[t].width, enemy_data[t].height, ObjectMode::ENEMY);
+                    tmp.distance.x_dis = distance.x_dis;
+                    tmp.distance.y_dis = distance.y_dis;
+                    tmp.distance.dis = distance.dis;
+                    Soccer.ObjectList.push_back(tmp);
+                    // ROS_INFO("mode = %d", tmp.object_mode);
+                }
+                enemy_data.clear();
+            }
+
+            Soccer.object_cnt = soccer_data.size() + goal_data.size() + partner_data.size() + enemy_data.size();
             SoccerData_Publisher.publish(Soccer);
             Soccer.ObjectList.clear();
         }

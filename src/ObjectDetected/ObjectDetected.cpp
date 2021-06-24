@@ -175,6 +175,14 @@ Mat ObjectDetected::FindObject(const cv::Mat iframe)
 	{
 		rectangle(oframe, goal_data[t], Scalar(0, 0, 255), 2, 8, 0);
 	}
+    for (size_t t = 0; t < partner_data.size(); t++)
+	{
+		rectangle(oframe, partner_data[t], Scalar(0, 0, 0), 2, 8, 0);
+	}
+    for (size_t t = 0; t < enemy_data.size(); t++)
+	{
+		rectangle(oframe, enemy_data[t], Scalar(94, 38, 18), 2, 8, 0);
+	}
 
     resize(oframe, oframe, cv::Size(320, 240));
     return oframe;

@@ -1,7 +1,9 @@
-#include<ObjectDetected/ObjectDetected.h>
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+
+#include "ObjectDetected/ObjectDetected.h"
+#include "tku_libs/strategy_info.h"
 
 using namespace std;
 using namespace cv;
@@ -15,9 +17,10 @@ class FeatureDistance : public ObjectDetected
         double RobotWidth;
 	    ToolInstance *tool;
     public:
-        double pre_x_dis;
-        double pre_y_dis;
-        double pre_xy_dis;
+        Distance preSoccer;
+        Distance preGoal;
+        Distance prePartner;
+        Distance preEnemy;
         
         float camera_height;    //機器人高度
         float camera2robot_dis;
@@ -51,6 +54,6 @@ class FeatureDistance : public ObjectDetected
         void calcImageAngle(motordata Horizontal_Head,motordata Vertical_Head);
         void calcMotorAngle(int Horizontal_pos,int Vertical_pos);
         Distance measureLine(int Feature_x, int Feature_y);
-        Distance measureObject(int Feature_x, int Feature_y, int Width, int Height);
+        Distance measureObject(int Feature_x, int Feature_y, int Width, int Height, ObjectMode Mode);
         double CalcRobotHeight();
 };
