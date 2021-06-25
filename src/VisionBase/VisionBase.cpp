@@ -36,7 +36,7 @@ double VisionBase::normalize_angle_RAD(double phi)
 {
     //Normalize phi to be between 0 and pi
     phi = (90.0 - phi) * DEG2RAD;
-
+    
     return phi;
 }
 
@@ -61,6 +61,11 @@ bool VisionBase::LineorNot(Vec4i line)
     }else{
         return 1;
     }
+}
+
+bool VisionBase::onImage(int x, int y)
+{
+    return x >= 0 && x < 640 && y >= 0 && y < 480;
 }
 
 int VisionBase::Frame_Area(int coordinate, int range)

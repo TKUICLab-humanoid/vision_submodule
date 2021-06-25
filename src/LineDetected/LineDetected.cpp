@@ -591,6 +591,7 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
     // ROS_INFO("checkline");
     Point Xstart = Point(line[0],line[1]);
     Point Xend = Point(line[2],line[3]);
+    
     int x1 = 0;
     int y1 = 0;
     int x2 = 0;
@@ -608,6 +609,7 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
         x2 = Xend.x;
         y2 = Xend.y;
     }
+    
     float para_a = (float)((float)(y1-y2)/(float)(x1-x2));
     float para_b = (float)((float)((x1*y2)-(x2*y1))/(float)(x1-x2));
     float theta = Slope(line);
@@ -617,178 +619,60 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
     int Vedge = 0;
     int Verror = 0;
 
+    Point Linelength = Point(x2,y2)-Point(x1,y1);
+    int Linestep = ceil(max(fabs(Linelength.x),fabs(Linelength.y)));
+    Point Linegap = Linelength / Linestep;
+
+    Point p1 = Point(x1,y1);
     // ROS_INFO("line %d %d %d %d, theta = %f,para = (%f,%f) ",x1,y1,x2,y2,theta,para_a,para_b);
     int counter = 0;
-    if(abs(x2-x1)>20)
+    if(Linestep > 100)
+    {
+        counter = 10;
+    }else if(Linestep > 20)
     {
         counter = 5;
-    }else if(abs(x2-x1)>10 && abs(x2-x1)<=20){
+    }else if(Linestep > 10 && Linestep <= 20){
         counter = 3;
     }else{
         counter = 1;
     }
     int countfor = 0;
     // ROS_INFO("counter = %d",counter);
-    for(int i = 0; i <= abs(x2-x1); i=i+counter)
+    for(int i = 0; i <= Linestep; i = i + counter)
     {
-        float x = 0.0;
-        float y = 0.0;
-        int dis = 0.0;
+        int x = round(p1.x);
+        int y = round(p1.y);
+        if(!onImage(x, y)) continue;
+
+        int dis = 0;
         if(theta == 0.0 || para_a == 0.0)
         {
             // ROS_INFO("theta 0");
-            x = x1 + i;
-            y = y1;
-            for(int j = 0; j < 20; j++)
+            int x_1 = x;
+            int y_1 = y - 6;   
+            Point checkstart = Point(x_1,y_1);
+            int x_2 = x ;
+            int y_2 = y + 6;   
+            Point checkend = Point(x_2,y_2);
+
+            Point length = checkend - checkstart;
+            int step = ceil(max(fabs(length.x),fabs(length.y)));
+            Point gap = length/step;
+
+            for(int j = 0; j < step ; j++)
             {
                 // ROS_INFO("j = %d",j);
-                float x_1 = 0.0;
-                float y_1 = 0.0;
+                int checkx = round(checkstart.x);
+                int checky = round(checkstart.y);
+                  
+                if(!onImage(checkx, checky)) continue;
                 
-                x_1 = x;
-                y_1 = y - 10 + j;
-
-                if(x_1>639||x_1<0)
-                {
-                    // ROS_INFO("0 continue");
-                    continue;
-                }               
-                if(y_1>479||y_1<0)
-                {
-                    // ROS_INFO("0 continue");
-                    continue;
-                }
-                // ROS_INFO("para_inv = (%f,%f)",para_a_inv,para_a_inv);
-                // ROS_INFO("pos = (%f,%f)",x_1,y_1);
-                int b = nobackgroud_image.at<Vec3b>((int)y_1, (int)x_1)[0];
-                int g = nobackgroud_image.at<Vec3b>((int)y_1, (int)x_1)[1];
-                int r = nobackgroud_image.at<Vec3b>((int)y_1, (int)x_1)[2];
-                int edge_ = canny.at<uchar>((int)y_1, (int)x_1);
-                // ROS_INFO("edge = %d",edge_);
-                double diff = 0;
-                if(edge_ == 255)
-                {               
-                    Vedge++;
-                }
-                if(g >= 245 && b >=245 && r >= 245)
-                {
-                    Vwhite++;
-                }
-                else if(g >= 245 && b <=10 && r <= 10)
-                {
-                    Coordinate checkgreen = {x_1,y_1};
-                    Coordinate checkpoint = {x,y};
-                    diff = calculate_3D(checkgreen,checkpoint);
-
-                    if(diff <= 30)
-                    {
-                        Vgreen++;
-                    }
-                }else{
-                    Verror++;
-                }
-            }
-        }else if(theta == 90.0 || !std::isfinite(para_a))
-        {
-            // ROS_INFO("theta 90");
-            x = x1 ;
-            y = y1 + i;
-            for(int j = 0; j < 20; j++)
-            {
-                // ROS_INFO("j = %d",j);
-                float x_1 = 0.0;
-                float y_1 = 0.0;
                 
-                x_1 = x - 10 + j;
-                y_1 = y;
-
-                if(x_1>639||x_1<0)
-                {
-                    // ROS_INFO("90 continue");
-                    continue;
-                }               
-                if(y_1>479||y_1<0)
-                {
-                    // ROS_INFO("90 continue");
-                    continue;
-                }
-                // ROS_INFO("para_inv = (%f,%f)",para_a_inv,para_a_inv);
-                // ROS_INFO("pos = (%f,%f)",x_1,y_1);
-                int b = nobackgroud_image.at<Vec3b>((int)y_1, (int)x_1)[0];
-                int g = nobackgroud_image.at<Vec3b>((int)y_1, (int)x_1)[1];
-                int r = nobackgroud_image.at<Vec3b>((int)y_1, (int)x_1)[2];
-                int edge_ = canny.at<uchar>((int)y_1, (int)x_1);
-                // ROS_INFO("edge = %d",edge_);
-                double diff = 0.;
-                if(edge_ == 255)
-                {               
-                    Vedge++;
-                }
-                if(g >= 245 && b >=245 && r >= 245)
-                {
-                    Vwhite++;
-                }
-                else if(g >= 245 && b <=10 && r <= 10)
-                {
-                    Coordinate checkgreen = {x_1,y_1};
-                    Coordinate checkpoint = {x,y};
-                    diff = calculate_3D(checkgreen,checkpoint);
-                    if(diff <= 30)
-                    {
-                        Vgreen++;
-                    }
-                }else{
-                    Verror++;
-                }
-            }
-        }else{
-            // ROS_INFO("theta else");
-            if(x2<x1)
-            {
-                x = x2 + i;
-            }else{
-                x = x1 + i;
-            }
-            if(x>639.0||x<0.0)
-            {
-                continue;
-            }
-            y = (x*para_a)+para_b;
-            if(y>479.0||y<0.0)
-            {
-                continue;
-            }
-            float para_a_inv = (-1.0/para_a);
-            float para_b_inv = y - (para_a_inv * x);
-            // ROS_INFO("line %d %d %d %d, theta = %f,para = (%f,%f) ",x1,y1,x2,y2,theta,para_a,para_b);
-            // ROS_INFO("para_inv = (%f,%f)",para_a_inv,para_a_inv);
-            for(int j = 0; j < 8; j++)
-            {
-                // ROS_INFO("j = %d",j);
-                float x_1 = 0.0;
-                float y_1 = 0.0;
-                
-                x_1 = float(x - 4 + j );
-                                
-                if(x_1>639.0||x_1<0.0)
-                {
-                    
-                    // ROS_INFO("else continue x_1 = %f",x_1);
-                    continue;
-                }
-                y_1 = (x_1 * para_a_inv) + para_b_inv;
-                
-                // ROS_INFO("pos = (%f,%f)",x_1,y_1);
-                if(y_1 > 479.0||y_1 < 0.0)
-                {
-                    // ROS_INFO("else continue y_1 = %f",y_1);
-                    continue;
-                }
-                
-                int b = nobackgroud_image.at<Vec3b>((int)y_1, (int)x_1)[0];
-                int g = nobackgroud_image.at<Vec3b>((int)y_1, (int)x_1)[1];
-                int r = nobackgroud_image.at<Vec3b>((int)y_1, (int)x_1)[2];
-                int edge_ = canny.at<uchar>((int)y_1, (int)x_1);
+                int b = nobackgroud_image.at<Vec3b>(checky, checkx)[0];
+                int g = nobackgroud_image.at<Vec3b>(checky, checkx)[1];
+                int r = nobackgroud_image.at<Vec3b>(checky, checkx)[2];
+                int edge_ = canny.at<uchar>(checky, checkx);
                 // ROS_INFO("edge = %d",edge_);
                 double diff = 0.0;
                 if(edge_ == 255)
@@ -801,7 +685,7 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
                 }
                 else if(g >= 245 && b <=10 && r <= 10)
                 {
-                    Coordinate checkgreen = {(int)x_1,(int)y_1};
+                    Coordinate checkgreen = {checkx,checky};
                     Coordinate checkpoint = {(int)x,(int)y};
                     // ROS_INFO("checkgreen = %d %d",checkgreen.X,checkgreen.Y);
                     // ROS_INFO("checkpoint = %d %d",checkpoint.X,checkpoint.Y);
@@ -814,16 +698,128 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
                 }else{
                     Verror++;
                 }
+                checkstart = checkstart + gap;
             }
+        }else if(theta == 90.0)
+        {
+            // ROS_INFO("theta 90");           
+            int x_1 = x - 6;
+            int y_1 = y;   
+            Point checkstart = Point(x_1,y_1);
+            int x_2 = x + 6;
+            int y_2 = y;   
+            Point checkend = Point(x_2,y_2);
+
+            Point length = checkend - checkstart;
+            int step = ceil(max(fabs(length.x),fabs(length.y)));
+            Point gap = length/step;
+
+            for(int j = 0; j < step ; j++)
+            {
+                // ROS_INFO("j = %d",j);
+                int checkx = round(checkstart.x);
+                int checky = round(checkstart.y);
+                  
+                if(!onImage(checkx, checky)) continue;
+                
+                
+                int b = nobackgroud_image.at<Vec3b>(checky, checkx)[0];
+                int g = nobackgroud_image.at<Vec3b>(checky, checkx)[1];
+                int r = nobackgroud_image.at<Vec3b>(checky, checkx)[2];
+                int edge_ = canny.at<uchar>(checky, checkx);
+                // ROS_INFO("edge = %d",edge_);
+                double diff = 0.0;
+                if(edge_ == 255)
+                {               
+                    Vedge++;
+                }
+                if(g >= 245 && b >=245 && r >= 245)
+                {
+                    Vwhite++;
+                }
+                else if(g >= 245 && b <=10 && r <= 10)
+                {
+                    Coordinate checkgreen = {checkx,checky};
+                    Coordinate checkpoint = {(int)x,(int)y};
+                    // ROS_INFO("checkgreen = %d %d",checkgreen.X,checkgreen.Y);
+                    // ROS_INFO("checkpoint = %d %d",checkpoint.X,checkpoint.Y);
+                    diff = calculate_3D(checkgreen,checkpoint);
+                    // ROS_INFO("diff = %f",diff);
+                    if(diff <= 35)
+                    {
+                        Vgreen++;
+                    }
+                }else{
+                    Verror++;
+                }
+                checkstart = checkstart + gap;
+            }
+        }else{
+            // ROS_INFO("theta else");
+            float para_a_inv = (-1.0/para_a);
+            float para_b_inv = y - (para_a_inv * x);
+            // ROS_INFO("line %d %d %d %d, theta = %f,para = (%f,%f) ",x1,y1,x2,y2,theta,para_a,para_b);
+            // ROS_INFO("para_inv = (%f,%f)",para_a_inv,para_a_inv);
+            int x_1 = x - 6;
+            int y_1 = round((x_1 * para_a_inv) + para_b_inv);   
+            Point checkstart = Point(x_1,y_1);
+            int x_2 = x + 6;
+            int y_2 = round((x_2 * para_a_inv) + para_b_inv);   
+            Point checkend = Point(x_2,y_2);
+
+            Point length = checkend - checkstart;
+            int step = ceil(max(fabs(length.x),fabs(length.y)));
+            Point gap = length/step;
+
+            for(int j = 0; j < step ; j++)
+            {
+                // ROS_INFO("j = %d",j);
+                int checkx = round(checkstart.x);
+                int checky = round(checkstart.y);
+                  
+                if(!onImage(checkx, checky)) continue;
+                int b = nobackgroud_image.at<Vec3b>(checky, checkx)[0];
+                int g = nobackgroud_image.at<Vec3b>(checky, checkx)[1];
+                int r = nobackgroud_image.at<Vec3b>(checky, checkx)[2];
+                int edge_ = canny.at<uchar>(checky, checkx);
+                // ROS_INFO("edge = %d",edge_);
+                double diff = 0.0;
+                if(edge_ == 255)
+                {               
+                    Vedge++;
+                }
+                if(g >= 245 && b >=245 && r >= 245)
+                {
+                    Vwhite++;
+                }
+                else if(g >= 245 && b <=10 && r <= 10)
+                {
+                    Coordinate checkgreen = {checkx,checky};
+                    Coordinate checkpoint = {x,y};
+                    // ROS_INFO("checkgreen = %d %d",checkgreen.X,checkgreen.Y);
+                    // ROS_INFO("checkpoint = %d %d",checkpoint.X,checkpoint.Y);
+                    diff = calculate_3D(checkgreen,checkpoint);
+                    // ROS_INFO("diff = %f",diff);
+                    if(diff <= 35)
+                    {
+                        Vgreen++;
+                    }
+                }else{
+                    Verror++;
+                }
+                checkstart = checkstart + gap;
+            }
+            
         }
+        p1 = p1 + (Linegap * counter);
         countfor ++;
     }
-    // ROS_INFO("Vgreen = %d, Vwhite = %d,Vedge = %d",Vgreen,Vwhite,Vedge);
+    ROS_INFO("Vgreen = %d, Vwhite = %d,Vedge = %d",Vgreen,Vwhite,Vedge);
     float avg_G = (float)Vgreen/(float)(countfor);
     float avg_W = (float)Vwhite/(float)(countfor);
     float avg_E = (float)Vedge/(float)(countfor);
-    // ROS_INFO("avg_G = %f, avg_W = %f,avg_E = %f,countfor = %d",avg_G,avg_W,avg_E,countfor);
-    if(avg_G >= 0.8 && avg_W >= 0.8 && avg_E >=0.2 || avg_G >= 2.0 && avg_E >=0.3 ) return 1;
+    ROS_INFO("avg_G = %f, avg_W = %f,avg_E = %f,countfor = %d",avg_G,avg_W,avg_E,countfor);
+    if(avg_G >= 2.0 && avg_W >= 2.5 && avg_E >=1.0 || avg_G >= 3.0 && avg_E >=1.5 ) return 1;
     else return 0;
 }
 

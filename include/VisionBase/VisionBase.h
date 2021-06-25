@@ -147,7 +147,8 @@ class VisionBase
         void AngleLUT();
         int Frame_Area(int coordinate, int range);
         double CalcRobotHeight();
-        
+        bool onImage(int x, int y);
+
         string GetPath(string file_name);
         Point MinIntersectPoint(Vec4i line, Point A, int mindistance);
         double normalize_angle(double phi) ;
