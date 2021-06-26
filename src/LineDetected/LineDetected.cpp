@@ -408,7 +408,7 @@ double LineDetected::AngleDiff(Vec4i X,Vec4i Y)
     else mY = Slope(Y);;
     
     double angle = 0.0;
-    if((mX - mY) > 175.0)
+    if(abs(mX - mY) > 175.0)
     {
         angle = 180.0 - abs(mX - mY);
     }
@@ -625,6 +625,10 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
 
     Point p1 = Point(x1,y1);
     // ROS_INFO("line %d %d %d %d, theta = %f,para = (%f,%f) ",x1,y1,x2,y2,theta,para_a,para_b);
+    // ROS_INFO("Linelength = %d %d",Linelength.x,Linelength.y);
+    // ROS_INFO("Linestep = %d",Linestep);
+    // ROS_INFO("Linegap = %d %d",Linegap.x,Linegap.y);
+
     int counter = 0;
     if(Linestep > 100)
     {
@@ -639,21 +643,21 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
     }
     int countfor = 0;
     // ROS_INFO("counter = %d",counter);
-    for(int i = 0; i <= Linestep; i = i + counter)
+    for(int i = 0; i < Linestep; i = i + counter)
     {
         int x = round(p1.x);
         int y = round(p1.y);
         if(!onImage(x, y)) continue;
 
         int dis = 0;
-        if(theta == 0.0 || para_a == 0.0)
+        if(theta == 0.0 || round(para_a == 0.0))
         {
             // ROS_INFO("theta 0");
             int x_1 = x;
-            int y_1 = y - 6;   
+            int y_1 = y - 5;   
             Point checkstart = Point(x_1,y_1);
             int x_2 = x ;
-            int y_2 = y + 6;   
+            int y_2 = y + 5;   
             Point checkend = Point(x_2,y_2);
 
             Point length = checkend - checkstart;
@@ -666,12 +670,14 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
                 int checkx = round(checkstart.x);
                 int checky = round(checkstart.y);
                   
-                if(!onImage(checkx, checky)) continue;
-                
-                
-                int b = nobackgroud_image.at<Vec3b>(checky, checkx)[0];
-                int g = nobackgroud_image.at<Vec3b>(checky, checkx)[1];
-                int r = nobackgroud_image.at<Vec3b>(checky, checkx)[2];
+                if(!onImage(checkx, checky))
+                {
+                    checkstart = checkstart + gap;
+                    continue;
+                }                
+                int b = image_Enhance.at<Vec3b>(checky, checkx)[0];
+                int g = image_Enhance.at<Vec3b>(checky, checkx)[1];
+                int r = image_Enhance.at<Vec3b>(checky, checkx)[2];
                 int edge_ = canny.at<uchar>(checky, checkx);
                 // ROS_INFO("edge = %d",edge_);
                 double diff = 0.0;
@@ -703,10 +709,10 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
         }else if(theta == 90.0)
         {
             // ROS_INFO("theta 90");           
-            int x_1 = x - 6;
+            int x_1 = x - 5;
             int y_1 = y;   
             Point checkstart = Point(x_1,y_1);
-            int x_2 = x + 6;
+            int x_2 = x + 5;
             int y_2 = y;   
             Point checkend = Point(x_2,y_2);
 
@@ -720,12 +726,15 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
                 int checkx = round(checkstart.x);
                 int checky = round(checkstart.y);
                   
-                if(!onImage(checkx, checky)) continue;
+                if(!onImage(checkx, checky))
+                {
+                    checkstart = checkstart + gap;
+                    continue;
+                } 
                 
-                
-                int b = nobackgroud_image.at<Vec3b>(checky, checkx)[0];
-                int g = nobackgroud_image.at<Vec3b>(checky, checkx)[1];
-                int r = nobackgroud_image.at<Vec3b>(checky, checkx)[2];
+                int b = image_Enhance.at<Vec3b>(checky, checkx)[0];
+                int g = image_Enhance.at<Vec3b>(checky, checkx)[1];
+                int r = image_Enhance.at<Vec3b>(checky, checkx)[2];
                 int edge_ = canny.at<uchar>(checky, checkx);
                 // ROS_INFO("edge = %d",edge_);
                 double diff = 0.0;
@@ -760,27 +769,38 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
             float para_b_inv = y - (para_a_inv * x);
             // ROS_INFO("line %d %d %d %d, theta = %f,para = (%f,%f) ",x1,y1,x2,y2,theta,para_a,para_b);
             // ROS_INFO("para_inv = (%f,%f)",para_a_inv,para_a_inv);
-            int x_1 = x - 6;
+            int x_1 = x - 5;
             int y_1 = round((x_1 * para_a_inv) + para_b_inv);   
             Point checkstart = Point(x_1,y_1);
-            int x_2 = x + 6;
+            int x_2 = x + 5;
             int y_2 = round((x_2 * para_a_inv) + para_b_inv);   
             Point checkend = Point(x_2,y_2);
-
+            // ROS_INFO("x_1 y_1= (%d,%d)",x_1,y_1);
+            // ROS_INFO("x_2 y_2= (%d,%d)",x_2,y_2);
+            
             Point length = checkend - checkstart;
             int step = ceil(max(fabs(length.x),fabs(length.y)));
             Point gap = length/step;
+
+            // ROS_INFO("length = %d %d",length.x,length.y);
+            // ROS_INFO("step = %d",step);
+            // ROS_INFO("gap = %d %d",gap.x,gap.y);
 
             for(int j = 0; j < step ; j++)
             {
                 // ROS_INFO("j = %d",j);
                 int checkx = round(checkstart.x);
                 int checky = round(checkstart.y);
-                  
-                if(!onImage(checkx, checky)) continue;
-                int b = nobackgroud_image.at<Vec3b>(checky, checkx)[0];
-                int g = nobackgroud_image.at<Vec3b>(checky, checkx)[1];
-                int r = nobackgroud_image.at<Vec3b>(checky, checkx)[2];
+                // ROS_INFO("checkx checky= (%d,%d)",checkx,checky);
+                if(!onImage(checkx, checky))
+                {
+                    checkstart = checkstart + gap;
+                    continue;
+                } 
+
+                int b = image_Enhance.at<Vec3b>(checky, checkx)[0];
+                int g = image_Enhance.at<Vec3b>(checky, checkx)[1];
+                int r = image_Enhance.at<Vec3b>(checky, checkx)[2];
                 int edge_ = canny.at<uchar>(checky, checkx);
                 // ROS_INFO("edge = %d",edge_);
                 double diff = 0.0;
@@ -800,7 +820,7 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
                     // ROS_INFO("checkpoint = %d %d",checkpoint.X,checkpoint.Y);
                     diff = calculate_3D(checkgreen,checkpoint);
                     // ROS_INFO("diff = %f",diff);
-                    if(diff <= 35)
+                    if(diff <= 20)
                     {
                         Vgreen++;
                     }
@@ -814,12 +834,12 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
         p1 = p1 + (Linegap * counter);
         countfor ++;
     }
-    ROS_INFO("Vgreen = %d, Vwhite = %d,Vedge = %d",Vgreen,Vwhite,Vedge);
+    // ROS_INFO("Vgreen = %d, Vwhite = %d,Vedge = %d",Vgreen,Vwhite,Vedge);
     float avg_G = (float)Vgreen/(float)(countfor);
     float avg_W = (float)Vwhite/(float)(countfor);
     float avg_E = (float)Vedge/(float)(countfor);
     ROS_INFO("avg_G = %f, avg_W = %f,avg_E = %f,countfor = %d",avg_G,avg_W,avg_E,countfor);
-    if(avg_G >= 2.0 && avg_W >= 2.5 && avg_E >=1.0 || avg_G >= 3.0 && avg_E >=1.5 ) return 1;
+    if(avg_G >= 2.0 && avg_W >= 2.5 && avg_E >=0.4 || avg_W >= 25.0 && avg_E >=5.5 ) return 1;
     else return 0;
 }
 
@@ -863,9 +883,10 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
         int merge_similar_lines_SIZE = merge_similar_lines.size();
         int check = 0;
         int checklineX = checkline(EnhanceImage,canny_iframe,X);
+        // ROS_INFO("all_line(%d) checkline X = %d",i,checklineX);
+
         if(all_lines.size() == 1)
         {
-            // ROS_INFO("all_line(%d) checkline X = %d",i,checklineX);
             if(checklineX == 1)
             {
                 check_lines.push_back(X);
@@ -994,8 +1015,6 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
     }
     // ROS_INFO("check_lines.size = %d",check_lines.size());
 
-    // ROS_INFO("/---------------finish-------------/");
-    
     for(size_t i = 0 ; i < all_lines1.size(); i++)
     {
         Vec4i X = all_lines1[i];
