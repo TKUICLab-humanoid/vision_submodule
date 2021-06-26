@@ -375,11 +375,60 @@ double LineDetected::MinDistance(Vec4i X,Vec4i Y)
         dir(Ystart, Yend, Xstart) * dir(Ystart, Yend, Xend) <= 0)  //兩線段相交, 距離為0
 	{
         return 0.0;
-    }else{                                                   //如不相交, 則最短距離為每個端點到另一條線段距離的最小值
+    }else{                                                   
+        //如不相交, 則最短距離為每個端點到另一條線段距離的最小值
+               
+        Point Xstart1 = Point(X[0],X[1]);
+        Point Xend1 = Point(X[2],X[3]);
+        Point Ystart1 = Point(Y[0],Y[1]);
+        Point Yend1 = Point(Y[2],Y[3]);
+        int x1 = 0;
+        int y1 = 0;
+        int x2 = 0;
+        int y2 = 0;
+        int x11 = 0;
+        int y11 = 0;
+        int x21 = 0;
+        int y21 = 0;
+        if( Xstart1.x > Xend1.x )
+        {
+            x1 = Xend1.x;
+            y1 = Xend1.y;
+            x2 = Xstart1.x;
+            y2 = Xstart1.y;
+        }else{
+            x1 = Xstart1.x;
+            y1 = Xstart1.y;
+            x2 = Xend1.x;
+            y2 = Xend1.y;
+        }
+        if( Ystart1.x > Yend1.x )
+        {
+            x11 = Yend1.x;
+            y11 = Yend1.y;
+            x21 = Ystart1.x;
+            y21 = Ystart1.y;
+        }else{
+            x11 = Ystart1.x;
+            y11 = Ystart1.y;
+            x21 = Yend1.x;
+            y21 = Yend1.y;
+        }
+        float para_a = (float)((float)(y1-y2)/(float)(x1-x2));
+        float para_b = ((float)((x1*y2)-(x2*y1))/(float)(x1-x2));
+
+        float para_a2 = (float)((float)(y11-y21)/(float)(x11-x21));
+        float para_b2 = ((float)((x11*y21)-(x21*y11))/(float)(x11-x21));
+        // ROS_INFO("para_a = %f para_b = %f para_a2 = %f para_b2 = %f ",para_a,para_b,para_a2,para_b2);
+        if(para_a == para_a2)
+        {
+            return abs(para_b-para_b2);
+        }else
+        {
+            double XYMinDistance = min(min(min(disMin(Xstart, Xend, Ystart,CameraType::stereo), disMin(Xstart, Xend, Yend,CameraType::stereo)), disMin(Ystart, Yend, Xstart,CameraType::stereo)),disMin(Ystart,Yend,Xend,CameraType::stereo));
+            return XYMinDistance;
+        }
         // ROS_INFO("s");
-        double XYMinDistance = min(min(min(disMin(Xstart, Xend, Ystart,CameraType::stereo), disMin(Xstart, Xend, Yend,CameraType::stereo)), disMin(Ystart, Yend, Xstart,CameraType::stereo)),disMin(Ystart,Yend,Xend,CameraType::stereo));
-        // ROS_INFO("f");
-        return XYMinDistance;
     }
 }
 
@@ -647,7 +696,11 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
     {
         int x = round(p1.x);
         int y = round(p1.y);
-        if(!onImage(x, y)) continue;
+        if(!onImage(x, y))
+        {
+            p1 = p1 + (Linegap * counter);
+            continue;
+        } 
 
         int dis = 0;
         if(theta == 0.0 || round(para_a == 0.0))
@@ -839,7 +892,7 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
     float avg_W = (float)Vwhite/(float)(countfor);
     float avg_E = (float)Vedge/(float)(countfor);
     ROS_INFO("avg_G = %f, avg_W = %f,avg_E = %f,countfor = %d",avg_G,avg_W,avg_E,countfor);
-    if(avg_G >= 2.0 && avg_W >= 2.5 && avg_E >=0.4 || avg_W >= 25.0 && avg_E >=5.5 ) return 1;
+    if(avg_G >= 2.0 && avg_W >= 2.5 && avg_E >=0.4) return 1;
     else return 0;
 }
 
@@ -908,8 +961,8 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
                     j--;
                 }else{
                     // ROS_INFO("merge_similar_lines(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",j,Y[0],Y[1],Y[2],Y[3],Slope(Y));
-                    // ROS_INFO("MinDistance = %f",MinDistance(X,Y));
-                    // ROS_INFO("AngleDiff = %f",AngleDiff(X,Y));
+                    ROS_INFO("MinDistance = %f",MinDistance(X,Y));
+                    ROS_INFO("AngleDiff = %f",AngleDiff(X,Y));
                     if((MinDistance(X,Y) < 35.0 && AngleDiff(X,Y) < 1.5 && stereo_flag != false && LineorNot(Y) == 1) || (MinDistance(X,Y) < 50.0 && AngleDiff(X,Y) < 1.5 && stereo_flag == false && LineorNot(Y) == 1))
                     {
                         // ROS_INFO("--------Merge--------");
@@ -985,14 +1038,14 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
                     int checkMaxLine = checkline(EnhanceImage,canny_iframe,NewLine);
                     if(checkMaxLine == 1)
                     {
-                        check_lines.push_back(MaxLine);
+                        all_lines.push_back(MaxLine);
                     } 
                 }
                 else if(reduce_similar_lines.size() == 1)
                 {
                     //ROS_INFO("push_back(reduce_similar_lines[0])");
                     // ROS_INFO("reduce_similar_lines = (x1= %d ,y1 = %d ,x2 = %d ,y2 = %d)",reduce_similar_lines[0][0],reduce_similar_lines[0][1],reduce_similar_lines[0][2],reduce_similar_lines[0][3]);
-                    check_lines.push_back(reduce_similar_lines[0]);
+                    all_lines.push_back(reduce_similar_lines[0]);
                 }else if(merge_similar_lines.size() == merge_similar_lines_SIZE){
                     if(checklineX == 1)
                     {
@@ -1004,7 +1057,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
             }else if(merge_similar_lines.size() == 0 && reduce_similar_lines.size() == 1)
             {
                 // ROS_INFO("reduce_similar_lines = (x1= %d ,y1 = %d ,x2 = %d ,y2 = %d)",reduce_similar_lines[0][0],reduce_similar_lines[0][1],reduce_similar_lines[0][2],reduce_similar_lines[0][3]);
-                check_lines.push_back(reduce_similar_lines[0]);
+                all_lines.push_back(reduce_similar_lines[0]);
             }else if(merge_similar_lines.size() == merge_similar_lines_SIZE && checklineX != 0 && all_lines.size() != 1){
                 // ROS_INFO("X = (x1= %d ,y1 = %d ,x2 = %d ,y2 = %d)",X[0],X[1],X[2],X[3]);
                 check_lines.push_back(X);
