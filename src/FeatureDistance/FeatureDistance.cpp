@@ -188,7 +188,21 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
                         // ROS_INFO("Wrong depth distance");
                         measure(Feature_x,Feature_y,CameraType::Monocular);
                     }
-                }        
+                } 
+                if(Horizontal_Head_Angle != 0.0)
+                {
+                    if(Horizontal_Head_Angle < 0.0)
+                    {
+                        distance.y_dis = distance.dis * cos(Horizontal_Head_Angle * DEG2RAD);
+                        distance.x_dis = distance.x_dis - (distance.dis * sin(Horizontal_Head_Angle * DEG2RAD));
+                    }
+                    else
+                    {
+                        distance.y_dis = distance.dis * cos(Horizontal_Head_Angle * DEG2RAD);
+                        distance.x_dis = distance.x_dis - (distance.dis * sin(Horizontal_Head_Angle * DEG2RAD));
+                    }
+                }  
+                distance.dis = int(round(sqrt(pow(distance.x_dis,2)+pow(distance.y_dis,2))));     
                 // ROS_INFO("finish");
                 ROS_INFO("stereo: x = %d, y = %d, dis = %d",distance.x_dis,distance.y_dis,distance.dis);
                 break;
