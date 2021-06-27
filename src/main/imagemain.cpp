@@ -246,9 +246,9 @@ void Vision_main::strategy_init()
     tool->Delay(1000);
     ros_com->sendHeadMotor(HeadMotorID::HorizontalID, 2048, 200);
     tool->Delay(50);
-    ros_com->sendHeadMotor(HeadMotorID::VerticalID, 2048, 200);
+    ros_com->sendHeadMotor(HeadMotorID::VerticalID, 1800, 200);
     tool->Delay(50);
-    ros_com->sendSensorReset();//IMU值重製
+    // ros_com->sendSensorReset();//IMU值重製
 
     Roll_init = 0;
     Pitch_init = 0;
@@ -429,7 +429,11 @@ void Vision_main::strategy_main()
         resize(monitor, monitor, cv::Size(320, 240));
         // namedWindow("monitor",WINDOW_NORMAL);
         // imshow("monitor",monitor);
-        if(soccer_data.size() == 0 && goal_data.size() == 0 && partner_data.size() == 0 && enemy_data.size() == 0) 
+
+        Soccer.object_cnt = soccer_data.size() + goal_data.size() + partner_data.size() + enemy_data.size();
+        // ROS_INFO("cnt = %d", Soccer.object_cnt);
+
+        if(Soccer.object_cnt == 0) 
         {
             tku_msgs::SoccerData tmp;
             tmp.x = 0;
@@ -561,14 +565,12 @@ void Vision_main::strategy_main()
                 enemy_data.clear();
             }
 
-            Soccer.object_cnt = soccer_data.size() + goal_data.size() + partner_data.size() + enemy_data.size();
             SoccerData_Publisher.publish(Soccer);
             Soccer.ObjectList.clear();
         }
 
         processVisionFlag = false;
 
-        // ROS_INFO("cnt = %d", Soccer.object_cnt);
         Observation_Data.imagestate = whiteline_flag;
         ObservationData_Publisher.publish(Observation_Data);
         //ROS_INFO("13x = %d y = %d dis = %d",FeaturePoint_distance.x_dis[13],FeaturePoint_distance.y_dis[13],FeaturePoint_distance.dis[13]);

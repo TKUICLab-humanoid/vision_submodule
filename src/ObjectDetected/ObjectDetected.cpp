@@ -139,16 +139,23 @@ Mat ObjectDetected::White_Line(const cv::Mat iframe)
             }
             if(x == 0 || x == (oframe.cols - 1) || y == 0)
             {
+                if(!find_feature_flag)
+                {
+                    tmp.x = -1;
+                    tmp.y = -1;
+                    tmp.scan_line_cnt = angle_be / 5;
+                    Filed_feature_point.push_back(tmp);
+                }
                 break;
             }
         }
-        if(!find_feature_flag)
-        {
-            tmp.x = -1;
-            tmp.y = -1;
-            tmp.scan_line_cnt = angle_be / 5;
-            Filed_feature_point.push_back(tmp);
-        }
+        // if(!find_feature_flag)
+        // {
+        //     tmp.x = -1;
+        //     tmp.y = -1;
+        //     tmp.scan_line_cnt = angle_be / 5;
+        //     Filed_feature_point.push_back(tmp);
+        // }
     }
     // ROS_INFO("Filed_feature_point.size = %d",Filed_feature_point.size());
     // ROS_INFO("Filed_feature_point.scan_line_angle = %d",Filed_feature_point[Filed_feature_point.size() - 1].scan_line_cnt);

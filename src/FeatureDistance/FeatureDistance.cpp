@@ -131,7 +131,7 @@ Distance FeatureDistance::measureObject(int Feature_x, int Feature_y, int Width,
             case ObjectMode::SOCCER:
             case ObjectMode::GOAL: //goal must change
                 yz_dis = (depth_buffer.at<uint16_t>(Feature_y, Feature_x)) * 0.1 + HW_Camera + R_Ball;//獲取圖像座標Feature_y,Feature_x的深度值,單位是公分
-                y_dis = sqrt(pow(yz_dis, 2)-pow(camera_height - L_Shoes - R_Ball, 2)) + camera2robot_dis;
+                y_dis = sqrt(pow(yz_dis, 2)-pow(camera_height - L_Shoes - R_Ball, 2)) + camera2robot_dis + 20;
                 break;
             case ObjectMode::PARTNER:
             case ObjectMode::ENEMY:
