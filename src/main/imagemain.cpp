@@ -402,7 +402,7 @@ void Vision_main::strategy_main()
         {
             Distance distance;
             tku_msgs::Distance tmp;
-            distance = measure(Field_feature_point[i].x,Field_feature_point[i].y,CameraType::Monocular);
+            distance = measure(Field_feature_point[i].x,Field_feature_point[i].y,CameraType::stereo);
             if(i == 0)
             {
                 tmp.x_dis = distance.x_dis;

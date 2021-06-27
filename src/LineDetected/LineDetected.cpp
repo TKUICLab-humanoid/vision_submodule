@@ -422,7 +422,11 @@ double LineDetected::MinDistance(Vec4i X,Vec4i Y)
         // ROS_INFO("para_a = %f para_b = %f para_a2 = %f para_b2 = %f ",para_a,para_b,para_a2,para_b2);
         if(para_a == para_a2)
         {
-            return abs(para_b-para_b2);
+            if(abs(para_b-para_b2) < 55.0)
+            {
+                return 1;
+            }
+            
         }else
         {
             double XYMinDistance = min(min(min(disMin(Xstart, Xend, Ystart,CameraType::stereo), disMin(Xstart, Xend, Yend,CameraType::stereo)), disMin(Ystart, Yend, Xstart,CameraType::stereo)),disMin(Ystart,Yend,Xend,CameraType::stereo));
@@ -892,7 +896,7 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
     float avg_W = (float)Vwhite/(float)(countfor);
     float avg_E = (float)Vedge/(float)(countfor);
     ROS_INFO("avg_G = %f, avg_W = %f,avg_E = %f,countfor = %d",avg_G,avg_W,avg_E,countfor);
-    if(avg_G >= 2.0 && avg_W >= 2.5 && avg_E >=0.4) return 1;
+    if(avg_G >= 2.0 && avg_W >= 1.0 && avg_E >=0.1) return 1;
     else return 0;
 }
 
