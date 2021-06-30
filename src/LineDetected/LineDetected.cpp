@@ -1102,7 +1102,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
             startp = {l[0],l[1]};
             endp = {l[2],l[3]};
         }
-        Coordinate pointP = {320,480};
+        Coordinate pointP = {319,479};
         Coordinate midpoint = Midpoint(l);
         Distance start_ = measure(startp.X,startp.Y,CameraType::stereo);
         Distance end_ = measure(endp.X,endp.Y,CameraType::stereo);
@@ -1119,7 +1119,8 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
         endpoint.x = endp.X;
         endpoint.y = endp.Y;
         double mindis = disMin(startp,endp,pointP,CameraType::Monocular);//點P到線段AB的最短距離
-        Point minIntersectPoint = MinIntersectPoint(l,Point(320,479),mindis);
+        Point minIntersectPoint = MinIntersectPoint(l,Point(319,478),mindis);
+        // circle(merge_hough_frame, Point(minIntersectPoint.x, minIntersectPoint.y), 3, Scalar(0, 255, 255), 6);
         Distance relativedis = measure(minIntersectPoint.x,minIntersectPoint.y,CameraType::stereo);
         tku_msgs::Cooridinate IntersectPoint;
         IntersectPoint.x = minIntersectPoint.x;

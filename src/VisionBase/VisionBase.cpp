@@ -90,38 +90,61 @@ Point VisionBase::MinIntersectPoint(Vec4i line, Point A, int mindistance)
 {
     Point start = Point(line[0],line[1]);
     Point end = Point(line[2],line[3]);
-    int x1 = start.x;
-    int y1 = start.y;
-    int x2 = end.x;
-    int y2 = end.y;
-    float para_a = (float)((float)(y1-y2)/(float)(x1-x2));
-    float para_b = (float)((float)((x1*y2)-(x2*y1))/(float)(x1-x2));
-    Point minIntersectPoint = Point(0,0);
-    for(int i = 0; i <= abs(x2-x1); i++ )
+
+    int x1 = 0;
+    int y1 = 0;
+    int x2 = 0;
+    int y2 = 0;
+    if( start.x > end.x )
     {
-        float x = 0;
-        float y = 0;
-        int dis = 0;
-        if(x2<x1)
+        x1 = end.x;
+        y1 = end.y;
+        x2 = start.x;
+        y2 = start.y;
+    }else{
+        x1 = start.x;
+        y1 = start.y;
+        x2 = end.x;
+        y2 = end.y;
+    }
+    // float para_a = (float)(y1-y2)/(x1-x2);
+    // float para_b = (float)(x1*y2-x2*y1)/(x1-x2);
+    Point minIntersectPoint = Point(0,0);
+    double min_value = 0.0;
+    
+    Point2f Linelength = Point(x2,y2)-Point(x1,y1);
+    int Linestep = ceil(max(fabs(Linelength.x),fabs(Linelength.y)));
+    Point2f Linegap = Linelength / Linestep;
+    Point2f p1 = Point(x1,y1);
+    // ROS_INFO(" Linelength %d %d",Linelength.x,Linelength.y);
+    // ROS_INFO("Linestep %d",Linestep);
+    // ROS_INFO("Linegap %f %f",Linegap.x,Linegap.y);
+    // ROS_INFO("%d %d %d %d",x1,y1,x2,y2);
+
+    for(int i = 0; i < Linestep; i++ )
+    {
+        int x = round(p1.x);
+        int y = round(p1.y);
+        // ROS_INFO("%d %d",x,y);
+        if(!onImage(x, y))
         {
-            x = x2 + i;
-        }else{
-            x = x1 + i;
-        }
-        if(x>639||x<0)
-        {
+            p1 = p1 + Linegap ;
             continue;
-        }
-        y = (x*para_a)+para_b;
-        if(y>479||y<0)
+        } 
+        double dis = sqrt(pow(320-x,2)+pow(478-y,2));
+        if( i == 0)
         {
-            continue;
-        }
-        dis = int(round(sqrt(pow(A.x-x,2)+pow(A.y-y,2))));
-        if(dis >= mindistance -1 && dis <= mindistance +1)
-        {
+            min_value = dis;
             minIntersectPoint = Point(x,y);
         }
+        else if(min_value > dis)
+        {
+            minIntersectPoint = Point(x,y);
+            min_value = dis;
+        }
+        p1 = p1 + Linegap;
+        
+        // ROS_INFO(" x = %d y = %d dis = %f min_value = %f,mindistance = %f",x,y,dis ,min_value,mindistance);
     }
     // ROS_INFO("MinIntersectPoint = (%d,%d)",minIntersectPoint.x,minIntersectPoint.y);
     return minIntersectPoint;

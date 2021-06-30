@@ -38,7 +38,7 @@ FeatureDistance::~FeatureDistance()
 
 float FeatureDistance::AvgPixelDistance(int Feature_x, int Feature_y)
 {
-    Size range = Size(4,4);
+    Size range = Size(2,2);
     Rect RectRange(Feature_x-range.width/2,Feature_y-range.height/2,range.width,range.height);
     float depth_scale = 0.1;//0.1為cm 1為mm
     float effective_distance = 0.0;
@@ -73,7 +73,7 @@ float FeatureDistance::AvgPixelDistance(int Feature_x, int Feature_y)
                     // ROS_INFO("distance_sum = %f",distance_sum);
                     // ROS_INFO("effective_pixel = %d",effective_pixel);
                 }else{
-                    distance_sum+=0.0;
+                    // distance_sum+=0.0;
                 }
             }
         }
@@ -148,7 +148,7 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
                     theta_y = 0.;
                 }
                 double OYp = avgdistance * cos(theta_x);
-                // ROS_INFO("theta_x = %f theta_y = %f avgdistance = %f",theta_x*RAD2DEG,theta_y*RAD2DEG,avgdistance);
+                ROS_INFO("theta_x = %f theta_y = %f avgdistance = %f",theta_x*RAD2DEG,theta_y*RAD2DEG,avgdistance);
                 // ROS_INFO("OYp = %f RealsenseIMUData[0] = %f",OYp,RealsenseIMUData[0]);
                 if(std::isfinite(RealsenseIMUData[0]))
                 {
@@ -168,7 +168,7 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
                         Pixelx = OYp * tan(theta_x);
                         pixelDistance = sqrt(pow(Pixelx,2)+pow(Pixely,2));
                     }else{
-                        // ROS_INFO("Wrong depth distance");
+                        ROS_INFO("Wrong depth distance");
                         measure(Feature_x,Feature_y,CameraType::Monocular);
                     }
                 }else{
@@ -177,7 +177,7 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
                     {
                         camera_angle = acos(camera_height / avgdistance) * RAD2DEG - (round(AVGERRORANGLE) + (Vertical_Head_Angle-28.65)/8.785) ;
                         Robot_H = OYp * cos((camera_angle* DEG2RAD) + theta_y);                                
-                        distance.y_dis = int(round(OYp * sin((camera_angle * DEG2RAD) + theta_y)));
+                        distance.y_dis = int(round(OYp * sin((camera_angle * DEG2RAD) + theta_y)+camera2robot_dis));
                         distance.x_dis = int(round(OYp * tan(theta_x)));
                         distance.dis = int(round(sqrt(pow(distance.x_dis,2)+pow(distance.y_dis,2))));
                         Pixely = OYp * sin((camera_angle * DEG2RAD) + theta_y);
@@ -185,7 +185,7 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
                         pixelDistance = sqrt(pow(Pixelx,2)+pow(Pixely,2));
 
                     }else{
-                        // ROS_INFO("Wrong depth distance");
+                        ROS_INFO("Wrong depth distance");
                         measure(Feature_x,Feature_y,CameraType::Monocular);
                     }
                 } 
@@ -245,19 +245,19 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
                 }
                 distance.dis = sqrt(pow(distance.y_dis,2) + pow(distance.x_dis,2));
             }
-            if(Horizontal_Head_Angle != 0.0)
-            {
-                if(Horizontal_Head_Angle < 0.0)
-                {
-                    distance.y_dis = distance.dis * cos(Horizontal_Head_Angle * DEG2RAD);
-                    distance.x_dis = distance.x_dis - (distance.dis * sin(Horizontal_Head_Angle * DEG2RAD));
-                }
-                else
-                {
-                    distance.y_dis = distance.dis * cos(Horizontal_Head_Angle * DEG2RAD);
-                    distance.x_dis = distance.x_dis - (distance.dis * sin(Horizontal_Head_Angle * DEG2RAD));
-                }
-            }
+            // if(Horizontal_Head_Angle != 0.0)
+            // {
+            //     if(Horizontal_Head_Angle < 0.0)
+            //     {
+            //         distance.y_dis = distance.dis * cos(Horizontal_Head_Angle * DEG2RAD);
+            //         distance.x_dis = distance.x_dis - (distance.dis * sin(Horizontal_Head_Angle * DEG2RAD));
+            //     }
+            //     else
+            //     {
+            //         distance.y_dis = distance.dis * cos(Horizontal_Head_Angle * DEG2RAD);
+            //         distance.x_dis = distance.x_dis - (distance.dis * sin(Horizontal_Head_Angle * DEG2RAD));
+            //     }
+            // }
             // ROS_INFO("Monocular: x = %d, y = %d, dis = %d",distance.x_dis,distance.y_dis,distance.dis);
             //ROS_INFO("distance_d.x_dis = %d",distance.x_dis);
             //ROS_INFO("distance_d.y_dis = %d",distance.y_dis);
