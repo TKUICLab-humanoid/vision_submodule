@@ -93,11 +93,8 @@ void Vision_main::ChangeBGRValue(const tku_msgs::BGRValue& msg)
 
 void Vision_main::LoadBGRValue()
 {
-    ROS_INFO("LoadBGRValue");
+    // ROS_INFO("LoadBGRValue");
     Model_Base->LoadBGRFile();
-    // B_ = Model_Base->BGRColorRange->BuValue;
-    // G_ = Model_Base->BGRColorRange->GrValue;
-    // R_ = Model_Base->BGRColorRange->ReValue;
     // ROS_INFO("B = %d G = %d R = %d",B_,G_,R_);
 }
 
@@ -107,30 +104,26 @@ bool Vision_main::LoadBGRInfo(tku_msgs::BGRInfo::Request &req, tku_msgs::BGRInfo
     res.GValue = Model_Base->BGRColorRange->GrValue;
     res.RValue = Model_Base->BGRColorRange->ReValue;
     return true;
-    
 }
 
 void Vision_main::ChangeHoughValue(const tku_msgs::HoughValue& msg)
 {
-    hough_threshold = (int)msg.Hough_threshold;
-    hough_minLineLength = (int)msg.Hough_minLineLength;
-    hough_maxLineGap = (int)msg.Hough_maxLineGap;
-    SaveHoughFile();
+    Model_Base->houghrange->hough_threshold = (int)msg.Hough_threshold;
+    Model_Base->houghrange->hough_minLineLength = (int)msg.Hough_minLineLength;
+    Model_Base->houghrange->hough_maxLineGap = (int)msg.Hough_maxLineGap;
+    Model_Base->SaveHoughFile();
 }
 
 void Vision_main::LoadHoughValue()
 {
-    LoadHoughFile();
-    // _threshold = hough_threshold;
-    // _minLineLength = hough_minLineLength;
-    // _maxLineGap = hough_maxLineGap;
+    Model_Base->LoadHoughFile();
     // ROS_INFO("_threshold = %d _minLineLength = %d _maxLineGap = %d",_threshold,_minLineLength,_maxLineGap);
 }
 bool Vision_main::LoadHoughInfo(tku_msgs::HoughInfo::Request &req, tku_msgs::HoughInfo::Response &res)
 {
-    res.Hough_threshold = hough_threshold;
-    res.Hough_minLineLength = hough_minLineLength;
-    res.Hough_maxLineGap = hough_maxLineGap;
+    res.Hough_threshold =  Model_Base->houghrange->hough_threshold;
+    res.Hough_minLineLength =  Model_Base->houghrange->hough_minLineLength;
+    res.Hough_maxLineGap =  Model_Base->houghrange->hough_maxLineGap;
     return true;
 }
 
@@ -302,6 +295,8 @@ void Vision_main::strategy_init()
 
     }
     LoadBGRValue();
+    LoadHoughValue();
+
 }
 
 void Vision_main::strategy_main()

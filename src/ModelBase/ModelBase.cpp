@@ -73,6 +73,12 @@ ModelBase::ModelBase()
     BGRColorRange->GrValue = 0;
     BGRColorRange->ReValue = 0;
     BGRColorRange->ParameterName = "[BGRColorRange]";
+//-----------BGR threshold------------------
+    houghrange = new HoughRange;
+    houghrange->hough_threshold = 0;
+    houghrange->hough_minLineLength = 0;
+    houghrange->hough_maxLineGap = 0;
+    houghrange->ParameterName = "[HoughRange]";
     tool = ToolInstance::getInstance();
 
 }
@@ -87,6 +93,7 @@ ModelBase::~ModelBase()
     }
     delete [] this->HSVColorRange;
     delete BGRColorRange;
+    delete houghrange;
 }
 
 // void ModelBase::HSV_BuildingTable()
@@ -619,7 +626,7 @@ void ModelBase::LoadBGRFile()
     //fin.open(("../../Parameter/Color_Model_Data/ColorModelData.ini"), ios::in);
     try
     {
-        ROS_INFO("path = %s",path);
+        // ROS_INFO("2 path = %s",path);
         fin.getline(line,sizeof(line),'\n');
         BGRColorRange->BuValue = tool->readvalue(fin, "BValue", 0);
         BGRColorRange->GrValue = tool->readvalue(fin, "GValue", 0);
@@ -661,5 +668,57 @@ void ModelBase::SaveBGRFile()
     }
 }
 
+//-----------Hough threshold-------------------
 
+void ModelBase::LoadHoughFile()
+{
+    fstream fin;
+    char line[100]; 
+    char path[200];
+    std::string PATH = tool->getPackagePath("strategy");
+    strcpy(path, PATH.c_str());
+    strcat(path, "/Hough_Value.ini");
+    
+    fin.open(path, ios::in);
+    try
+    {
+        // ROS_INFO("1 path = %s",path);
+        fin.getline(line,sizeof(line),'\n');
+        houghrange->hough_threshold = tool->readvalue(fin, "Hough_threshold", 0);
+        houghrange->hough_minLineLength = tool->readvalue(fin, "Hough_minLineLength", 0);
+        houghrange->hough_maxLineGap = tool->readvalue(fin, "Hough_maxLineGap", 0);
+        // ROS_INFO("hough_threshold = %d hough_minLineLength = %d hough_maxLineGap = %d",houghrange->hough_threshold,houghrange->hough_minLineLength,houghrange->hough_maxLineGap);
+        fin.close();
+    }
+    catch(exception e)
+    {
+    }
+}
+void ModelBase::SaveHoughFile()
+{
+    char path[200];
+    printf("%s",path);
+    std::string PATH = tool->getPackagePath("strategy");
+    strcpy(path, PATH.c_str());
+    strcat(path, "/Hough_Value.ini");
+    try
+    {
+        ofstream OutFile(path);
+        OutFile << houghrange->ParameterName;
+        OutFile << "\n";
+        OutFile << "Hough_threshold = ";
+        OutFile << houghrange->hough_threshold;
+        OutFile << "\n";
+        OutFile << "Hough_minLineLength = ";
+        OutFile << houghrange->hough_minLineLength;
+        OutFile << "\n";
+        OutFile << "Hough_maxLineGap = ";
+        OutFile << houghrange->hough_maxLineGap;
+        OutFile << "\n";
+        OutFile.close();
+    }
+    catch( exception e )
+    {
+    }
+}
 

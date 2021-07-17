@@ -9,8 +9,8 @@ LineDetected::LineDetected()
     G_value = 220;
     B_value = 220;
     hough_threshold = 100;
-    hough_minLineLength = 60.0;
-    hough_maxLineGap = 40.0;
+    hough_minLineLength = 60;
+    hough_maxLineGap = 40;
 
 }
 LineDetected::~LineDetected()
@@ -28,7 +28,7 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
     // imshow("orign",orign);
     //濾除非場地部份(laplace)
     Mat mask = Mat::zeros(orign.rows,orign.cols, CV_8UC3); 
-    Mat Kernel = (Mat_<float>(3, 3) << 0, -1, 0, 0, 6, 0, 0, -1, 0);
+    Mat Kernel = (Mat_<float>(3, 3) << 0, -1, 0, -1, 6, -1, 0, -1, 0);
     Mat imageEnhance;
     filter2D(orign, imageEnhance, CV_8UC3, Kernel);
     // imshow("imageEnhance",imageEnhance);
@@ -922,6 +922,9 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
     check_lines.clear();
     hough_frame = ori_frame.clone();
     merge_hough_frame = ori_frame.clone();
+    hough_threshold = Model_Base->houghrange->hough_threshold;
+    hough_minLineLength = Model_Base->houghrange->hough_minLineLength;
+    hough_maxLineGap = Model_Base->houghrange->hough_maxLineGap;
     // ROS_INFO("hough_threshold = %d hough_minLineLength = %d hough_maxLineGap = %d",hough_threshold,hough_minLineLength,hough_maxLineGap);
     HoughLinesP(canny_iframe,all_lines,1,CV_PI/180,hough_threshold,hough_minLineLength,hough_maxLineGap); 
     all_lines1 = all_lines;
@@ -1142,61 +1145,6 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
     // imshow("hough_frame",hough_frame);
     // imshow("merge_hough_frame",merge_hough_frame);
     return merge_hough_frame;
-}
-
-//-----------Hough threshold-------------------
-void LineDetected::LoadHoughFile()
-{
-    fstream fin;
-    char line[100]; 
-    char path[200];
-    std::string PATH = tool->getPackagePath("strategy");
-    strcpy(path, PATH.c_str());
-    strcat(path, "/Hough_Value.ini");
-    
-    fin.open(path, ios::in);
-    //fin.open(("../../Parameter/Color_Model_Data/ColorModelData.ini"), ios::in);
-    try
-    {
-        // ROS_INFO("path = %s",path);
-        fin.getline(line,sizeof(line),'\n');
-        hough_threshold = tool->readvalue(fin, "Hough_threshold", 0);
-        hough_minLineLength = tool->readvalue(fin, "Hough_minLineLength", 0);
-        hough_maxLineGap = tool->readvalue(fin, "Hough_maxLineGap", 0);
-        ROS_INFO("hough_threshold = %d hough_minLineLength = %d hough_maxLineGap = %d",hough_threshold,hough_minLineLength,hough_maxLineGap);
-
-        fin.close();
-    }
-    catch(exception e)
-    {
-    }
-}
-void LineDetected::SaveHoughFile()
-{
-    char path[200];
-    printf("%s",path);
-    std::string PATH = tool->getPackagePath("strategy");
-    strcpy(path, PATH.c_str());
-    strcat(path, "/Hough_Value.ini");
-    try
-    {
-        ofstream OutFile(path);
-        OutFile << "[HoughRange]";
-        OutFile << "\n";
-        OutFile << "Hough_threshold = ";
-        OutFile << hough_threshold;
-        OutFile << "\n";
-        OutFile << "Hough_minLineLength = ";
-        OutFile << hough_minLineLength;
-        OutFile << "\n";
-        OutFile << "Hough_maxLineGap = ";
-        OutFile << hough_maxLineGap;
-        OutFile << "\n";
-        OutFile.close();
-    }
-    catch( exception e )
-    {
-    }
 }
 
 Mat LineDetected::UpperConvexHull(const Mat ori,Mat drawing,vector<vector<Point> > allfieldpoints,int horization_line)

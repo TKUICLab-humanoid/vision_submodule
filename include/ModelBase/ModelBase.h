@@ -45,6 +45,14 @@ struct BGRRange
     string ParameterName;
 };
 
+struct HoughRange
+{
+    int hough_threshold;
+    int hough_minLineLength;
+    int hough_maxLineGap;
+    string ParameterName;
+};
+
 class ModelBase : public FeatureDistance
 {
     private:
@@ -105,6 +113,10 @@ class ModelBase : public FeatureDistance
         void SaveBGRFile();
         void LoadBGRFile();
         BGRRange* BGRColorRange;
+    //-----
+        void SaveHoughFile();
+        void LoadHoughFile();
+        HoughRange* houghrange;
 };
 extern ModelBase* Model_Base;
 #endif // TMODELUNIT_H

@@ -85,8 +85,7 @@ class LineDetected : public ModelBase
         int hough_threshold;
         int hough_minLineLength;
         int hough_maxLineGap;
-        void LoadHoughFile();
-        void SaveHoughFile();
+
         int checkline(const Mat image_Enhance,const Mat canny,Vec4i line);
         //-------------------------------------
         vector<Vec4i> complement(vector<Vec4i>  all_line,Vec4i remove) ;
