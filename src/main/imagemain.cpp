@@ -57,7 +57,7 @@ void Vision_main::GetIMUData(const geometry_msgs::Vector3Stamped &msg)
         RealsenseIMUData[0] = msg.vector.x;
         RealsenseIMUData[1] = msg.vector.y;
         RealsenseIMUData[2] = msg.vector.z;
-        // ROS_INFO("r = %f, p = %f, y = %f",RealsenseIMUData[0],RealsenseIMUData[1],RealsenseIMUData[2]);
+        ROS_INFO("r = %f, p = %f, y = %f",RealsenseIMUData[0],RealsenseIMUData[1],RealsenseIMUData[2]);
               
     }catch(...)
     {
