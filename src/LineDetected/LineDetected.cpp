@@ -184,6 +184,7 @@ Mat LineDetected::ImagePreprocessing(const Mat iframe)
     // ROS_INFO("----------------hull = %d",hull.size());  
     // ROS_INFO("----------------greenhull = %d",greenhull.size()); 
     imageGamma.copyTo(nobackgroud_image,Gmask);
+    
     // imshow("nobackgroud_image",nobackgroud_image);
     for(int col = 0; col < nobackgroud_image.cols;col++)
     {
@@ -1132,7 +1133,7 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
         line_tmp.end_point = endpoint;
         line_tmp.center_point = mid_point;
         line_tmp.Line_length = dis;
-        line_tmp.Line_theta = normalize_angle_RAD(Slope(l)+ RealsenseIMUData[1]);
+        line_tmp.Line_theta = normalize_angle_RAD(Slope(l));
         line_tmp.relative_distance = float(relativedis.dis)/100.0;
         line_tmp.Nearest_point = IntersectPoint;
         // line_tmp.Line_theta = acos((AdotB)/((image_bottom_width_length/2)*(middlepoint.dis)))*180/CV_PI;

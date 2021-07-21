@@ -57,7 +57,7 @@ void Vision_main::GetIMUData(const geometry_msgs::Vector3Stamped &msg)
         RealsenseIMUData[0] = msg.vector.x;
         RealsenseIMUData[1] = msg.vector.y;
         RealsenseIMUData[2] = msg.vector.z;
-        ROS_INFO("r = %f, p = %f, y = %f",RealsenseIMUData[0],RealsenseIMUData[1],RealsenseIMUData[2]);
+        // ROS_INFO("r = %f, p = %f, y = %f",RealsenseIMUData[0],RealsenseIMUData[1],RealsenseIMUData[2]);
               
     }catch(...)
     {
@@ -73,6 +73,10 @@ void Vision_main::DepthCallback(const sensor_msgs::ImageConstPtr& depth_img)
     {
         cv_depth_ptr = cv_bridge::toCvCopy(depth_img, sensor_msgs::image_encodings::TYPE_16UC1);
         depth_buffer = cv_depth_ptr->image;
+        cv::Size dst_sz(depth_buffer.cols,depth_buffer.rows);
+        cv::Point2f center(dst_sz.height/2,dst_sz.width/2);
+        cv::Mat rot_mat = cv::getRotationMatrix2D(center, 1 * (RealsenseIMUData[1]), 1.0);
+        cv::warpAffine(depth_buffer, depth_buffer, rot_mat, dst_sz);
         resize(depth_buffer, depth_buffer, cv::Size(640, 480));
         //   imshow("depth_buffer",depth_buffer);
     }
@@ -301,6 +305,7 @@ void Vision_main::strategy_init()
 
 void Vision_main::strategy_main()
 {
+    cv::Mat dst;
     if(!color_buffer.empty())
     {
         Mat oframe = color_buffer.clone();
@@ -308,24 +313,21 @@ void Vision_main::strategy_main()
         line(oframe, Point(0,oframe.rows/2), Point(oframe.cols,oframe.rows/2), Scalar(0,0,255), 1);
         resize(oframe, oframe, cv::Size(320, 240));
         //imshow("oframe",oframe);
+        cv::Size dst_sz(color_buffer.cols,color_buffer.rows);
+        cv::Point2f center(dst_sz.height/2,dst_sz.width/2);
+        cv::Mat rot_mat = cv::getRotationMatrix2D(center, 1 * (RealsenseIMUData[1]), 1.0);
+        cv::warpAffine(color_buffer, dst, rot_mat, dst_sz,INTER_LINEAR,BORDER_CONSTANT,Scalar(0,255,0));
 
-        Mat imagePreprocessing = ImagePreprocessing(color_buffer);
+        Mat imagePreprocessing = ImagePreprocessing(dst);
         edge = ImageCanny(imagePreprocessing);
-        
         Mat aftercanny = edge.clone();
-        merge_hough_frame = Merge_similar_line(imagePreprocessing,aftercanny,color_buffer);
+        merge_hough_frame = Merge_similar_line(imagePreprocessing,aftercanny,dst);
 	    // imshow("line",line);
         Observation_Data.landmark = JustLine_Data.landmark;
         cv::Mat Object_frame = FindObject(color_buffer);
         //imshow("Object_frame", Object_frame);
 
-        cv::Size dst_sz(color_buffer.cols,color_buffer.rows);
-        cv::Point2f center(dst_sz.height/2,dst_sz.width/2);
-
-        cv::Mat rot_mat = cv::getRotationMatrix2D(center, -1 * (Robot_Roll), 1.0);
-
-        cv::Mat dst;
-        cv::warpAffine(color_buffer, dst, rot_mat, dst_sz);
+        
         //imshow("dst",dst);
 
         cv::Mat monitor = White_Line(aftercanny);
