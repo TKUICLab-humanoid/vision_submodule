@@ -246,7 +246,7 @@ void Vision_main::strategy_init()
     tool->Delay(1000);
     ros_com->sendHeadMotor(HeadMotorID::HorizontalID, 2048, 200);
     tool->Delay(50);
-    ros_com->sendHeadMotor(HeadMotorID::VerticalID, 1800, 200);
+    ros_com->sendHeadMotor(HeadMotorID::VerticalID, 1950, 200);
     tool->Delay(50);
     // ros_com->sendSensorReset();//IMU值重製
 
@@ -526,11 +526,14 @@ void Vision_main::strategy_main()
                     tmp.width = partner_data[t].width;
                     tmp.object_mode = (int)ObjectMode::PARTNER;
                     int x = partner_data[t].x + (partner_data[t].width / 2);
-                    int y = partner_data[t].y + (partner_data[t].height / 2);
+                    int y = partner_data[t].y + partner_data[t].height;
                     distance = measureObject(x, y, partner_data[t].width, partner_data[t].height, ObjectMode::PARTNER);
                     tmp.distance.x_dis = distance.x_dis;
                     tmp.distance.y_dis = distance.y_dis;
                     tmp.distance.dis = distance.dis;
+                    ROS_INFO("distance.x_dis: %d", distance.x_dis);
+                    ROS_INFO("distance.y_dis: %d", distance.y_dis);
+                    ROS_INFO("distance.dis: %d", distance.dis);
                     Soccer.ObjectList.push_back(tmp);
                     // ROS_INFO("mode = %d", tmp.object_mode);
                 }

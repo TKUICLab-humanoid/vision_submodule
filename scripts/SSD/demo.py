@@ -116,6 +116,7 @@ def run_demo(cfg, ckpt, score_threshold, images_dir, output_dir, dataset_type):
             labels = labels[indices]
             scores = scores[indices]
             
+            print(boxes.shape[0])
             if boxes.shape[0] > 0:
                 for i in range(0, boxes.shape[0]):
                     if boxes[i][0] < 0:

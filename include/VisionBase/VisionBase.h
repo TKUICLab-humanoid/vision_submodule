@@ -33,7 +33,7 @@
 #define HFOV            55.0         //Horizontal FOV (deg) 64.0 depth camera: 86 my messure: 51.3
 #define HW_Camera       1.0          //Half Width of Camera (cm)
 #define R_Ball          6.5          //Radius of ball (cm)
-#define R_Robot         5.5          //Radius of robot (cm)
+#define R_Robot         11.0         //Radius of robot (cm)
 
 using namespace std;
 using namespace cv;

@@ -135,8 +135,10 @@ Distance FeatureDistance::measureObject(int Feature_x, int Feature_y, int Width,
                 break;
             case ObjectMode::PARTNER:
             case ObjectMode::ENEMY:
-                yz_dis = (depth_buffer.at<uint16_t>(Feature_y, Feature_x)) * 0.1 + HW_Camera + R_Robot;
-                y_dis = sqrt(pow(yz_dis, 2)-pow(camera_height / 2 - L_Shoes, 2)) + camera2robot_dis;
+                yz_dis = (depth_buffer.at<uint16_t>(Feature_y, Feature_x)) * 0.1 + HW_Camera;
+                y_dis = sqrt(pow(yz_dis, 2)-pow(camera_height - L_Shoes, 2)) + camera2robot_dis + R_Robot;
+                ROS_INFO("yz_dis: %lf", yz_dis);
+                ROS_INFO("y_dis: %lf", y_dis);
                 break;
             default:
                 ROS_ERROR("measureObject No this mode!!");
