@@ -11,6 +11,7 @@ class FeatureDistance : public ObjectDetected
         double RobotHeight;
         double RobotWidth;
 	    ToolInstance *tool;
+        // static FeatureDistance *m_pInstance;
     public:
         float camera_height;    //機器人高度
         float camera2robot_dis;
@@ -41,7 +42,7 @@ class FeatureDistance : public ObjectDetected
     public:
         FeatureDistance();
         ~FeatureDistance();
-
+        // static FeatureDistance* getInstance();
         void calcImageAngle(motordata Horizontal_Head,motordata Vertical_Head);
         void calcMotorAngle(int Horizontal_pos,int Vertical_pos);
         Distance measure(int Feature_x, int Feature_y,CameraType cameratype);
@@ -50,3 +51,14 @@ class FeatureDistance : public ObjectDetected
         float AvgPixelDistance(int Feature_x, int Feature_y);
 
 };
+
+// class FeatureDistanceInstance : public FeatureDistance
+// {
+// public:
+//     FeatureDistanceInstance() : FeatureDistance(){}
+//     ~FeatureDistanceInstance(){}
+//     static FeatureDistanceInstance* getInstance();
+//     static void deleteInstance();
+// private:
+//     static FeatureDistanceInstance* m_pInstance;
+// };

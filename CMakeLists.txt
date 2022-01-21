@@ -29,6 +29,7 @@ set(TKU_LIBRARIES ${CATKIN_DEVEL_PREFIX}/lib/libtku_libs.so)
 catkin_package(
    INCLUDE_DIRS include
 #  LIBRARIES imageprocess
+   LIBRARIES distance
    CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs std_msgs
 #  DEPENDS system_lib
 )
@@ -39,6 +40,10 @@ include_directories(
   ${OpenCV_INCLUDE_DIRS}
 )
 
+add_library(distance 
+    src/FeatureDistance/FeatureDistance.cpp
+    src/ObjectDetected/ObjectDetected.cpp
+    src/VisionBase/VisionBase.cpp)
 # add the publisher example
 add_executable(vision
     src/VisionBase/VisionBase.cpp

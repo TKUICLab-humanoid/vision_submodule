@@ -896,7 +896,7 @@ int LineDetected::checkline(const Mat image_Enhance,const Mat canny,Vec4i line)
     float avg_G = (float)Vgreen/(float)(countfor);
     float avg_W = (float)Vwhite/(float)(countfor);
     float avg_E = (float)Vedge/(float)(countfor);
-    ROS_INFO("avg_G = %f, avg_W = %f,avg_E = %f,countfor = %d",avg_G,avg_W,avg_E,countfor);
+    // ROS_INFO("avg_G = %f, avg_W = %f,avg_E = %f,countfor = %d",avg_G,avg_W,avg_E,countfor);
     if(avg_G >= 2.0 && avg_W >= 1.0 && avg_E >=0.1) return 1;
     else return 0;
 }
@@ -969,8 +969,8 @@ Mat LineDetected::Merge_similar_line(const Mat iframe,const Mat canny_iframe,con
                     j--;
                 }else{
                     // ROS_INFO("merge_similar_lines(%d)=(x1 = %d ,y1 =%d, x2 =%d ,y2 =%d)  slope = %f",j,Y[0],Y[1],Y[2],Y[3],Slope(Y));
-                    ROS_INFO("MinDistance = %f",MinDistance(X,Y));
-                    ROS_INFO("AngleDiff = %f",AngleDiff(X,Y));
+                    // ROS_INFO("MinDistance = %f",MinDistance(X,Y));
+                    // ROS_INFO("AngleDiff = %f",AngleDiff(X,Y));
                     if((MinDistance(X,Y) < 35.0 && AngleDiff(X,Y) < 1.5 && stereo_flag != false && LineorNot(Y) == 1) || (MinDistance(X,Y) < 50.0 && AngleDiff(X,Y) < 1.5 && stereo_flag == false && LineorNot(Y) == 1))
                     {
                         // ROS_INFO("--------Merge--------");

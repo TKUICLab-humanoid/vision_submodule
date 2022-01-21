@@ -385,199 +385,204 @@ void Vision_main::strategy_main()
         // ROS_INFO("-------------------finish---------------------");
         // imshow("AA",AA);
         // waitKey(0);
+        Distance distance;
+        distance = measure(300,200,CameraType::stereo);
+        circle(monitor, Point(300, 200), 3, Scalar(0, 255, 0), 3);
         
-        
-        if(Field_feature_point.size() < 40)     // no feature point = 36
-        {
-            whiteline_flag = false;
-        }
-        else
-        {
-            whiteline_flag = true;
-        }
-        for(int i = 0; i < Field_feature_point.size(); i++)
-        {
-            Distance distance;
-            tku_msgs::Distance tmp;
-            distance = measure(Field_feature_point[i].x,Field_feature_point[i].y,CameraType::stereo);
-            if(i == 0)
-            {
-                tmp.x_dis = distance.x_dis;
-                tmp.y_dis = distance.y_dis;
-                tmp.dis = distance.dis;
-                distance_last = distance.dis;
-                scan_line_last = Field_feature_point[i].scan_line_cnt;
-                feature_point_tmp.feature_point.push_back(tmp);
-                if(tmp.dis > 0)
-                {
-                    circle(monitor, Point(Field_feature_point[i].x, Field_feature_point[i].y), 3, Scalar(0, 255, 255), 3);
-                }
-            }
-            else if(distance_last >= 0)
-            {
-                if(scan_line_last == Field_feature_point[i].scan_line_cnt)
-                {
-                    int p2p_dis = abs(distance_last - distance.dis);
-                    if(p2p_dis > 10)
-                    {
-                        tmp.x_dis = distance.x_dis;
-                        tmp.y_dis = distance.y_dis;
-                        tmp.dis = distance.dis;
-                        distance_last = distance.dis;
-                        scan_line_last = Field_feature_point[i].scan_line_cnt;
-                        feature_point_tmp.feature_point.push_back(tmp);
-                        circle(monitor, Point(Field_feature_point[i].x, Field_feature_point[i].y), 3, Scalar(0, 255, 255), 3);
-                    }
-                }
-                else
-                {
-                    Observation_Data.scan_line.push_back(feature_point_tmp);
-                    feature_point_tmp.feature_point.clear();
+        // if(Field_feature_point.size() < 40)     // no feature point = 36
+        // {
+        //     whiteline_flag = false;
+        // }
+        // else
+        // {
+        //     whiteline_flag = true;
+        // }
+        // for(int i = 0; i < Field_feature_point.size(); i++)
+        // {
+        //     Distance distance;
+        //     tku_msgs::Distance tmp;
+        //     // distance = measure(Field_feature_point[i].x,Field_feature_point[i].y,CameraType::stereo);
+        //     distance = measure(200,340,CameraType::stereo);
+        //     circle(monitor, Point(200, 340), 3, Scalar(0, 255, 0), 3);
+        //     // tool->Delay(1);
+        //     if(i == 0)
+        //     {
+        //         tmp.x_dis = distance.x_dis;
+        //         tmp.y_dis = distance.y_dis;
+        //         tmp.dis = distance.dis;
+        //         distance_last = distance.dis;
+        //         scan_line_last = Field_feature_point[i].scan_line_cnt;
+        //         feature_point_tmp.feature_point.push_back(tmp);
+        //         if(tmp.dis > 0)
+        //         {
+        //             circle(monitor, Point(Field_feature_point[i].x, Field_feature_point[i].y), 3, Scalar(0, 255, 255), 3);
+        //         }
+        //     }
+        //     else if(distance_last >= 0)
+        //     {
+        //         if(scan_line_last == Field_feature_point[i].scan_line_cnt)
+        //         {
+        //             int p2p_dis = abs(distance_last - distance.dis);
+        //             if(p2p_dis > 10)
+        //             {
+        //                 tmp.x_dis = distance.x_dis;
+        //                 tmp.y_dis = distance.y_dis;
+        //                 tmp.dis = distance.dis;
+        //                 distance_last = distance.dis;
+        //                 scan_line_last = Field_feature_point[i].scan_line_cnt;
+        //                 feature_point_tmp.feature_point.push_back(tmp);
+        //                 circle(monitor, Point(Field_feature_point[i].x, Field_feature_point[i].y), 3, Scalar(0, 255, 255), 3);
+        //             }
+        //         }
+        //         else
+        //         {
+        //             Observation_Data.scan_line.push_back(feature_point_tmp);
+        //             feature_point_tmp.feature_point.clear();
 
-                    tmp.x_dis = distance.x_dis;
-                    tmp.y_dis = distance.y_dis;
-                    tmp.dis = distance.dis;
-                    distance_last = distance.dis;
-                    scan_line_last = Field_feature_point[i].scan_line_cnt;
-                    feature_point_tmp.feature_point.push_back(tmp);
-                    if(tmp.dis > 0)
-                    {
-                        circle(monitor, Point(Field_feature_point[i].x, Field_feature_point[i].y), 3, Scalar(0, 255, 255), 3);
-                    }
-                }
-            }
-            else
-            {
-                Observation_Data.scan_line.push_back(feature_point_tmp);
-                feature_point_tmp.feature_point.clear();
+        //             tmp.x_dis = distance.x_dis;
+        //             tmp.y_dis = distance.y_dis;
+        //             tmp.dis = distance.dis;
+        //             distance_last = distance.dis;
+        //             scan_line_last = Field_feature_point[i].scan_line_cnt;
+        //             feature_point_tmp.feature_point.push_back(tmp);
+        //             if(tmp.dis > 0)
+        //             {
+        //                 circle(monitor, Point(Field_feature_point[i].x, Field_feature_point[i].y), 3, Scalar(0, 255, 255), 3);
+        //             }
+        //         }
+        //     }
+        //     else
+        //     {
+        //         Observation_Data.scan_line.push_back(feature_point_tmp);
+        //         feature_point_tmp.feature_point.clear();
 
-                tmp.x_dis = distance.x_dis;
-                tmp.y_dis = distance.y_dis;
-                tmp.dis = distance.dis;
-                distance_last = distance.dis;
-                scan_line_last = Field_feature_point[i].scan_line_cnt;
-                feature_point_tmp.feature_point.push_back(tmp);
-                if(tmp.dis > 0)
-                {
-                    circle(monitor, Point(Field_feature_point[i].x, Field_feature_point[i].y), 3, Scalar(0, 255, 255), 3);
-                }
-            }
-            if(i == (Field_feature_point.size() - 1))
-            {
-                if(scan_line_last == Field_feature_point[i].scan_line_cnt)
-                {
-                    int p2p_dis = abs(distance_last - distance.dis);
-                    if(p2p_dis > 10)
-                    {
-                        tmp.x_dis = distance.x_dis;
-                        tmp.y_dis = distance.y_dis;
-                        tmp.dis = distance.dis;
-                        distance_last = distance.dis;
-                        scan_line_last = Field_feature_point[i].scan_line_cnt;
-                        feature_point_tmp.feature_point.push_back(tmp);
-                        circle(monitor, Point(Field_feature_point[i].x, Field_feature_point[i].y), 3, Scalar(0, 255, 255), 3);
-                    }
-                }
-                else
-                {
-                    Observation_Data.scan_line.push_back(feature_point_tmp);
-                    feature_point_tmp.feature_point.clear();
+        //         tmp.x_dis = distance.x_dis;
+        //         tmp.y_dis = distance.y_dis;
+        //         tmp.dis = distance.dis;
+        //         distance_last = distance.dis;
+        //         scan_line_last = Field_feature_point[i].scan_line_cnt;
+        //         feature_point_tmp.feature_point.push_back(tmp);
+        //         if(tmp.dis > 0)
+        //         {
+        //             circle(monitor, Point(Field_feature_point[i].x, Field_feature_point[i].y), 3, Scalar(0, 255, 255), 3);
+        //         }
+        //     }
+        //     if(i == (Field_feature_point.size() - 1))
+        //     {
+        //         if(scan_line_last == Field_feature_point[i].scan_line_cnt)
+        //         {
+        //             int p2p_dis = abs(distance_last - distance.dis);
+        //             if(p2p_dis > 10)
+        //             {
+        //                 tmp.x_dis = distance.x_dis;
+        //                 tmp.y_dis = distance.y_dis;
+        //                 tmp.dis = distance.dis;
+        //                 distance_last = distance.dis;
+        //                 scan_line_last = Field_feature_point[i].scan_line_cnt;
+        //                 feature_point_tmp.feature_point.push_back(tmp);
+        //                 circle(monitor, Point(Field_feature_point[i].x, Field_feature_point[i].y), 3, Scalar(0, 255, 255), 3);
+        //             }
+        //         }
+        //         else
+        //         {
+        //             Observation_Data.scan_line.push_back(feature_point_tmp);
+        //             feature_point_tmp.feature_point.clear();
 
-                    tmp.x_dis = distance.x_dis;
-                    tmp.y_dis = distance.y_dis;
-                    tmp.dis = distance.dis;
-                    feature_point_tmp.feature_point.push_back(tmp);
-                    if(tmp.dis > 0)
-                    {
-                        circle(monitor, Point(Field_feature_point[i].x, Field_feature_point[i].y), 3, Scalar(0, 255, 255), 3);
-                    }
-                }
-                Observation_Data.scan_line.push_back(feature_point_tmp);
-                feature_point_tmp.feature_point.clear();
-            }
-        }
+        //             tmp.x_dis = distance.x_dis;
+        //             tmp.y_dis = distance.y_dis;
+        //             tmp.dis = distance.dis;
+        //             feature_point_tmp.feature_point.push_back(tmp);
+        //             if(tmp.dis > 0)
+        //             {
+        //                 circle(monitor, Point(Field_feature_point[i].x, Field_feature_point[i].y), 3, Scalar(0, 255, 255), 3);
+        //             }
+        //         }
+        //         Observation_Data.scan_line.push_back(feature_point_tmp);
+        //         feature_point_tmp.feature_point.clear();
+        //     }
+        // }
         resize(monitor, monitor, cv::Size(320, 240));
         // namedWindow("monitor",WINDOW_NORMAL);
         // imshow("monitor",monitor);
-        if(soccer_data.size() == 0 && goal_data.size() == 0)
-        {
-            tku_msgs::SoccerData tmp;
-            tmp.x = 0;
-            tmp.y = 0;
-            tmp.height = 0;
-            tmp.width = 0;
-            tmp.object_mode = 2;
-            Soccer.object_cnt = 1;
-            Soccer.ObjectList.push_back(tmp);
-            SoccerData_Publisher.publish(Soccer);
-            soccer_data.clear();
-        }
-        else
-        {
-            int cnt = 0;
-            if(soccer_data.size() != 0)
-            {
-                for(size_t t = 0; t < soccer_data.size(); t++)
-                {
-                    tku_msgs::SoccerData tmp;
-                    Distance distance;
-                    // ROS_INFO("Soccer_X = %d",soccer_data[t].x);
-                    // ROS_INFO("Soccer_Y = %d",soccer_data[t].y);
-                    // ROS_INFO("Soccer_Height = %d",soccer_data[t].height);
-                    // ROS_INFO("Soccer_Width = %d\n",soccer_data[t].width);
+        // if(soccer_data.size() == 0 && goal_data.size() == 0)
+        // {
+        //     tku_msgs::SoccerData tmp;
+        //     tmp.x = 0;
+        //     tmp.y = 0;
+        //     tmp.height = 0;
+        //     tmp.width = 0;
+        //     tmp.object_mode = 2;
+        //     Soccer.object_cnt = 1;
+        //     Soccer.ObjectList.push_back(tmp);
+        //     SoccerData_Publisher.publish(Soccer);
+        //     soccer_data.clear();
+        // }
+        // else
+        // {
+        //     int cnt = 0;
+        //     if(soccer_data.size() != 0)
+        //     {
+        //         for(size_t t = 0; t < soccer_data.size(); t++)
+        //         {
+        //             tku_msgs::SoccerData tmp;
+        //             Distance distance;
+        //             // ROS_INFO("Soccer_X = %d",soccer_data[t].x);
+        //             // ROS_INFO("Soccer_Y = %d",soccer_data[t].y);
+        //             // ROS_INFO("Soccer_Height = %d",soccer_data[t].height);
+        //             // ROS_INFO("Soccer_Width = %d\n",soccer_data[t].width);
 
-                    tmp.x = soccer_data[t].x;
-                    tmp.y = soccer_data[t].y;
-                    tmp.height = soccer_data[t].height;
-                    tmp.width = soccer_data[t].width;
-                    tmp.object_mode = 0;
-                    int x = soccer_data[t].x + (soccer_data[t].width / 2);
-                    int y = soccer_data[t].y + soccer_data[t].height;
-                    distance = measure(x,y,CameraType::Monocular);
-                    tmp.distance.x_dis = distance.x_dis;
-                    tmp.distance.y_dis = distance.y_dis;
-                    tmp.distance.dis = distance.dis;
-                    Soccer.ObjectList.push_back(tmp);
-                    cnt++;
-                    // ROS_INFO("mode = %d",tmp.object_mode);
-                    // ROS_INFO("x_soccer = %d",Soccer.ObjectList[t].x);
-		            // ROS_INFO("soccer_dis = %d",tmp.distance);
-                }
-                soccer_data.clear();
-            }
-            if(goal_data.size() != 0)
-            {
-                for(size_t t = 0; t < goal_data.size(); t++)
-                {
-                    tku_msgs::SoccerData tmp;
-                    Distance distance;
-                    // ROS_INFO("goal_data_X = %d",goal_data[t].x);
-                    // ROS_INFO("goal_data_Y = %d",goal_data[t].y);
-                    // ROS_INFO("goal_data_Height = %d",goal_data[t].height);
-                    // ROS_INFO("goal_data_Width = %d\n",goal_data[t].width);
+        //             tmp.x = soccer_data[t].x;
+        //             tmp.y = soccer_data[t].y;
+        //             tmp.height = soccer_data[t].height;
+        //             tmp.width = soccer_data[t].width;
+        //             tmp.object_mode = 0;
+        //             int x = soccer_data[t].x + (soccer_data[t].width / 2);
+        //             int y = soccer_data[t].y + soccer_data[t].height;
+        //             distance = measure(x,y,CameraType::Monocular);
+        //             tmp.distance.x_dis = distance.x_dis;
+        //             tmp.distance.y_dis = distance.y_dis;
+        //             tmp.distance.dis = distance.dis;
+        //             Soccer.ObjectList.push_back(tmp);
+        //             cnt++;
+        //             // ROS_INFO("mode = %d",tmp.object_mode);
+        //             // ROS_INFO("x_soccer = %d",Soccer.ObjectList[t].x);
+		//             // ROS_INFO("soccer_dis = %d",tmp.distance);
+        //         }
+        //         soccer_data.clear();
+        //     }
+        //     if(goal_data.size() != 0)
+        //     {
+        //         for(size_t t = 0; t < goal_data.size(); t++)
+        //         {
+        //             tku_msgs::SoccerData tmp;
+        //             Distance distance;
+        //             // ROS_INFO("goal_data_X = %d",goal_data[t].x);
+        //             // ROS_INFO("goal_data_Y = %d",goal_data[t].y);
+        //             // ROS_INFO("goal_data_Height = %d",goal_data[t].height);
+        //             // ROS_INFO("goal_data_Width = %d\n",goal_data[t].width);
 
-                    tmp.x = goal_data[t].x;
-                    tmp.y = goal_data[t].y;
-                    tmp.height = goal_data[t].height;
-                    tmp.width = goal_data[t].width;
-                    tmp.object_mode = 1;
-                    int x = soccer_data[t].x + (soccer_data[t].width / 2);
-                    int y = soccer_data[t].y + soccer_data[t].height;
-                    distance = measure(x,y,CameraType::Monocular);
-                    tmp.distance.x_dis = distance.x_dis;
-                    tmp.distance.y_dis = distance.y_dis;
-                    tmp.distance.dis = distance.dis;
-                    Soccer.ObjectList.push_back(tmp);
-                    cnt++;
-                    // ROS_INFO("mode = %d",tmp.object_mode);
-                }
-                goal_data.clear();
-            }
-            ROS_INFO("cnt = %d",cnt);
-            Soccer.object_cnt = cnt;
-            SoccerData_Publisher.publish(Soccer);
-            Soccer.ObjectList.clear();
-        }
+        //             tmp.x = goal_data[t].x;
+        //             tmp.y = goal_data[t].y;
+        //             tmp.height = goal_data[t].height;
+        //             tmp.width = goal_data[t].width;
+        //             tmp.object_mode = 1;
+        //             int x = soccer_data[t].x + (soccer_data[t].width / 2);
+        //             int y = soccer_data[t].y + soccer_data[t].height;
+        //             distance = measure(x,y,CameraType::Monocular);
+        //             tmp.distance.x_dis = distance.x_dis;
+        //             tmp.distance.y_dis = distance.y_dis;
+        //             tmp.distance.dis = distance.dis;
+        //             Soccer.ObjectList.push_back(tmp);
+        //             cnt++;
+        //             // ROS_INFO("mode = %d",tmp.object_mode);
+        //         }
+        //         goal_data.clear();
+        //     }
+        //     ROS_INFO("cnt = %d",cnt);
+        //     Soccer.object_cnt = cnt;
+        //     SoccerData_Publisher.publish(Soccer);
+        //     Soccer.ObjectList.clear();
+        // }
         Observation_Data.imagestate = whiteline_flag;
         ObservationData_Publisher.publish(Observation_Data);
         //ROS_INFO("13x = %d y = %d dis = %d",FeaturePoint_distance.x_dis[13],FeaturePoint_distance.y_dis[13],FeaturePoint_distance.dis[13]);
