@@ -41,7 +41,7 @@ Vision_main::Vision_main(ros::NodeHandle &nh)
     R_ = 0;
     Horizontal_Head.pos = 2048;
     Horizontal_Head.speed = 10;
-    Vertical_Head.pos = 1800;
+    Vertical_Head.pos = 1330;
     Vertical_Head.speed = 10;
     RealsenseIMUData = {0.0,0.0,0.0};
 }
@@ -321,7 +321,7 @@ void Vision_main::strategy_main()
         Mat imagePreprocessing = ImagePreprocessing(dst);
         edge = ImageCanny(imagePreprocessing);
         Mat aftercanny = edge.clone();
-        merge_hough_frame = Merge_similar_line(imagePreprocessing,aftercanny,dst);
+        // merge_hough_frame = Merge_similar_line(imagePreprocessing,aftercanny,dst);
 	    // imshow("line",line);
         Observation_Data.landmark = JustLine_Data.landmark;
         cv::Mat Object_frame = FindObject(color_buffer);
@@ -385,9 +385,10 @@ void Vision_main::strategy_main()
         // ROS_INFO("-------------------finish---------------------");
         // imshow("AA",AA);
         // waitKey(0);
+        ROS_INFO("Vertical_Head_ver = %d",Vertical_Head.pos);
         Distance distance;
-        distance = measure(300,200,CameraType::stereo);
-        circle(monitor, Point(300, 200), 3, Scalar(0, 255, 0), 3);
+        distance = measure(155*2,185*2,CameraType::stereo);
+        circle(monitor, Point(155*2,185*2), 3, Scalar(0, 255, 0), 3);
         
         // if(Field_feature_point.size() < 40)     // no feature point = 36
         // {
@@ -602,8 +603,8 @@ void Vision_main::strategy_main()
         // resize(morph, morph, cv::Size(320, 240));
         resize(edge, edge, cv::Size(320, 240));
         resize(Gmask, Gmask, cv::Size(320, 240));
-        resize(hough_frame, hough_frame, cv::Size(320, 240));
-        resize(merge_hough_frame, merge_hough_frame, cv::Size(320, 240));
+        // resize(hough_frame, hough_frame, cv::Size(320, 240));
+        // resize(merge_hough_frame, merge_hough_frame, cv::Size(320, 240));
 
         Mat MyCombine(Gmask.rows, Gmask.cols*2, CV_8UC1, Scalar(0,255,255));
         Gmask.copyTo(MyCombine(Rect(0,0,Gmask.cols,Gmask.rows)));
@@ -613,23 +614,23 @@ void Vision_main::strategy_main()
         imageGamma.copyTo(MyCombine1(Rect(0,0,imageGamma.cols,imageGamma.rows)));
 	    nobackgroud_image.copyTo(MyCombine1(Rect(imageGamma.cols,0,imageGamma.cols,imageGamma.rows)));
         
-        Mat MyCombine2(hough_frame.rows, hough_frame.cols*2, CV_8UC3, Scalar(0,255,255));
-        hough_frame.copyTo(MyCombine2(Rect(0,0,hough_frame.cols,hough_frame.rows)));
-	    merge_hough_frame.copyTo(MyCombine2(Rect(hough_frame.cols,0,hough_frame.cols,hough_frame.rows)));
+        // Mat MyCombine2(hough_frame.rows, hough_frame.cols*2, CV_8UC3, Scalar(0,255,255));
+        // hough_frame.copyTo(MyCombine2(Rect(0,0,hough_frame.cols,hough_frame.rows)));
+	    // merge_hough_frame.copyTo(MyCombine2(Rect(hough_frame.cols,0,hough_frame.cols,hough_frame.rows)));
         
         msg_object = cv_bridge::CvImage(std_msgs::Header(), "bgr8", Object_frame).toImageMsg();
         msg_monitor = cv_bridge::CvImage(std_msgs::Header(), "bgr8", monitor).toImageMsg();
         msg_measure = cv_bridge::CvImage(std_msgs::Header(), "bgr8", oframe).toImageMsg();
         msg_mask = cv_bridge::CvImage(std_msgs::Header(), "mono8", MyCombine).toImageMsg();
         msg_imageGamma = cv_bridge::CvImage(std_msgs::Header(), "bgr8", MyCombine1).toImageMsg();
-        msg_hough = cv_bridge::CvImage(std_msgs::Header(), "bgr8", MyCombine2).toImageMsg();
+        // msg_hough = cv_bridge::CvImage(std_msgs::Header(), "bgr8", MyCombine2).toImageMsg();
 
         Object_Frame_Publisher.publish(msg_object);
         Monitor_Frame_Publisher.publish(msg_monitor);
         Measure_Frame_Publisher.publish(msg_measure);
         Gamma_Frame_Publisher.publish(msg_imageGamma);
         mask_Frame_Publisher.publish(msg_mask);
-        MerHough_Publisher.publish(msg_hough);
+        // MerHough_Publisher.publish(msg_hough);
 
         waitKey(1);
     }

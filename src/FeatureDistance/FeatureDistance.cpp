@@ -92,7 +92,7 @@ float FeatureDistance::AvgPixelDistance(int Feature_x, int Feature_y)
                     distance_sum+=depth_scale*depth_buffer.at<uint16_t>(y,x);
                     effective_pixel++;
                     ROS_INFO("distance_sum = %f",distance_sum);
-                    ROS_INFO("effective_pixel = %d",effective_pixel);
+                    // ROS_INFO("effective_pixel = %d",effective_pixel);
                 }else{
                     // distance_sum+=0.0;
                 }
@@ -103,7 +103,7 @@ float FeatureDistance::AvgPixelDistance(int Feature_x, int Feature_y)
         {
             ROS_INFO("distance_sum = %f, effective_pixel = %f", distance_sum, effective_pixel);
             effective_distance = 0.0;
-            ROS_INFO("effective_distance = %f",effective_distance);
+            // ROS_INFO("effective_distance = %f",effective_distance);
         }        
         // ROS_INFO("effective_distance = %f",effective_distance);    
     }else{
@@ -138,8 +138,8 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
             ROS_INFO("avgdistance = %f",avgdistance);
             if(!depth_buffer.empty() && avgdistance != 0.000000)
             {
-                ROS_INFO("x = %d, y = %d", Feature_x, Feature_y);
-                ROS_INFO("start");
+                // ROS_INFO("x = %d, y = %d", Feature_x, Feature_y);
+                // ROS_INFO("start");
                 
                 float theta_y = 0.0;               
                 float theta_x = 0.0;
@@ -236,6 +236,7 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
                     total_dis = camera2robot_dis + distance.dis;
                 ROS_INFO("total_dis = %f", total_dis);
                 tool->Delay(1);
+                // tool->Delay(1000);
                 break;
             }
  
@@ -296,6 +297,7 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
             break;
         
     }
+    // tool->Delay(50);
     return distance;
 }
 
