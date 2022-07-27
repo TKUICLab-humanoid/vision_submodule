@@ -31,7 +31,7 @@
 #define L_Thigh         11.0         //膝關節～髖關節長度 (cm) 大腿
 #define L_BodyError     0  // L_4 = 24.95 (cm), L_5 = 3.123 (cm) 2.3
 #define L_Body          24.56  //髖關節～垂直頭馬達長度 (cm)
-#define L_FOOT          2.57        //腳底板下面～踝關節長度 (cm)
+#define L_FOOT          3.5//2.57        //腳底板下面～踝關節長度 (cm)
 #define L_Shoes         0.2          //鞋釘厚度 (cm)
 #define W_Front         5.0          //Front Width of Shoes (cm)
 #define W_Behind        5.0          //Behind Width of Shoes (cm)

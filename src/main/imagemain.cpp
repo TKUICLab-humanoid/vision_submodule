@@ -331,6 +331,7 @@ void Vision_main::strategy_main()
         //imshow("dst",dst);
 
         cv::Mat monitor = White_Line(aftercanny);
+        // cv::Mat monitor = Object_frame;
 
         calcImageAngle(Horizontal_Head,Vertical_Head);
         ImageLengthData.focus = camera2robot_dis;
@@ -387,8 +388,26 @@ void Vision_main::strategy_main()
         // waitKey(0);
         ROS_INFO("Vertical_Head_ver = %d",Vertical_Head.pos);
         Distance distance;
-        distance = measure(155*2,185*2,CameraType::stereo);
-        circle(monitor, Point(155*2,185*2), 3, Scalar(0, 255, 0), 3);
+        distance = measure(165*2,225*2,CameraType::stereo);
+        circle(monitor, Point(165*2,225*2), 3, Scalar(0, 255, 0), 3);
+
+        distance = measure(225*2,165*2,CameraType::stereo);
+        circle(monitor, Point(225*2,165*2), 3, Scalar(0, 255, 0), 3);
+        distance = measure(225*2,175*2,CameraType::stereo);
+        circle(monitor, Point(225*2,175*2), 3, Scalar(0, 255, 0), 3);
+        distance = measure(225*2,185*2,CameraType::stereo);
+        circle(monitor, Point(225*2,185*2), 3, Scalar(0, 255, 0), 3);
+        distance = measure(225*2,195*2,CameraType::stereo);
+        circle(monitor, Point(225*2,195*2), 3, Scalar(0, 255, 0), 3);
+        distance = measure(225*2,205*2,CameraType::stereo);
+        circle(monitor, Point(225*2,205*2), 3, Scalar(0, 255, 0), 3);
+        distance = measure(225*2,215*2,CameraType::stereo);
+        circle(monitor, Point(225*2,215*2), 3, Scalar(0, 255, 0), 3);
+        distance = measure(225*2,225*2,CameraType::stereo);
+        circle(monitor, Point(225*2,225*2), 3, Scalar(0, 255, 0), 3);
+        distance = measure(225*2,235*2,CameraType::stereo);
+        circle(monitor, Point(225*2,235*2), 3, Scalar(0, 255, 0), 3);
+        // circle(Object_frame, Point(135*2,185*2), 3, Scalar(0, 255, 0), 3);
         
         // if(Field_feature_point.size() < 40)     // no feature point = 36
         // {

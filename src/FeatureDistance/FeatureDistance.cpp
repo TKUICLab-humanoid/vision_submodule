@@ -79,19 +79,19 @@ float FeatureDistance::AvgPixelDistance(int Feature_x, int Feature_y)
     }
     if(!depth_buffer.empty())
     {
-        ROS_INFO("!depth_buffer.empty()");
-        ROS_INFO("RectRange.y = %d, RectRange.height = %d", RectRange.y, RectRange.height);
+        // ROS_INFO("!depth_buffer.empty()");
+        // ROS_INFO("RectRange.y = %d, RectRange.height = %d", RectRange.y, RectRange.height);
         
         for(int y=RectRange.y;y<RectRange.y+RectRange.height;y++)
         {
             for(int x=RectRange.x;x<RectRange.x+RectRange.width;x++)
             {
-                ROS_INFO("buffer = %f", depth_buffer.at<uint16_t>(y,x));
+                // ROS_INFO("buffer = %f", depth_buffer.at<uint16_t>(y,x));
                 //如果深度图下該點像素不為0，表示有距離信息
                 if(depth_buffer.at<uint16_t>(y,x)){
                     distance_sum+=depth_scale*depth_buffer.at<uint16_t>(y,x);
                     effective_pixel++;
-                    ROS_INFO("distance_sum = %f",distance_sum);
+                    // ROS_INFO("distance_sum = %f",distance_sum);
                     // ROS_INFO("effective_pixel = %d",effective_pixel);
                 }else{
                     // distance_sum+=0.0;
@@ -214,7 +214,7 @@ Distance FeatureDistance::measure(int Feature_x, int Feature_y,CameraType camera
                 } 
                 if(Horizontal_Head_Angle != 0.0)
                 {
-                    ROS_INFO("Horizontal_Head_Angle  = %d", Horizontal_Head_Angle);
+                    ROS_INFO("Horizontal_Head_Angle  = %f", Horizontal_Head_Angle);
                     if(Horizontal_Head_Angle < 0.0)
                     {
                         distance.y_dis = distance.dis * cos(Horizontal_Head_Angle * DEG2RAD);
@@ -449,6 +449,7 @@ double FeatureDistance::CalcRobotHeight()
         ROS_INFO("Robot_Width_1 = %f, Robot_Width_2 = %f, Robot_Width_3 = %f", Robot_Width_1, Robot_Width_2, Robot_Width_3);
         ROS_INFO("RobotHeight = %f, RobotWidth = %f",RobotHeight, RobotWidth);
         fin.close();
+        // sleep(3);
     }
     StandPackage.clear();
 }
